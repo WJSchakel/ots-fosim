@@ -3,8 +3,6 @@ package org.opentrafficsim.fosim.parameters;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opentrafficsim.fosim.parameters.ParameterGroup.DefaultState;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -59,8 +57,8 @@ public class ParameterDefinitions
         group.addParameter(new Parameter("w", it("breedte"), it("width"), "m").setMin(1.5).setMax(2.6).setDefault(1.7, 2.55)
                 .setDescriptionNl("Voertuigbreedte.").setDescriptionEn("Vehicle width."));
         group.addParameter(new Parameter("vMax", it("v_max"), "km/h").setMin(50.0).setMax(200.0)
-                .setDefault(180.0, Distribution.normal(85.0, 2.5, 60.0, 100.0)).setDescriptionNl("Maximale voertuigsnelheid.")
-                .setDescriptionEn("Maximum vehicle speed."));
+                .setDefault(180.0, DistributionValue.normal(85.0, 2.5, 60.0, 100.0))
+                .setDescriptionNl("Maximale voertuigsnelheid.").setDescriptionEn("Maximum vehicle speed."));
         list.add(group);
 
         // Car-following model
@@ -87,7 +85,7 @@ public class ParameterDefinitions
                 .setDescriptionNl("Persistentie maximale acceleratie bij toenemen snelheid.")
                 .setDescriptionEn("Persistence of maximum acceleration as speed increases."));
         group.addParameter(new Parameter("fSpeed", it("f_speed"), "-").setMin(0.1).setMax(2.0)
-                .setDefault(Distribution.normal(1.0308, 0.1, 0.5, 2.0), Distribution.normal(1.0308, 0.1, 0.5, 2.0))
+                .setDefault(DistributionValue.normal(1.0308, 0.1, 0.5, 2.0), DistributionValue.normal(1.0308, 0.1, 0.5, 2.0))
                 .setDescriptionNl("Factor gewenste snelheid/maximum snelheid.")
                 .setDescriptionEn("Factor desired speed/legal speed limit."));
         list.add(group);
@@ -139,7 +137,7 @@ public class ParameterDefinitions
                         + "important to use different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = "
                         + "<i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.");
         group.addParameter(new Parameter("sigma", it("σ"), "-").setMin(0.0).setMax(1.0)
-                .setDefault(Distribution.triangular(0.0, 0.25, 1.0), 1.0)
+                .setDefault(DistributionValue.triangular(0.0, 0.25, 1.0), 1.0)
                 .setDescriptionNl("Gevoeligheid voor gewenste snelheid anderen.").setDescriptionEn("Socio-speed sensitivity."));
         group.addParameter(new Parameter("courtesy", it("courtesy"), "0|1").setMin(0.0).setMax(1.0).setDefault(1.0, 0.0)
                 .setDescriptionNl("Bereid rijstrook te wisselen voor anderen.")
@@ -201,7 +199,7 @@ public class ParameterDefinitions
      * @param string String; string to add html tags to.
      * @return String; string with html tags.
      */
-    private static String it(final String string)
+    protected static String it(final String string)
     {
         String str = string;
         String suffix = "";
@@ -231,7 +229,7 @@ public class ParameterDefinitions
      * @param string String; string to add html tags to.
      * @return String; string with html tags.
      */
-    private static String sc(final String string)
+    protected static String sc(final String string)
     {
         String str = string;
         String suffix = "";

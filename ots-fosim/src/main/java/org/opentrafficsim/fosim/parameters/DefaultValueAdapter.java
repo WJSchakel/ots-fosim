@@ -32,7 +32,7 @@ public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDe
         {
             return context.serialize(((Scalar) src).value(), Double.class);
         }
-        return context.serialize(src, Distribution.class);
+        return context.serialize(src, DistributionValue.class);
     }
 
     /** {@inheritDoc} */
@@ -44,7 +44,7 @@ public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDe
         {
             return new Scalar(json.getAsDouble());
         }
-        return GSON.fromJson(json, Distribution.class);
+        return GSON.fromJson(json, DistributionValue.class);
     }
     
 }
