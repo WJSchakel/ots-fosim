@@ -61,6 +61,20 @@ public class ParameterDefinitions
                 .setDescriptionNl("Maximale voertuigsnelheid.").setDescriptionEn("Maximum vehicle speed."));
         list.add(group);
 
+        // Driver
+        group = new ParameterGroup("Bestuurder", "Driver", DefaultState.ALWAYS)
+                .setDescriptionNl("Algemene bestuurder parameters.").setDescriptionEn("General driver parameters.");
+        group.addParameter(new Parameter("Tmax", it("T_max"), "s").setMin("Tmin").setMax(10.0).setDefault(1.2, 1.2)
+                .setDescriptionNl("Normale volgtijd.").setDescriptionEn("Regular desired headway."));
+        group.addParameter(new Parameter("Tmin", it("T_min"), "s").setMin(0.1).setMax("Tmax").setDefault(0.56, 0.56)
+                .setDescriptionNl("Minimale volgtijd bij rijstrookwisselen.")
+                .setDescriptionEn("Minimum desired headway when changing lanes."));
+        group.addParameter(new Parameter("fSpeed", it("f_speed"), "-").setMin(0.1).setMax(2.0)
+                .setDefault(DistributionValue.normal(1.0308, 0.1, 0.5, 2.0), DistributionValue.normal(1.0308, 0.1, 0.5, 2.0))
+                .setDescriptionNl("Factor gewenste snelheid/maximum snelheid.")
+                .setDescriptionEn("Factor desired speed/legal speed limit."));
+        list.add(group);
+        
         // Car-following model
         group = new ParameterGroup("Voertuig-volg model", "Car-following model", DefaultState.ALWAYS)
                 .setDescriptionNl("Parameters van het IDM+ voertuig-volg model. Dit wordt ook gebruikt voor het accepteren van "
@@ -79,15 +93,9 @@ public class ParameterDefinitions
                 .setDescriptionEn("Critical deceleration, e.g. at traffic lights."));
         group.addParameter(new Parameter("s0", it("s_0"), "m").setMin(0.5).setMax(8.0).setDefault(3.0, 3.0)
                 .setDescriptionNl("Stopafstand tussen voertuigen.").setDescriptionEn("Stopping distance between vehicles."));
-        group.addParameter(new Parameter("Tmax", it("T_max"), "s").setMin("Tmin").setMax(10.0).setDefault(1.2, 1.2)
-                .setDescriptionNl("Normale volgtijd.").setDescriptionEn("Regular desired headway."));
         group.addParameter(new Parameter("delta", it("δ"), "-").setMin(0).setMax(1000).setDefault(4.0, 4.0)
                 .setDescriptionNl("Persistentie maximale acceleratie bij toenemen snelheid.")
                 .setDescriptionEn("Persistence of maximum acceleration as speed increases."));
-        group.addParameter(new Parameter("fSpeed", it("f_speed"), "-").setMin(0.1).setMax(2.0)
-                .setDefault(DistributionValue.normal(1.0308, 0.1, 0.5, 2.0), DistributionValue.normal(1.0308, 0.1, 0.5, 2.0))
-                .setDescriptionNl("Factor gewenste snelheid/maximum snelheid.")
-                .setDescriptionEn("Factor desired speed/legal speed limit."));
         list.add(group);
 
         // Lane-change model
@@ -105,9 +113,6 @@ public class ParameterDefinitions
         group.addParameter(new Parameter("dCoop", it("d_coop"), "-").setMin("dSync").setMax(1.0).setDefault(0.788, 0.788)
                 .setDescriptionNl("Drempelwaarde rijstrookwisselwens cooperatie.")
                 .setDescriptionEn("Lane change desire threshold for cooperation."));
-        group.addParameter(new Parameter("Tmin", it("T_min"), "s").setMin(0.1).setMax("Tmax").setDefault(0.56, 0.56)
-                .setDescriptionNl("Minimale volgtijd bij rijstrookwisselen.")
-                .setDescriptionEn("Minimum desired headway when changing lanes."));
         group.addParameter(new Parameter("tau", it("τ"), "s").setMin(1.0).setMax(120.0).setDefault(25.0, 25.0)
                 .setDescriptionNl("Relaxatietijd naar normale volgtijd.")
                 .setDescriptionEn("Relaxation time to regular headway."));

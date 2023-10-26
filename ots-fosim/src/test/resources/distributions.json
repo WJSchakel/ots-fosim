@@ -5,7 +5,7 @@
       {
         "id": "lambda",
         "defaultValue": {
-          "parameter": "param.value"
+          "parameter": "param.default"
         },
         "minimum": {
           "value": 0.0

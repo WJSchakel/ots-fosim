@@ -72,6 +72,87 @@
     ]
   },
   {
+    "groupNl": "Bestuurder",
+    "groupEn": "Driver",
+    "defaultState": "ALWAYS",
+    "descriptionNl": "Algemene bestuurder parameters.",
+    "descriptionEn": "General driver parameters.",
+    "parameters": [
+      {
+        "id": "Tmax",
+        "descriptionNl": "Normale volgtijd.",
+        "descriptionEn": "Regular desired headway.",
+        "unit": "s",
+        "defaultValue": [
+          1.2,
+          1.2
+        ],
+        "minimum": {
+          "parameter": "Tmin"
+        },
+        "maximum": {
+          "value": 10.0
+        },
+        "nameNl": "<i>T<sub>max</sub></i>",
+        "nameEn": "<i>T<sub>max</sub></i>"
+      },
+      {
+        "id": "Tmin",
+        "descriptionNl": "Minimale volgtijd bij rijstrookwisselen.",
+        "descriptionEn": "Minimum desired headway when changing lanes.",
+        "unit": "s",
+        "defaultValue": [
+          0.56,
+          0.56
+        ],
+        "minimum": {
+          "value": 0.1
+        },
+        "maximum": {
+          "parameter": "Tmax"
+        },
+        "nameNl": "<i>T<sub>min</sub></i>",
+        "nameEn": "<i>T<sub>min</sub></i>"
+      },
+      {
+        "id": "fSpeed",
+        "descriptionNl": "Factor gewenste snelheid/maximum snelheid.",
+        "descriptionEn": "Factor desired speed/legal speed limit.",
+        "unit": "-",
+        "defaultValue": [
+          {
+            "type": "Normal",
+            "value": 1.0308,
+            "values": {
+              "mu": 1.0308,
+              "sigma": 0.1,
+              "min": 0.5,
+              "max": 2.0
+            }
+          },
+          {
+            "type": "Normal",
+            "value": 1.0308,
+            "values": {
+              "mu": 1.0308,
+              "sigma": 0.1,
+              "min": 0.5,
+              "max": 2.0
+            }
+          }
+        ],
+        "minimum": {
+          "value": 0.1
+        },
+        "maximum": {
+          "value": 2.0
+        },
+        "nameNl": "<i>f<sub>speed</sub></i>",
+        "nameEn": "<i>f<sub>speed</sub></i>"
+      }
+    ]
+  },
+  {
     "groupNl": "Voertuig-volg model",
     "groupEn": "Car-following model",
     "defaultState": "ALWAYS",
@@ -169,24 +250,6 @@
         "nameEn": "<i>s</i><sub>0</sub>"
       },
       {
-        "id": "Tmax",
-        "descriptionNl": "Normale volgtijd.",
-        "descriptionEn": "Regular desired headway.",
-        "unit": "s",
-        "defaultValue": [
-          1.2,
-          1.2
-        ],
-        "minimum": {
-          "parameter": "Tmin"
-        },
-        "maximum": {
-          "value": 10.0
-        },
-        "nameNl": "<i>T<sub>max</sub></i>",
-        "nameEn": "<i>T<sub>max</sub></i>"
-      },
-      {
         "id": "delta",
         "descriptionNl": "Persistentie maximale acceleratie bij toenemen snelheid.",
         "descriptionEn": "Persistence of maximum acceleration as speed increases.",
@@ -203,42 +266,6 @@
         },
         "nameNl": "<i>δ</i>",
         "nameEn": "<i>δ</i>"
-      },
-      {
-        "id": "fSpeed",
-        "descriptionNl": "Factor gewenste snelheid/maximum snelheid.",
-        "descriptionEn": "Factor desired speed/legal speed limit.",
-        "unit": "-",
-        "defaultValue": [
-          {
-            "type": "Normal",
-            "value": 1.0308,
-            "values": {
-              "mu": 1.0308,
-              "sigma": 0.1,
-              "min": 0.5,
-              "max": 2.0
-            }
-          },
-          {
-            "type": "Normal",
-            "value": 1.0308,
-            "values": {
-              "mu": 1.0308,
-              "sigma": 0.1,
-              "min": 0.5,
-              "max": 2.0
-            }
-          }
-        ],
-        "minimum": {
-          "value": 0.1
-        },
-        "maximum": {
-          "value": 2.0
-        },
-        "nameNl": "<i>f<sub>speed</sub></i>",
-        "nameEn": "<i>f<sub>speed</sub></i>"
       }
     ]
   },
@@ -302,24 +329,6 @@
         },
         "nameNl": "<i>d<sub>coop</sub></i>",
         "nameEn": "<i>d<sub>coop</sub></i>"
-      },
-      {
-        "id": "Tmin",
-        "descriptionNl": "Minimale volgtijd bij rijstrookwisselen.",
-        "descriptionEn": "Minimum desired headway when changing lanes.",
-        "unit": "s",
-        "defaultValue": [
-          0.56,
-          0.56
-        ],
-        "minimum": {
-          "value": 0.1
-        },
-        "maximum": {
-          "parameter": "Tmax"
-        },
-        "nameNl": "<i>T<sub>min</sub></i>",
-        "nameEn": "<i>T<sub>min</sub></i>"
       },
       {
         "id": "tau",
