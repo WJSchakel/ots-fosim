@@ -209,6 +209,7 @@ public class FosParser
      */
     private void parseLine(final String line)
     {
+        Throw.when(this.endOfFile, IllegalStateException.class, "Lines beyond end of file marker.");
         if (line.startsWith("#"))
         {
             return; // comment line
@@ -525,7 +526,7 @@ public class FosParser
         // return possible next from-lane
         return toLane + 1;
     }
-    
+
     /**
      * Returns a lane.
      * @param sectionIndex int; section index.
@@ -643,10 +644,10 @@ public class FosParser
         this.nodes.add(newNode);
         return newNode;
     }
-    
+
     /**
-     * Returns whether this node has a forbidden name, i.e. equal to desired name of a source or sink. In that case, a new
-     * node should be generated in that case.
+     * Returns whether this node has a forbidden name, i.e. equal to desired name of a source or sink. In that case, a new node
+     * should be generated in that case.
      * @param node FosNode; node.
      * @return boolean; whether this node has a forbidden name.
      */
@@ -809,14 +810,14 @@ public class FosParser
 
         // build the lanes
         LaneType laneType = this.network.getLaneType(LaneType.DEFAULTS.HIGHWAY);
-        int laneNum = link.fromLane;
+        int laneNum = 0;
         for (FosLane lane : link.lanes)
         {
             String id = String.format("Lane %d", laneNum + 1);
             // calculate offset as y-distance between start/end node and from/to point, and add halve the lane width
             Length lateralOffsetAtStart = lateralOffsetAtStarts.get(laneNum);
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
-            Lane otsLane = Try.assign(
+            Try.assign(
                     () -> new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
                             laneType, lane.speedLimit),
                     NetworkException.class, "Geometry failed for lane %s at section %s.", laneNum, link.sectionIndex);
