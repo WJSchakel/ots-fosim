@@ -1,4 +1,4 @@
-package org.opentrafficsim.fosim;
+package org.opentrafficsim.fosim.parser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,23 +9,18 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.DoubleFunction;
 
 import javax.naming.NamingException;
 
-import org.djunits.unit.FrequencyUnit;
 import org.djunits.value.vdouble.scalar.Direction;
 import org.djunits.value.vdouble.scalar.Duration;
-import org.djunits.value.vdouble.scalar.Frequency;
 import org.djunits.value.vdouble.scalar.Length;
-import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
@@ -411,7 +406,7 @@ public class FosParser
         {
             buildLink(link);
         }
-        
+
         // build generators
 
         printMappings(); // TODO remove test code
@@ -516,18 +511,30 @@ public class FosParser
         // find until what lane we are on the same link
         int toLane = fromLane;
         this.mappedLinks[toLane][sectionIndex] = this.lastMappedLink;
-        while (toLane < this.lane.size() - 1 && (this.lane.get(toLane).get(sectionIndex).canChangeRight()
-                || this.lane.get(toLane + 1).get(sectionIndex).canChangeLeft()))
+        while (toLane < this.lane.size() - 1
+                && (this.lane.get(toLane).get(sectionIndex).canChangeRight(getSetting(ParserSetting.STRIPED_AREAS))
+                        || this.lane.get(toLane + 1).get(sectionIndex).canChangeLeft(getSetting(ParserSetting.STRIPED_AREAS))))
         {
             toLane++;
             this.mappedLinks[toLane][sectionIndex] = this.lastMappedLink;
         }
 
         // remember information, the FosLink constructor increases the lastMappedLink index
-        this.links.put(this.lastMappedLink, new FosLink(sectionIndex, fromLane, toLane));
+        this.links.put(this.lastMappedLink, new FosLink(this.lastMappedLink++, sectionIndex, fromLane, toLane, this));
 
         // return possible next from-lane
         return toLane + 1;
+    }
+    
+    /**
+     * Returns a lane.
+     * @param sectionIndex int; section index.
+     * @param laneIndex int; lane index.
+     * @return FosLane; lane at given section and lane index.
+     */
+    FosLane getLane(final int sectionIndex, final int laneIndex)
+    {
+        return this.lane.get(laneIndex).get(sectionIndex);
     }
 
     /**
@@ -559,8 +566,8 @@ public class FosParser
         Set<String> sourceNames = new LinkedHashSet<>();
         for (FosSourceSink source : this.source)
         {
-            FosLink link = source.getConnectedLink();
-            FosNode sourceNode = new FosNode();
+            FosLink link = getSourceSinkLink(source);
+            FosNode sourceNode = new FosNode(this.lastMappedNode++);
             sourceNode.name = source.name;
             sourceNode.outLinks.add(link);
             link.fromNode = sourceNode;
@@ -572,8 +579,8 @@ public class FosParser
         Set<String> sinkNames = new LinkedHashSet<>();
         for (FosSourceSink sink : this.sink)
         {
-            FosLink link = sink.getConnectedLink();
-            FosNode sinkNode = new FosNode();
+            FosLink link = getSourceSinkLink(sink);
+            FosNode sinkNode = new FosNode(this.lastMappedNode++);
             sinkNode.name = sink.name;
             // sources and sinks can have the same name, in that case create a new node
             while (sourceNames.contains(sinkNode.getName()) || sinkNames.contains(sinkNode.getName()))
@@ -591,13 +598,24 @@ public class FosParser
                  * including the one we are trying to create, and hence then sinks would never be allowed to have their own
                  * actual name.
                  */
-                sinkNode = new FosNode();
+                sinkNode = new FosNode(this.lastMappedNode++);
             }
             sinkNode.inLinks.add(link);
             link.toNode = sinkNode;
             this.nodes.add(sinkNode);
             sinkNames.add(sinkNode.getName());
         }
+    }
+
+    /**
+     * Returns the link connected to the source or sink.
+     * @param sourceSink FosSourceSink; source or sink.
+     * @return FosLink; link connected to the source or sink.
+     */
+    private FosLink getSourceSinkLink(final FosSourceSink sourceSink)
+    {
+        int sectionIndexFromStart = this.sections.size() - sourceSink.sectionFromEnd - 1;
+        return this.links.get(this.mappedLinks[sourceSink.fromLane][sectionIndexFromStart]);
     }
 
     /**
@@ -616,14 +634,31 @@ public class FosParser
                 return node;
             }
         }
-        FosNode newNode = new FosNode();
+        FosNode newNode = new FosNode(this.lastMappedNode++);
         // check we are not using a forbidden name (same as source or sink)
-        while (newNode.hasForbiddenName())
+        while (hasForbiddenName(newNode))
         {
-            newNode = new FosNode(); // constructor increases the lastMappedNode counter
+            newNode = new FosNode(this.lastMappedNode++);
         }
         this.nodes.add(newNode);
         return newNode;
+    }
+    
+    /**
+     * Returns whether this node has a forbidden name, i.e. equal to desired name of a source or sink. In that case, a new
+     * node should be generated in that case.
+     * @param node FosNode; node.
+     * @return boolean; whether this node has a forbidden name.
+     */
+    private boolean hasForbiddenName(final FosNode node)
+    {
+        if (this.forbiddenNodeNames == null)
+        {
+            this.forbiddenNodeNames = new LinkedHashSet<>();
+            this.source.forEach((s) -> this.forbiddenNodeNames.add(s.name));
+            this.sink.forEach((s) -> this.forbiddenNodeNames.add(s.name));
+        }
+        return this.forbiddenNodeNames.contains(node.getName());
     }
 
     /**
@@ -682,7 +717,7 @@ public class FosParser
         Length y = Length.POSITIVE_INFINITY;
         for (FosLink link : links)
         {
-            y = Length.min(y, link.getLeftLinkEdge());
+            y = Length.min(y, getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane));
         }
         new OTSRoadNode(this.network, node.getName(), new OTSPoint3D(x.si, y.si, 0.0), Direction.ZERO);
     }
@@ -693,7 +728,7 @@ public class FosParser
         String name = String.format("Link %d", link.number);
         OTSRoadNode startNode = (OTSRoadNode) this.network.getNode(link.fromNode.getName());
         OTSRoadNode endNode = (OTSRoadNode) this.network.getNode(link.toNode.getName());
-        LinkType linkType = network.getLinkType(DEFAULTS.FREEWAY);
+        LinkType linkType = this.network.getLinkType(DEFAULTS.FREEWAY);
         // TODO: Use Bezier if any of the lanes makes a shift?
         OTSLine3D designLine = Try.assign(() -> new OTSLine3D(startNode.getPoint(), endNode.getPoint()), NetworkException.class,
                 "Design line could not be generated for link at lane %s, section %s.", link.fromLane, link.sectionIndex);
@@ -708,8 +743,10 @@ public class FosParser
         List<Length> lateralOffsetAtStarts = new ArrayList<>();
         List<Length> lateralOffsetAtEnds = new ArrayList<>();
         // initialize relative to nodes
-        Length leftEdgeOffsetStart = link.getLeftLinkEdge().minus(Length.instantiateSI(startNode.getPoint().y));
-        Length leftEdgeOffsetEnd = link.getLeftLinkEdge().minus(Length.instantiateSI(endNode.getPoint().y));
+        Length leftEdgeOffsetStart = getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane)
+                .minus(Length.instantiateSI(startNode.getPoint().y));
+        Length leftEdgeOffsetEnd = getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane)
+                .minus(Length.instantiateSI(endNode.getPoint().y));
         int offsetEnd = 0; // to detect change in the number of lanes a lane shifts, relative to left-hand lanes
         for (int i = 0; i < link.lanes.size(); i++)
         {
@@ -744,7 +781,8 @@ public class FosParser
                 // a shift to the left, on the first lane
 
                 // margin between actual left edge and left edge in grid assuming maximum lane widths
-                Length leftEdgeMargin = link.getLeftLinkEdge().minus(getLeftEdgeMax(link.fromLane));
+                Length leftEdgeMargin =
+                        getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane).minus(getLeftEdgeMax(link.fromLane));
 
                 // add this margin to the left edge assuming maximum lane widths on the output lane
                 Length actualLeftEdge = getLeftEdgeMax(link.lanes.get(i).laneOut).plus(leftEdgeMargin);
@@ -781,8 +819,7 @@ public class FosParser
             Lane otsLane = Try.assign(
                     () -> new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
                             laneType, lane.speedLimit),
-                    NetworkException.class, "Geometry failed for lane %s at section %s.", laneNum,
-                    link.sectionIndex);
+                    NetworkException.class, "Geometry failed for lane %s at section %s.", laneNum, link.sectionIndex);
             laneNum++;
         }
 
@@ -790,6 +827,47 @@ public class FosParser
 
         // TODO
 
+    }
+
+    /**
+     * Returns the lateral coordinate of the left edge. The section is centered by its actual width, in the space assuming a
+     * grid of maximum lane widths.
+     * @param sectionIndex int; section index.
+     * @param fromLane int; from lane.
+     * @param toLane int; to lane.
+     * @return Length; lateral coordinate of the left edge for a link.
+     */
+    private Length getLeftLinkEdge(final int sectionIndex, final int fromLane, final int toLane)
+    {
+        // derive max lane widths, if we haven't already
+        if (this.maxLaneWidth == null)
+        {
+            this.maxLaneWidth = new Length[this.lane.size()];
+            for (int laneIndex = 0; laneIndex < this.lane.size(); laneIndex++)
+            {
+                // for each lane, loop all sections and store the maximum width
+                this.maxLaneWidth[laneIndex] = Length.ZERO;
+                for (FosLane lane : this.lane.get(laneIndex))
+                {
+                    this.maxLaneWidth[laneIndex] = Length.max(this.maxLaneWidth[laneIndex], lane.laneWidth);
+                }
+            }
+        }
+
+        // get left edge assuming all lanes are at maximum width
+        Length leftEdgeMax = getLeftEdgeMax(fromLane);
+
+        // get width if all lanes are at maximum width, and actual width
+        Length linkWidthMax = Length.ZERO;
+        Length linkWidth = Length.ZERO;
+        for (int laneIndex = fromLane; laneIndex <= toLane; laneIndex++)
+        {
+            linkWidthMax = linkWidthMax.plus(this.maxLaneWidth[laneIndex]);
+            linkWidth = linkWidth.plus(this.lane.get(laneIndex).get(sectionIndex).laneWidth);
+        }
+
+        // add halve of space to left edge
+        return leftEdgeMax.plus(linkWidthMax.minus(linkWidth).times(.5));
     }
 
     /**
@@ -928,7 +1006,7 @@ public class FosParser
      * @param delimiter String; delimiter.
      * @return String[]; trimmed fields.
      */
-    private static String[] splitAndTrimString(final String string, final String delimiter)
+    static String[] splitAndTrimString(final String string, final String delimiter)
     {
         String[] fields = string.split(delimiter);
         for (int i = 0; i < fields.length; i++)
@@ -946,7 +1024,7 @@ public class FosParser
      * @param numFields Number of fields to return. Use 0 for as many as required.
      * @return String[]; split strings.
      */
-    private static String[] splitStringByBlank(final String string, final int numFields)
+    static String[] splitStringByBlank(final String string, final int numFields)
     {
         if (string.isEmpty())
         {
@@ -974,685 +1052,6 @@ public class FosParser
             // store field and move to next
             fields.add(trimmedString.substring(from, to));
             from = to + 1;
-        }
-    }
-
-    /**
-     * This list wrapper allows multiple threads to set data in the array using the {@code set(index, element)} method. This
-     * method also assures the array will be of sufficient size, filling it with {@code null} as required. Using this, multiple
-     * threads can fill the array in parallel.
-     * @author wjschakel
-     * @param <T> element type.
-     */
-    private static class FosList<T> implements Iterable<T>
-    {
-        /** Wrapped list. */
-        private final List<T> list = new ArrayList<>();
-
-        /**
-         * Set the element at the specified index. Increase size of array if required. This will fill the array with
-         * {@code null}.
-         * @param index int; index to set the element.
-         * @param t T; element to set.
-         */
-        public synchronized T set(final int index, final T t)
-        {
-            while (index >= size())
-            {
-                this.list.add(null);
-            }
-            return this.list.set(index, t);
-        }
-
-        /**
-         * Returns the size;
-         * @return int; size.
-         */
-        public int size()
-        {
-            return this.list.size();
-        }
-
-        /**
-         * Returns the value at index.
-         * @param index int; index.
-         * @return T; value at index.
-         */
-        public T get(final int index)
-        {
-            return this.list.get(index);
-        }
-
-        /** {@inhertitDoc} */
-        public Iterator<T> iterator()
-        {
-            return this.list.iterator();
-        }
-
-        /**
-         * Returns whether the list is fully defined, i.e. contains no {@code null}.
-         * @return boolean; whether the list is fully defined.
-         */
-        public boolean isDefined()
-        {
-            return !this.list.contains(null);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return this.list.toString();
-        }
-    }
-
-    /**
-     * Parsed lane info. The interpretation if this has been reverse-engineered by setting various properties in a .fos file.
-     * @author wjschakel
-     */
-    private class FosLane
-    {
-        /**
-         * Type:
-         * <ul>
-         * <li>u: unused</li>
-         * <li>l: can only change left</li>
-         * <li>r: can only change right</li>
-         * <li>c: can change in both directions</li>
-         * <li>s: single lane (no lane change in either direction</li>
-         * <li>L: must go left (striped area)</li>
-         * <li>R: must go right (striped area)</li>
-         * <li>X: should not be here (beyond striped area)</li>
-         * </ul>
-         */
-        public final String type;
-
-        /**
-         * Taper:
-         * <ul>
-         * <li>- no</li>
-         * <li>&gt; merge taper</li>
-         * <li>&lt; diverge taper</li>
-         * <li>/ merge taper adjacent</li>
-         * <li>\ diverge taper adjacent</li>
-         */
-        public final String taper;
-
-        /**
-         * Lane number out; for diagonal sections. For both a merge taper and its adjacent lane, this is the same lane as the
-         * merge taper. For diverge tapers, these values are not affected.
-         */
-        public final int laneOut;
-
-        /** No overtaking trucks. */
-        public final boolean noOvertakingTrucks;
-
-        /** Speed suppression. */
-        public final double speedSuppression;
-
-        /** Speed limit. */
-        public final Speed speedLimit;
-
-        /** Slope (unit unknown, not used in FOSIM). */
-        public final double slope;
-
-        /** All lane change required (function unknown, not used in FOSIM). */
-        public final boolean allLaneChangeRequired;
-
-        /** Lane width. */
-        public final Length laneWidth;
-
-        /** Road works. */
-        public final boolean roadWorks;
-
-        /** Trajectory control. */
-        public final boolean trajectoryControl;
-
-        /**
-         * Switched lane.
-         * <ul>
-         * <li>0: none</li>
-         * <li>&lt;0: rush-hour lane, must change left</li>
-         * <li>&gt;0: plus lane, must change left</li>
-         * <li>abs value: index of area times</li>
-         * </ul>
-         * area time).
-         */
-        private final int switchedLane;
-
-        /**
-         * Parses the information of a single lane in a single section.
-         * @param string String; string describing a single lane in a single section.
-         */
-        public FosLane(final String string)
-        {
-            // example string: r,-, 0, 0,1.0,100.0,0.000,0,3.50,0,0[,-1]
-            // documented comma-separated fields do not match actual fields, nor in type, nor in number
-            String[] fields = splitAndTrimString(string, ",");
-            this.type = fields[0];
-            this.taper = fields[1];
-            this.laneOut = Integer.parseInt(fields[2]);
-            this.noOvertakingTrucks = fields[3].equals("1"); // "0" otherwise
-            this.speedSuppression = Double.parseDouble(fields[4]);
-            this.speedLimit = Speed.of(Double.parseDouble(fields[5]), "km/h");
-            this.slope = Double.parseDouble(fields[6]);
-            this.allLaneChangeRequired = fields[7].equals("1"); // "0" otherwise
-            this.laneWidth = Length.instantiateSI(Double.parseDouble(fields[8]));
-            this.roadWorks = fields[9].equals("1"); // "0" otherwise
-            this.trajectoryControl = fields[10].equals("1"); // "0" otherwise
-            this.switchedLane = fields.length > 11 ? Integer.parseInt(fields[11]) : 0;
-        }
-
-        /**
-         * Whether vehicles may change left.
-         * @return boolean; whether vehicles may change left.
-         */
-        public boolean canChangeLeft()
-        {
-            return (this.type.equals("l") || this.type.equals("c")
-                    || (this.type.equals("L") && getSetting(ParserSetting.STRIPED_AREAS)));
-        }
-
-        /**
-         * Whether vehicles may change right.
-         * @return boolean; whether vehicles may change right.
-         */
-        public boolean canChangeRight()
-        {
-            return (this.type.equals("r") || this.type.equals("c")
-                    || (this.type.equals("R") && getSetting(ParserSetting.STRIPED_AREAS)));
-        }
-
-        /**
-         * Whether this lane is switched (rush-hour lane or plus lane).
-         * @return boolean; whether this lane is switched (rush-hour lane or plus lane).
-         */
-        public boolean isSwitched()
-        {
-            return this.switchedLane != 0;
-        }
-
-        /**
-         * Returns the number of the switched are times for this lane, if it is switched.
-         * @return int; number of the switched are times for this lane.
-         */
-        public int switchedAreaTimesNumber()
-        {
-            Throw.when(!isSwitched(), RuntimeException.class, "Requesting switch times of lane that is not switched.");
-            return Math.abs(this.switchedLane);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "FosLane " + type + taper + ", " + speedLimit;
-        }
-    }
-
-    /**
-     * Parsed source or sink info (this is the same info).
-     * @author wjschakel
-     */
-    private class FosSourceSink
-    {
-        /** Section index, counting from the end. */
-        public final int sectionFromEnd;
-
-        /** From lane index. */
-        public final int fromLane;
-
-        /** To lane index. */
-        public final int toLane;
-
-        /** Name. */
-        public final String name;
-
-        /**
-         * Parses a single source or sink.
-         * @param string String; value of a source or sink line.
-         */
-        public FosSourceSink(final String string)
-        {
-            String[] fields = splitStringByBlank(string, 4);
-            this.sectionFromEnd = Integer.parseInt(fields[0]);
-            this.fromLane = Integer.parseInt(fields[1]);
-            this.toLane = Integer.parseInt(fields[2]);
-            this.name = fields[3];
-        }
-
-        /**
-         * Returns the link connected to the source or sink.
-         * @return FosLink; link connected to the source or sink.
-         */
-        public FosLink getConnectedLink()
-        {
-            int sectionIndexFromStart = FosParser.this.sections.size() - this.sectionFromEnd - 1;
-            return FosParser.this.links.get(FosParser.this.mappedLinks[this.fromLane][sectionIndexFromStart]);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "FosSourceSink [name=" + name + ", section=" + sectionFromEnd + ", fromLane=" + fromLane + ", toLane="
-                    + toLane + "]";
-        }
-    }
-
-    /**
-     * Parsed traffic light info.
-     * @author wjschakel
-     */
-    private class FosTrafficLight
-    {
-        /** Controller (function unknown, not used in FOSIM). */
-        public final String controller;
-
-        /** Position. */
-        public final Length position;
-
-        /** Lane. */
-        public final int lane;
-
-        /** Number (function unknown, not used in FOSIM). */
-        public final int number;
-
-        /** Cycle time. */
-        public final Duration cycleTime;
-
-        /** Green time. */
-        public final Duration greenTime;
-
-        /** Yellow time. */
-        public final Duration yellowTime;
-
-        /** Start offset. */
-        public final Duration startOffset;
-
-        /**
-         * Parses a single traffic light.
-         * @param string String; value of a traffic light line.
-         */
-        public FosTrafficLight(final String string)
-        {
-            String[] fields = splitStringByBlank(string, 8);
-            this.controller = fields[0];
-            this.position = Length.instantiateSI(Double.parseDouble(fields[1]));
-            this.lane = Integer.parseInt(fields[2]);
-            this.number = Integer.parseInt(fields[3]);
-            this.cycleTime = Duration.instantiateSI(Double.parseDouble(fields[4]));
-            this.greenTime = Duration.instantiateSI(Double.parseDouble(fields[5]));
-            this.yellowTime = Duration.instantiateSI(Double.parseDouble(fields[6]));
-            this.startOffset = Duration.instantiateSI(Double.parseDouble(fields[7]));
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "FosTrafficLight [position=" + position + ", lane=" + lane + ", cycleTime=" + cycleTime + ", greenTime="
-                    + greenTime + ", yellowTime=" + yellowTime + ", startOffset=" + startOffset + "]";
-        }
-    }
-
-    /**
-     * Parsed parameter info.
-     * @author wjschakel
-     */
-    private class FosParameter
-    {
-        /** Value. */
-        public final double value;
-
-        /** Name. */
-        public final String name;
-
-        /**
-         * Parses a single parameter.
-         * @param string String; value of a parameter line.
-         */
-        public FosParameter(final String string)
-        {
-            String[] fields = splitStringByBlank(string, 2);
-            this.value = Double.parseDouble(fields[0]);
-            this.name = fields[1];
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "FosParameter " + name + " = " + value + "]";
-        }
-    }
-
-    /**
-     * Parsed flow info.
-     * @author wjschakel
-     */
-    private class FosFlow
-    {
-        /** Time. */
-        public final List<Duration> time = new ArrayList<>();
-
-        /** Flow. */
-        public final List<Frequency> flow = new ArrayList<>();
-
-        /**
-         * Parses a single flow source.
-         * @param string String; value of a flow line.
-         */
-        public FosFlow(final String string)
-        {
-            String[] fields = splitStringByBlank(string, 0);
-            for (String subString : fields)
-            {
-                String[] valueStrings = splitAndTrimString(subString, "\\|"); // pipe is a meta character in regex
-                this.time.add(Duration.instantiateSI(Double.parseDouble(valueStrings[0])));
-                this.flow.add(new Frequency(Double.parseDouble(valueStrings[1]), FrequencyUnit.PER_HOUR));
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "FosFlow [time=" + time + ", flow=" + flow + "]";
-        }
-    }
-
-    /**
-     * Parsed switched area info.
-     * @author wjschakel
-     */
-    private class FosSwitchedArea
-    {
-        /** Open time. */
-        public final Duration openTime;
-
-        /** Close time. */
-        public final Duration closeTime;
-
-        /** Open speed (unit unknown, not used in FOSIM). */
-        public final Speed openSpeed;
-
-        /** Close speed (unit unknown, not used in FOSIM). */
-        public final Speed closeSpeed;
-
-        /** Open intensity (unit unknown, not used in FOSIM). */
-        public final Frequency openIntensity;
-
-        /** Open intensity (unit unknown, not used in FOSIM). */
-        public final Frequency closeIntensity;
-
-        /** Open mode (function unknown, not used in FOSIM). */
-        public final int openMode;
-
-        /** Close mode (function unknown, not used in FOSIM). */
-        public final int closeMode;
-
-        /** Detector index (not used in FOSIM). */
-        public final int detectorIndex;
-
-        /**
-         * Parses a single switch area.
-         * @param string String; value of a switch area line.
-         */
-        public FosSwitchedArea(final String string)
-        {
-            String[] fields = splitStringByBlank(string, 9);
-            this.openTime = Duration.instantiateSI(Double.parseDouble(fields[0]));
-            this.closeTime = Duration.instantiateSI(Double.parseDouble(fields[1]));
-            this.openSpeed = Speed.instantiateSI(Double.parseDouble(fields[2])); // unit unknown
-            this.closeSpeed = Speed.instantiateSI(Double.parseDouble(fields[3])); // unit unknown
-            this.openIntensity = new Frequency(Double.parseDouble(fields[4]), FrequencyUnit.PER_HOUR); // unit unknown
-            this.closeIntensity = new Frequency(Double.parseDouble(fields[5]), FrequencyUnit.PER_HOUR); // unit unknown
-            this.openMode = Integer.parseInt(fields[6]); // function unknown
-            this.closeMode = Integer.parseInt(fields[7]); // function unknown
-            this.detectorIndex = Integer.parseInt(fields[8]);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "FosSwitchedArea [openTime=" + openTime + ", closeTime=" + closeTime + "]";
-        }
-    }
-
-    /**
-     * Parsed temporary blockage info.
-     * @author wjschakel
-     */
-    private class FosTemporaryBlockage
-    {
-        /** Position. */
-        public final Length position;
-
-        /** From lane index. */
-        public final int fromLane;
-
-        /** To lane index. */
-        public final int toLane;
-
-        /** From time. */
-        public final Duration fromTime;
-
-        /** To time. */
-        public final Duration toTime;
-
-        /**
-         * Parses a single switch area.
-         * @param string String; value of a switch area line.
-         */
-        public FosTemporaryBlockage(final String string)
-        {
-            String[] fields = splitStringByBlank(string, 5);
-            this.position = Length.instantiateSI(Double.parseDouble(fields[0]));
-            this.fromLane = Integer.parseInt(fields[1]);
-            this.toLane = Integer.parseInt(fields[2]);
-            this.fromTime = Duration.instantiateSI(Double.parseDouble(fields[3]));
-            this.toTime = Duration.instantiateSI(Double.parseDouble(fields[4]));
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public String toString()
-        {
-            return "FosTemporaryBlockage [position=" + position + ", fromLane=" + fromLane + ", toLane=" + toLane
-                    + ", fromTime=" + fromTime + ", toTime=" + toTime + "]";
-        }
-    }
-
-    /**
-     * Class for common functionality of both FOSIM links and nodes.
-     * @author wjschakel
-     */
-    private abstract class FosElement
-    {
-        /** Unique number. */
-        final public int number;
-
-        /**
-         * Contructor.
-         * @param number int; unique number.
-         */
-        public FosElement(final int number)
-        {
-            this.number = number;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public final int hashCode()
-        {
-            return Objects.hash(this.number);
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public final boolean equals(Object obj)
-        {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            FosElement other = (FosElement) obj;
-            return this.number == other.number;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public final String toString()
-        {
-            return getClass().getSimpleName() + " " + number;
-        }
-    }
-
-    /**
-     * Class with link information.
-     * @author wjschakel
-     */
-    private class FosLink extends FosElement
-    {
-        /** Section index. */
-        final public int sectionIndex;
-
-        /** From-lane index. */
-        final public int fromLane;
-
-        /** To-lane index. */
-        final public int toLane;
-
-        /** From-node. */
-        public FosNode fromNode;
-
-        /** To-node. */
-        public FosNode toNode;
-
-        /** Lanes. */
-        final public List<FosLane> lanes = new ArrayList<>();
-
-        /**
-         * Constructor.
-         * @param sectionIndex int; section index.
-         * @param fromLane int; from-lane index.
-         * @param toLane int; to-lane index.
-         */
-        public FosLink(final int sectionIndex, final int fromLane, final int toLane)
-        {
-            super(FosParser.this.lastMappedLink++);
-            this.sectionIndex = sectionIndex;
-            this.fromLane = fromLane;
-            this.toLane = toLane;
-            for (int laneIndex = fromLane; laneIndex <= toLane; laneIndex++)
-            {
-                this.lanes.add(FosParser.this.lane.get(laneIndex).get(sectionIndex));
-            }
-        }
-
-        /**
-         * Returns the lateral coordinate of the left edge. The section is centered by its actual width, in the space assuming a
-         * grid of maximum lane widths.
-         * @return Length; lateral coordinate of the left edge for a link.
-         */
-        public Length getLeftLinkEdge()
-        {
-            // derive max lane widths, if we haven't already
-            if (FosParser.this.maxLaneWidth == null)
-            {
-                FosParser.this.maxLaneWidth = new Length[FosParser.this.lane.size()];
-                for (int laneIndex = 0; laneIndex < FosParser.this.lane.size(); laneIndex++)
-                {
-                    // for each lane, loop all sections and store the maximum width
-                    FosParser.this.maxLaneWidth[laneIndex] = Length.ZERO;
-                    for (FosLane lane : FosParser.this.lane.get(laneIndex))
-                    {
-                        FosParser.this.maxLaneWidth[laneIndex] =
-                                Length.max(FosParser.this.maxLaneWidth[laneIndex], lane.laneWidth);
-                    }
-                }
-            }
-
-            // get left edge assuming all lanes are at maximum width
-            Length leftEdgeMax = getLeftEdgeMax(this.fromLane);
-
-            // get width if all lanes are at maximum width, and actual width
-            Length linkWidthMax = Length.ZERO;
-            Length linkWidth = Length.ZERO;
-            for (int laneIndex = this.fromLane; laneIndex <= this.toLane; laneIndex++)
-            {
-                linkWidthMax = linkWidthMax.plus(FosParser.this.maxLaneWidth[laneIndex]);
-                linkWidth = linkWidth.plus(FosParser.this.lane.get(laneIndex).get(this.sectionIndex).laneWidth);
-            }
-
-            // add halve of space to left edge
-            return leftEdgeMax.plus(linkWidthMax.minus(linkWidth).times(.5));
-        }
-    }
-
-    /**
-     * Class with node information.
-     * @author wjschakel
-     */
-    private class FosNode extends FosElement
-    {
-        /** Links in to the node. */
-        public final Set<FosLink> inLinks = new LinkedHashSet<>();
-
-        /** Links out of the node. */
-        public final Set<FosLink> outLinks = new LinkedHashSet<>();
-
-        /** Node name. */
-        private String name;
-
-        /**
-         * Constructor.
-         */
-        public FosNode()
-        {
-            super(FosParser.this.lastMappedNode++);
-            System.out.println("Created node " + this.number + " with name " + getName());
-        }
-
-        /**
-         * Returns a name for the node. If no name is given, the number is translated as 1&gt;A, 2&gt;B, ..., 27&gt;AA,
-         * 28&gt;AB, etc.
-         * @return String; name of the node.
-         */
-        public String getName()
-        {
-            if (this.name == null)
-            {
-                int num = this.number;
-                this.name = "";
-                while (num > 0)
-                {
-                    int remainder = (num - 1) % 26;
-                    num = (num - remainder) / 26;
-                    this.name = (char) (remainder + 'A') + this.name;
-                }
-            }
-            return this.name;
-        }
-
-        /**
-         * Returns whether this node has a forbidden name, i.e. equal to desired name of a source or sink. In that case, a new
-         * node should be generated in that case.
-         * @return boolean; whether this node has a forbidden name.
-         */
-        public boolean hasForbiddenName()
-        {
-            if (FosParser.this.forbiddenNodeNames == null)
-            {
-                FosParser.this.forbiddenNodeNames = new LinkedHashSet<>();
-                FosParser.this.source.forEach((s) -> FosParser.this.forbiddenNodeNames.add(s.name));
-                FosParser.this.sink.forEach((s) -> FosParser.this.forbiddenNodeNames.add(s.name));
-            }
-            return FosParser.this.forbiddenNodeNames.contains(getName());
         }
     }
 }
