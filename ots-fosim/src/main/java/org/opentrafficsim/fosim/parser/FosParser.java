@@ -22,16 +22,15 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
-import org.opentrafficsim.core.geometry.OTSLine3D;
-import org.opentrafficsim.core.geometry.OTSPoint3D;
-import org.opentrafficsim.core.network.LinkType;
-import org.opentrafficsim.core.network.LinkType.DEFAULTS;
+import org.opentrafficsim.core.definitions.DefaultsNl;
+import org.opentrafficsim.core.geometry.OtsLine3d;
+import org.opentrafficsim.core.geometry.OtsPoint3d;
 import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.road.network.OTSRoadNetwork;
+import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.road.definitions.DefaultsRoadNl;
+import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
-import org.opentrafficsim.road.network.lane.LaneType;
-import org.opentrafficsim.road.network.lane.OTSRoadNode;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 
 /**
@@ -46,7 +45,7 @@ public class FosParser
 {
 
     /** Network. */
-    private final OTSRoadNetwork network;
+    private final RoadNetwork network;
 
     /** Parser settings. */
     private final Map<ParserSetting, Boolean> parserSettings;
@@ -141,10 +140,10 @@ public class FosParser
 
     /**
      * Constructor. For parser settings that are not specified the default value is used.
-     * @param network OTSRoadNetwork; network.
+     * @param network RoadNetwork; network.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      */
-    private FosParser(final OTSRoadNetwork network, final Map<ParserSetting, Boolean> parserSettings)
+    private FosParser(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings)
     {
         this.network = Throw.whenNull(network, "Network may not be null.");
         this.parserSettings = parserSettings;
@@ -152,13 +151,13 @@ public class FosParser
 
     /**
      * Parses a .fos file. All parser settings are default.
-     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param network RoadNetwork; network to build the fos information in.
      * @param file String; location of a .pos file.
      * @throws InvalidPathException if the path is invalid.
      * @throws IOException if the file could not be read.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromFile(final OTSRoadNetwork network, final String file)
+    public static void parseFromFile(final RoadNetwork network, final String file)
             throws InvalidPathException, IOException, NetworkException
     {
         parseFromString(network, new EnumMap<>(ParserSetting.class), Files.readString(Path.of(file)));
@@ -166,14 +165,14 @@ public class FosParser
 
     /**
      * Parses a .fos file.
-     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param network RoadNetwork; network to build the fos information in.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param file String; location of a .pos file.
      * @throws InvalidPathException if the path is invalid.
      * @throws IOException if the file could not be read.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromFile(final OTSRoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
+    public static void parseFromFile(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
             final String file) throws InvalidPathException, IOException, NetworkException
     {
         parseFromString(network, parserSettings, Files.readString(Path.of(file)));
@@ -181,26 +180,25 @@ public class FosParser
 
     /**
      * Parses a string of the contents typically in a .fos file. All parser settings are default.
-     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param network RoadNetwork; network to build the fos information in.
      * @param stream InputStream; stream of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      * @throws IOException if the stream cannot be read
      */
-    public static void parseFromStream(final OTSRoadNetwork network, final InputStream stream)
-            throws NetworkException, IOException
+    public static void parseFromStream(final RoadNetwork network, final InputStream stream) throws NetworkException, IOException
     {
         parseFromStream(network, new EnumMap<>(ParserSetting.class), stream);
     }
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param network RoadNetwork; network to build the fos information in.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param stream InputStream; stream of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      * @throws IOException if the stream cannot be read
      */
-    public static void parseFromStream(final OTSRoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
+    public static void parseFromStream(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
             final InputStream stream) throws NetworkException, IOException
     {
         parseFromString(network, parserSettings, new String(stream.readAllBytes(), StandardCharsets.UTF_8));
@@ -208,23 +206,23 @@ public class FosParser
 
     /**
      * Parses a string of the contents typically in a .fos file. All parser settings are default.
-     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param network RoadNetwork; network to build the fos information in.
      * @param fosString String; string of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromString(final OTSRoadNetwork network, final String fosString) throws NetworkException
+    public static void parseFromString(final RoadNetwork network, final String fosString) throws NetworkException
     {
         parseFromString(network, new EnumMap<>(ParserSetting.class), fosString);
     }
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param network RoadNetwork; network to build the fos information in.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param fosString String; string of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromString(final OTSRoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
+    public static void parseFromString(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
             final String fosString) throws NetworkException
     {
         FosParser parser = new FosParser(network, parserSettings);
@@ -751,7 +749,7 @@ public class FosParser
         {
             y = Length.min(y, getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane));
         }
-        new OTSRoadNode(this.network, node.getName(), new OTSPoint3D(x.si, y.si, 0.0), Direction.ZERO);
+        new Node(this.network, node.getName(), new OtsPoint3d(x.si, y.si, 0.0), Direction.ZERO);
     }
 
     /**
@@ -763,14 +761,13 @@ public class FosParser
     {
         // create the link
         String name = String.format("Link %d", link.number);
-        OTSRoadNode startNode = (OTSRoadNode) this.network.getNode(link.fromNode.getName());
-        OTSRoadNode endNode = (OTSRoadNode) this.network.getNode(link.toNode.getName());
-        LinkType linkType = this.network.getLinkType(DEFAULTS.FREEWAY);
+        Node startNode = (Node) this.network.getNode(link.fromNode.getName());
+        Node endNode = (Node) this.network.getNode(link.toNode.getName());
         // TODO: Use Bezier if any of the lanes makes a shift?
-        OTSLine3D designLine = Try.assign(() -> new OTSLine3D(startNode.getPoint(), endNode.getPoint()), NetworkException.class,
+        OtsLine3d designLine = Try.assign(() -> new OtsLine3d(startNode.getPoint(), endNode.getPoint()), NetworkException.class,
                 "Design line could not be generated for link at lane %s, section %s.", link.fromLane, link.sectionIndex);
-        CrossSectionLink otsLink =
-                new CrossSectionLink(this.network, name, startNode, endNode, linkType, designLine, LaneKeepingPolicy.KEEPRIGHT);
+        CrossSectionLink otsLink = new CrossSectionLink(this.network, name, startNode, endNode, DefaultsNl.FREEWAY, designLine,
+                LaneKeepingPolicy.KEEPRIGHT);
 
         // TODO: we must do this all relative to the y-coordinates of the nodes, as these may be anywhere in case of multiple
         // links
@@ -845,7 +842,6 @@ public class FosParser
         }
 
         // build the lanes
-        LaneType laneType = this.network.getLaneType(LaneType.DEFAULTS.HIGHWAY);
         int laneNum = 0;
         for (FosLane lane : link.lanes)
         {
@@ -855,7 +851,7 @@ public class FosParser
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
             Try.assign(
                     () -> new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
-                            laneType, lane.speedLimit),
+                            DefaultsRoadNl.HIGHWAY, Map.of(DefaultsNl.ROAD_USER, lane.speedLimit), false),
                     NetworkException.class, "Geometry failed for lane %s at section %s.", laneNum, link.sectionIndex);
             laneNum++;
         }

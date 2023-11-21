@@ -1,7 +1,6 @@
 package org.opentrafficsim.fosim.sim0mq;
 
 import java.awt.Dimension;
-import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,37 +25,36 @@ import org.djutils.cli.CliUtil;
 import org.djutils.exceptions.Try;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.core.animation.gtu.colorer.GTUColorer;
-import org.opentrafficsim.core.dsol.AbstractOTSModel;
-import org.opentrafficsim.core.dsol.OTSAnimator;
-import org.opentrafficsim.core.dsol.OTSSimulator;
-import org.opentrafficsim.core.dsol.OTSSimulatorInterface;
-import org.opentrafficsim.core.geometry.OTSGeometryException;
-import org.opentrafficsim.core.geometry.OTSLine3D;
-import org.opentrafficsim.core.geometry.OTSPoint3D;
-import org.opentrafficsim.core.gtu.GTU;
-import org.opentrafficsim.core.gtu.GTUDirectionality;
-import org.opentrafficsim.core.gtu.GTUException;
-import org.opentrafficsim.core.network.LinkType;
+import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
+import org.opentrafficsim.core.definitions.DefaultsNl;
+import org.opentrafficsim.core.dsol.AbstractOtsModel;
+import org.opentrafficsim.core.dsol.OtsAnimator;
+import org.opentrafficsim.core.dsol.OtsSimulator;
+import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
+import org.opentrafficsim.core.geometry.OtsGeometryException;
+import org.opentrafficsim.core.geometry.OtsLine3d;
+import org.opentrafficsim.core.geometry.OtsPoint3d;
+import org.opentrafficsim.core.gtu.Gtu;
+import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.draw.core.OTSDrawingException;
-import org.opentrafficsim.road.gtu.generator.od.ODApplier;
-import org.opentrafficsim.road.gtu.generator.od.ODOptions;
-import org.opentrafficsim.road.gtu.lane.LaneBasedGTU;
-import org.opentrafficsim.road.gtu.strategical.od.Categorization;
-import org.opentrafficsim.road.gtu.strategical.od.Category;
-import org.opentrafficsim.road.gtu.strategical.od.Interpolation;
-import org.opentrafficsim.road.gtu.strategical.od.ODMatrix;
-import org.opentrafficsim.road.network.OTSRoadNetwork;
+import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.road.definitions.DefaultsRoadNl;
+import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
+import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
-import org.opentrafficsim.road.network.lane.LaneType;
-import org.opentrafficsim.road.network.lane.OTSRoadNode;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
-import org.opentrafficsim.road.network.lane.object.sensor.SinkSensor;
-import org.opentrafficsim.swing.gui.OTSAnimationPanel;
-import org.opentrafficsim.swing.gui.OTSSimulationApplication;
-import org.opentrafficsim.swing.gui.OTSSwingApplication;
+import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
+import org.opentrafficsim.road.od.Categorization;
+import org.opentrafficsim.road.od.Category;
+import org.opentrafficsim.road.od.Interpolation;
+import org.opentrafficsim.road.od.OdApplier;
+import org.opentrafficsim.road.od.OdMatrix;
+import org.opentrafficsim.road.od.OdOptions;
+import org.opentrafficsim.swing.gui.OtsAnimationPanel;
+import org.opentrafficsim.swing.gui.OtsSimulationApplication;
+import org.opentrafficsim.swing.gui.OtsSwingApplication;
 import org.sim0mq.Sim0MQException;
 import org.sim0mq.message.Sim0MQMessage;
 import org.zeromq.SocketType;
@@ -69,15 +67,23 @@ import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import nl.tudelft.simulation.language.DSOLException;
 import picocli.CommandLine.Option;
 
+/**
+ * Simple technical demo of a single straight lane. 
+ * <p>
+ * Copyright (c) 2023-2023 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
+ * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
+ * </p>
+ * @author <a href="https://dittlab.tudelft.nl">Wouter Schakel</a>
+ */
 public class TechnicalDemo
 {
 
     /** Federation id to receive/sent messages. */
-    @Option(names = "--federationId", description = "Federation id to receive/sent messages", defaultValue = "OTS_Fosim")
+    @Option(names = "--federationId", description = "Federation id to receive/sent messages", defaultValue = "Ots_Fosim")
     private String federation;
 
-    /** OTS id to receive/sent messages. */
-    @Option(names = "--otsId", description = "OTS id to receive/sent messages", defaultValue = "OTS")
+    /** Ots id to receive/sent messages. */
+    @Option(names = "--otsId", description = "Ots id to receive/sent messages", defaultValue = "Ots")
     private String ots;
 
     /** Fosim id to receive/sent messages. */
@@ -101,13 +107,13 @@ public class TechnicalDemo
     private boolean showGUI;
 
     /** The simulator. */
-    private OTSSimulatorInterface simulator;
+    private OtsSimulatorInterface simulator;
 
     /** The network. */
-    private OTSRoadNetwork network;
+    private RoadNetwork network;
 
     /** Application screen. */
-    private OTSSimulationApplication<FosimModel> app;
+    private OtsSimulationApplication<FosimModel> app;
 
     /** Step number. */
     private int stepNumber = 1;
@@ -117,7 +123,7 @@ public class TechnicalDemo
      * @param args String[]; command line arguments.
      * @throws Exception on any exception during simulation.
      */
-    public static void main(String... args) throws Exception
+    public static void main(final String... args) throws Exception
     {
         TechnicalDemo demo = new TechnicalDemo();
         CliUtil.execute(demo, args);
@@ -130,28 +136,28 @@ public class TechnicalDemo
      * @throws NamingException
      * @throws RemoteException
      * @throws DSOLException
-     * @throws OTSDrawingException
+     * @throws OtsDrawingException
      */
     private void setupSimulator()
-            throws SimRuntimeException, NamingException, RemoteException, DSOLException, OTSDrawingException
+            throws SimRuntimeException, NamingException, RemoteException, DSOLException, OtsDrawingException
     {
         Duration simulationTime = Duration.instantiateSI(3600.0);
         if (!this.showGUI)
         {
-            this.simulator = new OTSSimulator("OTS-Fosim");
+            this.simulator = new OtsSimulator("Ots-Fosim");
             final FosimModel fosimModel = new FosimModel(this.simulator);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
         }
         else
         {
-            OTSAnimator animator = new OTSAnimator("OTS-Fosim");
+            OtsAnimator animator = new OtsAnimator("Ots-Fosim");
             this.simulator = animator;
             final FosimModel fosimModel = new FosimModel(this.simulator);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
-            GTUColorer colorer = OTSSwingApplication.DEFAULT_COLORER;
-            OTSAnimationPanel animationPanel = new OTSAnimationPanel(fosimModel.getNetwork().getExtent(),
-                    new Dimension(800, 600), (OTSAnimator) this.simulator, fosimModel, colorer, fosimModel.getNetwork());
-            this.app = new OTSSimulationApplication<FosimModel>(fosimModel, animationPanel);
+            GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
+            OtsAnimationPanel animationPanel = new OtsAnimationPanel(fosimModel.getNetwork().getExtent(),
+                    new Dimension(800, 600), (OtsAnimator) this.simulator, fosimModel, colorer, fosimModel.getNetwork());
+            this.app = new OtsSimulationApplication<FosimModel>(fosimModel, animationPanel);
             this.app.setExitOnClose(true);
             animator.setAnimation(false);
             animator.setSpeedFactor(Double.MAX_VALUE, false);
@@ -162,56 +168,54 @@ public class TechnicalDemo
 
     /**
      * Builds the network and demand.
-     * @param sim OTSSimulatorInterface; simulator.
-     * @return OTSRoadNetwork; network.
+     * @param sim OtsSimulatorInterface; simulator.
+     * @return OtsRoadNetwork; network.
      * @throws NetworkException
-     * @throws OTSGeometryException
+     * @throws OtsGeometryException
      * @throws ParameterException
      * @throws SimRuntimeException
      */
-    private OTSRoadNetwork setupSimulation(final OTSSimulatorInterface sim)
-            throws NetworkException, OTSGeometryException, SimRuntimeException, ParameterException
+    private RoadNetwork setupSimulation(final OtsSimulatorInterface sim)
+            throws NetworkException, OtsGeometryException, SimRuntimeException, ParameterException
     {
-        OTSRoadNetwork network = new OTSRoadNetwork("OTS-Fosim", true, sim);
+        RoadNetwork network = new RoadNetwork("Ots-Fosim", sim);
 
-        OTSPoint3D pointFrom = new OTSPoint3D(0.0, -1.75, 0.0);
-        OTSPoint3D pointTo = new OTSPoint3D(2000.0, -1.75, 0.0);
+        OtsPoint3d pointFrom = new OtsPoint3d(0.0, -1.75, 0.0);
+        OtsPoint3d pointTo = new OtsPoint3d(2000.0, -1.75, 0.0);
 
-        OTSRoadNode nodeFrom = new OTSRoadNode(network, "From", pointFrom, Direction.ZERO);
-        OTSRoadNode nodeTo = new OTSRoadNode(network, "To", pointTo, Direction.ZERO);
+        Node nodeFrom = new Node(network, "From", pointFrom, Direction.ZERO);
+        Node nodeTo = new Node(network, "To", pointTo, Direction.ZERO);
 
-        OTSLine3D designLine = new OTSLine3D(pointFrom, pointTo);
-        LinkType linkType = network.getLinkType(LinkType.DEFAULTS.FREEWAY);
-        CrossSectionLink link =
-                new CrossSectionLink(network, "Link", nodeFrom, nodeTo, linkType, designLine, LaneKeepingPolicy.KEEPRIGHT);
+        OtsLine3d designLine = new OtsLine3d(pointFrom, pointTo);
+        CrossSectionLink link = new CrossSectionLink(network, "Link", nodeFrom, nodeTo, DefaultsNl.FREEWAY, designLine,
+                LaneKeepingPolicy.KEEPRIGHT);
 
-        LaneType laneType = network.getLaneType(LaneType.DEFAULTS.FREEWAY);
-        Lane lane =
-                new Lane(link, "1", Length.ZERO, Length.instantiateSI(3.5), laneType, new Speed(100.0, SpeedUnit.KM_PER_HOUR));
+        Lane lane = new Lane(link, "1", Length.ZERO, Length.instantiateSI(3.5), DefaultsRoadNl.FREEWAY,
+                Map.of(DefaultsNl.ROAD_USER, new Speed(100.0, SpeedUnit.KM_PER_HOUR)));
 
         DoubleVectorData timeData =
                 DoubleVectorData.instantiate(new double[] {0.0, 3600.0}, TimeUnit.BASE_SECOND.getScale(), StorageType.DENSE);
         TimeVector timeVector = new TimeVector(timeData, TimeUnit.BASE_SECOND);
-        List<OTSRoadNode> origins = new ArrayList<>();
+        List<Node> origins = new ArrayList<>();
         origins.add(nodeFrom);
-        List<OTSRoadNode> destinations = new ArrayList<>();
+        List<Node> destinations = new ArrayList<>();
         destinations.add(nodeTo);
-        ODMatrix od = new ODMatrix("OD", origins, destinations, Categorization.UNCATEGORIZED, timeVector, Interpolation.LINEAR);
+        OdMatrix od = new OdMatrix("OD", origins, destinations, Categorization.UNCATEGORIZED, timeVector, Interpolation.LINEAR);
         DoubleVectorData flowData = DoubleVectorData.instantiate(new double[] {1500.0, 1500.0},
                 FrequencyUnit.PER_HOUR.getScale(), StorageType.DENSE);
         FrequencyVector flowVector = new FrequencyVector(flowData, FrequencyUnit.PER_HOUR);
         od.putDemandVector(nodeFrom, nodeTo, Category.UNCATEGORIZED, flowVector);
 
-        ODOptions odOptions = new ODOptions();
-        ODApplier.applyOD(network, od, odOptions);
+        OdOptions odOptions = new OdOptions();
+        OdApplier.applyOd(network, od, odOptions, DefaultsRoadNl.ROAD_USERS);
 
-        new SinkSensor(lane, Length.instantiateSI(1950.0), GTUDirectionality.DIR_PLUS, sim);
+        new SinkDetector(lane, Length.instantiateSI(1950.0), sim, DefaultsRoadNl.ROAD_USERS);
 
         return network;
     }
 
     /**
-     * Run a simulation step, where a 'step' is defined as a fixed time step. Note that within OTS usually a step is defined as
+     * Run a simulation step, where a 'step' is defined as a fixed time step. Note that within Ots usually a step is defined as
      * a single event in DSOL.
      */
     private void step()
@@ -232,16 +236,16 @@ public class TechnicalDemo
      * Model.
      * @author wjschakel
      */
-    private class FosimModel extends AbstractOTSModel
+    private class FosimModel extends AbstractOtsModel
     {
         /** */
         private static final long serialVersionUID = 20180409L;
 
         /**
          * Constructor.
-         * @param simulator OTSSimulatorInterface; the simulator
+         * @param simulator OtsSimulatorInterface; the simulator
          */
-        FosimModel(final OTSSimulatorInterface simulator)
+        FosimModel(final OtsSimulatorInterface simulator)
         {
             super(simulator);
             TechnicalDemo.this.simulator = simulator;
@@ -264,16 +268,9 @@ public class TechnicalDemo
 
         /** {@inheritDoc} */
         @Override
-        public OTSRoadNetwork getNetwork()
+        public RoadNetwork getNetwork()
         {
             return TechnicalDemo.this.network;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public Serializable getSourceId()
-        {
-            return getShortName();
         }
     }
 
@@ -319,39 +316,38 @@ public class TechnicalDemo
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
                         // System.out.println("Performing STEP");
-                        TechnicalDemo.this.step(); // Performance of this line is terrible when using an OTSAnimator
+                        TechnicalDemo.this.step(); // Performance of this line is terrible when using an OtsAnimator
                         int numGtus = TechnicalDemo.this.network.getGTUs().size();
                         Object[] payload = new Object[1 + 4 * numGtus];
                         payload[0] = numGtus;
                         int k = 1;
-                        for (GTU gtu : TechnicalDemo.this.network.getGTUs())
+                        for (Gtu gtu : TechnicalDemo.this.network.getGTUs())
                         {
-                            payload[k++] = Integer.parseInt(((LaneBasedGTU) gtu).getReferencePosition().getLane().getId());
+                            payload[k++] = Integer.parseInt(((LaneBasedGtu) gtu).getReferencePosition().getLane().getId());
                             payload[k++] = Length.instantiateSI(gtu.getLocation().x);
                             payload[k++] = gtu.getSpeed();
                             payload[k++] = gtu.getAcceleration();
                         }
-                        // System.out.println("OTS replies STEP command with " + numGtus + " GTUs");
-                        this.responder.send(
-                                Sim0MQMessage.encodeUTF8(TechnicalDemo.this.bigEndian, TechnicalDemo.this.federation,
-                                        TechnicalDemo.this.ots, TechnicalDemo.this.fosim, "STEP_REPLY", messageId++, payload),
-                                0);
+                        // System.out.println("Ots replies STEP command with " + numGtus + " GTUs");
+                        this.responder.send(Sim0MQMessage.encodeUTF8(TechnicalDemo.this.bigEndian,
+                                TechnicalDemo.this.federation, TechnicalDemo.this.ots, TechnicalDemo.this.fosim, "STEP_REPLY",
+                                this.messageId++, payload), 0);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {
-                        System.out.println("OTS received STOP command at " + TechnicalDemo.this.simulator.getSimulatorTime());
+                        System.out.println("Ots received STOP command at " + TechnicalDemo.this.simulator.getSimulatorTime());
                         break;
                     }
                 }
             }
-            catch (Sim0MQException | SerializationException | NumberFormatException | GTUException e)
+            catch (Sim0MQException | SerializationException | NumberFormatException | GtuException e)
             {
                 e.printStackTrace();
             }
             this.responder.close();
             this.context.destroy();
             this.context.close();
-            System.out.println("OTS terminated");
+            System.out.println("Ots terminated");
             System.exit(0);
         }
 

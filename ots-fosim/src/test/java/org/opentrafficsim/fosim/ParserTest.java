@@ -1,9 +1,7 @@
 package org.opentrafficsim.fosim;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -13,14 +11,14 @@ import javax.naming.NamingException;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Time;
 import org.junit.jupiter.api.Test;
-import org.opentrafficsim.core.dsol.AbstractOTSModel;
-import org.opentrafficsim.core.dsol.OTSSimulator;
+import org.opentrafficsim.core.dsol.AbstractOtsModel;
+import org.opentrafficsim.core.dsol.OtsSimulator;
+import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.core.network.OTSNetwork;
 import org.opentrafficsim.fosim.parameters.ParametersJsonTest;
 import org.opentrafficsim.fosim.parser.FosParser;
 import org.opentrafficsim.fosim.parser.ParserSetting;
-import org.opentrafficsim.road.network.OTSRoadNetwork;
+import org.opentrafficsim.road.network.RoadNetwork;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 
@@ -46,15 +44,15 @@ public class ParserTest
     @Test
     public void testParser() throws SimRuntimeException, NamingException, InvalidPathException, IOException, NetworkException
     {
-        OTSSimulator simulator = new OTSSimulator("FOSIM parser test");
-        OTSRoadNetwork network = new OTSRoadNetwork("FOSIM parser test", true, simulator);
-        simulator.initialize(Time.ZERO, Duration.ZERO, Duration.instantiateSI(3600.0), new AbstractOTSModel(simulator)
+        OtsSimulator simulator = new OtsSimulator("FOSIM parser test");
+        RoadNetwork network = new RoadNetwork("FOSIM parser test", simulator);
+        simulator.initialize(Time.ZERO, Duration.ZERO, Duration.instantiateSI(3600.0), new AbstractOtsModel(simulator)
         {
             private static final long serialVersionUID = 1L;
 
             /** {@inheritDoc} */
             @Override
-            public OTSNetwork getNetwork()
+            public Network getNetwork()
             {
                 return network;
             }
@@ -64,13 +62,6 @@ public class ParserTest
             public void constructModel() throws SimRuntimeException
             {
                 //
-            }
-
-            /** {@inheritDoc} */
-            @Override
-            public Serializable getSourceId()
-            {
-                return "ParserTest";
             }
         });
         Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();

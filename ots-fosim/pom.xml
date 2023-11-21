@@ -15,20 +15,26 @@
   </properties>
 
   <dependencies>
+	<dependency>
+      <groupId>org.djunits</groupId>
+      <artifactId>djunits</artifactId>
+      <version>5.0.3</version>
+      <scope>compile</scope>
+    </dependency>
     <dependency>
       <groupId>org.opentrafficsim</groupId>
       <artifactId>ots-road</artifactId>
-      <version>1.6.0</version>
+      <version>1.7.3</version>
     </dependency>
     <dependency>
       <groupId>org.opentrafficsim</groupId>
       <artifactId>ots-swing</artifactId>
-      <version>1.6.0</version>
+      <version>1.7.3</version>
     </dependency>
     <dependency>
       <groupId>org.sim0mq</groupId>
       <artifactId>sim0mq</artifactId>
-      <version>2.1.0</version>
+      <version>2.1.1</version>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
