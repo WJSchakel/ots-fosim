@@ -2,8 +2,9 @@ package org.opentrafficsim.fosim.parser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.Serializable;
+import java.io.InputStream;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -16,22 +17,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.DoubleFunction;
 
-import javax.naming.NamingException;
-
 import org.djunits.value.vdouble.scalar.Direction;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
-import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
-import org.opentrafficsim.core.dsol.AbstractOTSModel;
-import org.opentrafficsim.core.dsol.OTSSimulator;
 import org.opentrafficsim.core.geometry.OTSLine3D;
 import org.opentrafficsim.core.geometry.OTSPoint3D;
 import org.opentrafficsim.core.network.LinkType;
 import org.opentrafficsim.core.network.LinkType.DEFAULTS;
 import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.core.network.OTSNetwork;
 import org.opentrafficsim.road.network.OTSRoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
@@ -39,8 +34,14 @@ import org.opentrafficsim.road.network.lane.LaneType;
 import org.opentrafficsim.road.network.lane.OTSRoadNode;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 
-import nl.tudelft.simulation.dsol.SimRuntimeException;
-
+/**
+ * Parser of .fos files from FOSIM.
+ * <p>
+ * Copyright (c) 2023-2023 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
+ * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
+ * </p>
+ * @author <a href="https://dittlab.tudelft.nl">Wouter Schakel</a>
+ */
 public class FosParser
 {
 
@@ -53,6 +54,7 @@ public class FosParser
     // parsed info
 
     /** Version. */
+    @SuppressWarnings("unused")
     private String version;
 
     /** Section lengths. */
@@ -99,6 +101,7 @@ public class FosParser
     private FosList<FosSwitchedArea> switchedAreaTimes = new FosList<>();
 
     /** Temporary blockage. */
+    @SuppressWarnings("unused")
     private FosTemporaryBlockage temporaryBlockage;
 
     /** Seed. */
@@ -174,6 +177,33 @@ public class FosParser
             final String file) throws InvalidPathException, IOException, NetworkException
     {
         parseFromString(network, parserSettings, Files.readString(Path.of(file)));
+    }
+
+    /**
+     * Parses a string of the contents typically in a .fos file. All parser settings are default.
+     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param stream InputStream; stream of the contents typically in a .fos file.
+     * @throws NetworkException if anything fails critically during parsing.
+     * @throws IOException if the stream cannot be read
+     */
+    public static void parseFromStream(final OTSRoadNetwork network, final InputStream stream)
+            throws NetworkException, IOException
+    {
+        parseFromStream(network, new EnumMap<>(ParserSetting.class), stream);
+    }
+
+    /**
+     * Parses a string of the contents typically in a .fos file.
+     * @param network OTSRoadNetwork; network to build the fos information in.
+     * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
+     * @param stream InputStream; stream of the contents typically in a .fos file.
+     * @throws NetworkException if anything fails critically during parsing.
+     * @throws IOException if the stream cannot be read
+     */
+    public static void parseFromStream(final OTSRoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
+            final InputStream stream) throws NetworkException, IOException
+    {
+        parseFromString(network, parserSettings, new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
 
     /**
@@ -485,9 +515,10 @@ public class FosParser
     }
 
     /**
-     * Maps out a single link in the {@code mappedLinks} grid. No link is mapped if the specified section and lane are not a
-     * valid traffic lane. In either case the returned index is where the next link may be found, and should be used for the
-     * next call to this method (if it is in the lane bounds).
+     * Maps out a single link in the {@code mappedLinks} grid. This moves from a first, left-most, lane to the right. This
+     * happens for as long as lane changes are possible to the next lane, or from the next lane to the current lane. No link is
+     * mapped if the specified section and lane are not a valid traffic lane. In either case the returned index is where the
+     * next link may be found, and should be used for the next call to this method (if it is in the overall lane bounds).
      * @param sectionIndex int; section index.
      * @param fromLane int; from lane index (i.e. the left-most lane of the potential link).
      * @return int; lane index at which the next left-most lane of the next link on the same section may be found.
@@ -520,7 +551,7 @@ public class FosParser
             this.mappedLinks[toLane][sectionIndex] = this.lastMappedLink;
         }
 
-        // remember information, the FosLink constructor increases the lastMappedLink index
+        // remember information
         this.links.put(this.lastMappedLink, new FosLink(this.lastMappedLink++, sectionIndex, fromLane, toLane, this));
 
         // return possible next from-lane
@@ -696,7 +727,7 @@ public class FosParser
     /**
      * Builds the nodes.
      * @param node FosNode; node.
-     * @throws NetworkException
+     * @throws NetworkException; on exception when creating a node
      */
     private void buildNode(final FosNode node) throws NetworkException
     {
@@ -723,6 +754,11 @@ public class FosParser
         new OTSRoadNode(this.network, node.getName(), new OTSPoint3D(x.si, y.si, 0.0), Direction.ZERO);
     }
 
+    /**
+     * Builds a link, including the lanes on it.
+     * @param link FosLink; parsed link information.
+     * @throws NetworkException on exceptions creating the link or lane objects.
+     */
     private void buildLink(final FosLink link) throws NetworkException
     {
         // create the link
@@ -884,42 +920,6 @@ public class FosParser
             leftEdgeMax = leftEdgeMax.plus(this.maxLaneWidth[laneIndex]);
         }
         return leftEdgeMax;
-    }
-
-    // TODO: test parsing, and remove this
-    public static void main(final String... args)
-            throws InvalidPathException, IOException, NetworkException, SimRuntimeException, NamingException
-    {
-
-        OTSSimulator simulator = new OTSSimulator("FOSIM parser test");
-        OTSRoadNetwork network = new OTSRoadNetwork("FOSIM parser test", true, simulator);
-        simulator.initialize(Time.ZERO, Duration.ZERO, Duration.instantiateSI(3600.0), new AbstractOTSModel(simulator)
-        {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public OTSNetwork getNetwork()
-            {
-                return network;
-            }
-
-            @Override
-            public void constructModel() throws SimRuntimeException
-            {
-                //
-            }
-
-            @Override
-            public Serializable getSourceId()
-            {
-                return "ParserTest";
-            }
-        });
-        Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();
-        parserSettings.put(ParserSetting.STRIPED_AREAS, false);
-        // Format_test Terbregseplein_6.5_aangepast
-        parseFromFile(network, parserSettings, "C:\\TUDelft\\2020\\Projects\\2022_FOSIM_OTS\\Fosim_files\\Format_test.fos");
-
     }
 
     /**

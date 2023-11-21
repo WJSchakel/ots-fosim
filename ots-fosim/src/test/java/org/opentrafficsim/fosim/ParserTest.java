@@ -77,9 +77,7 @@ public class ParserTest
         parserSettings.put(ParserSetting.STRIPED_AREAS, false);
         
         String fileName = "Terbregseplein_6.5_aangepast.fos";
-        InputStream stream = ParametersJsonTest.class.getResourceAsStream("/" + fileName);
-        String fileString = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-        FosParser.parseFromString(network, parserSettings, fileString);
+        FosParser.parseFromStream(network, parserSettings, ParametersJsonTest.class.getResourceAsStream("/" + fileName));
     }
     
 }
