@@ -21,6 +21,12 @@ class FosNode extends FosElement
 
     /** Node name. */
     String name;
+    
+    /** Source at this node. */
+    public FosSourceSink source;
+    
+    /** Sink at this node. */
+    public FosSourceSink sink;
 
     /**
      * Constructor.
@@ -52,4 +58,6 @@ class FosNode extends FosElement
         }
         return this.name;
     }
+    
+    
 }

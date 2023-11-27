@@ -3,7 +3,6 @@ package org.opentrafficsim.fosim.sim0mq;
 import java.awt.Dimension;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +26,6 @@ import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.definitions.DefaultsNl;
-import org.opentrafficsim.core.dsol.AbstractOtsModel;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
@@ -62,13 +60,11 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
-import nl.tudelft.simulation.jstats.streams.MersenneTwister;
-import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import nl.tudelft.simulation.language.DSOLException;
 import picocli.CommandLine.Option;
 
 /**
- * Simple technical demo of a single straight lane. 
+ * Simple technical demo of a single straight lane.
  * <p>
  * Copyright (c) 2023-2023 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
@@ -142,17 +138,19 @@ public class TechnicalDemo
             throws SimRuntimeException, NamingException, RemoteException, DSOLException, OtsDrawingException
     {
         Duration simulationTime = Duration.instantiateSI(3600.0);
+        this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
+                "Exception while setting up simulation.");
         if (!this.showGUI)
         {
             this.simulator = new OtsSimulator("Ots-Fosim");
-            final FosimModel fosimModel = new FosimModel(this.simulator);
+            final FosimModel fosimModel = new FosimModel(this.network, 1L);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
         }
         else
         {
             OtsAnimator animator = new OtsAnimator("Ots-Fosim");
             this.simulator = animator;
-            final FosimModel fosimModel = new FosimModel(this.simulator);
+            final FosimModel fosimModel = new FosimModel(this.network, 1L);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
             GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
             OtsAnimationPanel animationPanel = new OtsAnimationPanel(fosimModel.getNetwork().getExtent(),
@@ -229,48 +227,6 @@ public class TechnicalDemo
         while (this.simulator.isStartingOrRunning())
         {
             Thread.onSpinWait();
-        }
-    }
-
-    /**
-     * Model.
-     * @author wjschakel
-     */
-    private class FosimModel extends AbstractOtsModel
-    {
-        /** */
-        private static final long serialVersionUID = 20180409L;
-
-        /**
-         * Constructor.
-         * @param simulator OtsSimulatorInterface; the simulator
-         */
-        FosimModel(final OtsSimulatorInterface simulator)
-        {
-            super(simulator);
-            TechnicalDemo.this.simulator = simulator;
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public void constructModel() throws SimRuntimeException
-        {
-            Map<String, StreamInterface> streams = new LinkedHashMap<>();
-            long seed = 1L;
-            StreamInterface stream = new MersenneTwister(seed);
-            streams.put("generation", stream);
-            stream = new MersenneTwister(seed + 1);
-            streams.put("default", stream);
-            TechnicalDemo.this.simulator.getModel().getStreams().putAll(streams);
-            TechnicalDemo.this.network = Try.assign(() -> TechnicalDemo.this.setupSimulation(TechnicalDemo.this.simulator),
-                    RuntimeException.class, "Exception while setting up simulation.");
-        }
-
-        /** {@inheritDoc} */
-        @Override
-        public RoadNetwork getNetwork()
-        {
-            return TechnicalDemo.this.network;
         }
     }
 

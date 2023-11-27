@@ -1,5 +1,6 @@
 package org.opentrafficsim.fosim.parser;
 
+import java.awt.Dimension;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -8,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -17,21 +19,69 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.DoubleFunction;
 
+import javax.naming.NamingException;
+
+import org.djunits.unit.SpeedUnit;
+import org.djunits.unit.TimeUnit;
+import org.djunits.value.storage.StorageType;
 import org.djunits.value.vdouble.scalar.Direction;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
+import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.scalar.Time;
+import org.djunits.value.vdouble.vector.TimeVector;
+import org.djunits.value.vdouble.vector.data.DoubleVectorData;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
+import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.base.parameters.ParameterTypes;
+import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.definitions.DefaultsNl;
+import org.opentrafficsim.core.distributions.Distribution;
+import org.opentrafficsim.core.distributions.Distribution.FrequencyAndObject;
+import org.opentrafficsim.core.distributions.Generator;
+import org.opentrafficsim.core.distributions.ProbabilityException;
+import org.opentrafficsim.core.dsol.OtsAnimator;
+import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
+import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine3d;
 import org.opentrafficsim.core.geometry.OtsPoint3d;
+import org.opentrafficsim.core.gtu.GtuTemplate;
+import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.core.parameters.ParameterFactoryByType;
+import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
+import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.fosim.sim0mq.FosimModel;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
+import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
+import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
+import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.DefaultLmrsPerceptionFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
+import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
+import org.opentrafficsim.road.network.lane.CrossSectionSlice;
 import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.Stripe;
+import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
+import org.opentrafficsim.road.od.Categorization;
+import org.opentrafficsim.road.od.Category;
+import org.opentrafficsim.road.od.Interpolation;
+import org.opentrafficsim.road.od.OdApplier;
+import org.opentrafficsim.road.od.OdMatrix;
+import org.opentrafficsim.road.od.OdOptions;
+import org.opentrafficsim.swing.gui.OtsAnimationPanel;
+import org.opentrafficsim.swing.gui.OtsSimulationApplication;
+import org.opentrafficsim.swing.gui.OtsSwingApplication;
+
+import nl.tudelft.simulation.dsol.SimRuntimeException;
+import nl.tudelft.simulation.jstats.distributions.DistNormal;
+import nl.tudelft.simulation.jstats.streams.StreamInterface;
+import nl.tudelft.simulation.language.DSOLException;
 
 /**
  * Parser of .fos files from FOSIM.
@@ -44,8 +94,14 @@ import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 public class FosParser
 {
 
+    /** Offset for stripes that are at the left or right edge. This separates them between links. */
+    private static Length EDGE_STRIPE_GAP = Length.instantiateSI(0.2);
+
+    /** Length above which vehicles types are considered a truck. */
+    private static Length TRUCK_THRESHOLD = Length.instantiateSI(7.0);
+
     /** Network. */
-    private final RoadNetwork network;
+    private RoadNetwork network;
 
     /** Parser settings. */
     private final Map<ParserSetting, Boolean> parserSettings;
@@ -72,7 +128,7 @@ public class FosParser
     private FosList<FosTrafficLight> trafficLight = new FosList<>();
 
     /** Detector times [step#] containing two values: first detector output time and interval after that. */
-    // TODO: we do not support an irregular first interval, I think
+    // TODO: OTS does not support an irregular first interval (see git issue #6)
     private List<Integer> detectorTimes = new ArrayList<>();
 
     /** Detector positions. */
@@ -126,106 +182,100 @@ public class FosParser
     /** Link numbers, stored for reference when building and finding nodes. */
     private int[][] mappedLinks;
 
-    /** Links per number. */
+    /** Link object per link number. */
     private Map<Integer, FosLink> links = new LinkedHashMap<>();
 
     /** Number of last mapped node. */
     private int lastMappedNode = 1;
 
-    /** Nodes per number. */
+    /** Nodes. */
     private Set<FosNode> nodes = new LinkedHashSet<>();
 
     /** Forbidden node names, i.e. reserved for sources and sinks. */
     private LinkedHashSet<String> forbiddenNodeNames;
 
+    /** GTU types. */
+    private List<GtuType> gtuTypes = new ArrayList<>();
+
     /**
      * Constructor. For parser settings that are not specified the default value is used.
-     * @param network RoadNetwork; network.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      */
-    private FosParser(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings)
+    private FosParser(final Map<ParserSetting, Boolean> parserSettings)
     {
-        this.network = Throw.whenNull(network, "Network may not be null.");
         this.parserSettings = parserSettings;
     }
 
     /**
      * Parses a .fos file. All parser settings are default.
-     * @param network RoadNetwork; network to build the fos information in.
      * @param file String; location of a .pos file.
      * @throws InvalidPathException if the path is invalid.
      * @throws IOException if the file could not be read.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromFile(final RoadNetwork network, final String file)
-            throws InvalidPathException, IOException, NetworkException
+    public static void parseFromFile(final String file) throws InvalidPathException, IOException, NetworkException
     {
-        parseFromString(network, new EnumMap<>(ParserSetting.class), Files.readString(Path.of(file)));
+        parseFromString(new EnumMap<>(ParserSetting.class), Files.readString(Path.of(file)));
     }
 
     /**
      * Parses a .fos file.
-     * @param network RoadNetwork; network to build the fos information in.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param file String; location of a .pos file.
      * @throws InvalidPathException if the path is invalid.
      * @throws IOException if the file could not be read.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromFile(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
-            final String file) throws InvalidPathException, IOException, NetworkException
+    public static void parseFromFile(final Map<ParserSetting, Boolean> parserSettings, final String file)
+            throws InvalidPathException, IOException, NetworkException
     {
-        parseFromString(network, parserSettings, Files.readString(Path.of(file)));
+        parseFromString(parserSettings, Files.readString(Path.of(file)));
     }
 
     /**
      * Parses a string of the contents typically in a .fos file. All parser settings are default.
-     * @param network RoadNetwork; network to build the fos information in.
      * @param stream InputStream; stream of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      * @throws IOException if the stream cannot be read
      */
-    public static void parseFromStream(final RoadNetwork network, final InputStream stream) throws NetworkException, IOException
+    public static void parseFromStream(final InputStream stream) throws NetworkException, IOException
     {
-        parseFromStream(network, new EnumMap<>(ParserSetting.class), stream);
+        parseFromStream(new EnumMap<>(ParserSetting.class), stream);
     }
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param network RoadNetwork; network to build the fos information in.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param stream InputStream; stream of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      * @throws IOException if the stream cannot be read
      */
-    public static void parseFromStream(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
-            final InputStream stream) throws NetworkException, IOException
+    public static void parseFromStream(final Map<ParserSetting, Boolean> parserSettings, final InputStream stream)
+            throws NetworkException, IOException
     {
-        parseFromString(network, parserSettings, new String(stream.readAllBytes(), StandardCharsets.UTF_8));
+        parseFromString(parserSettings, new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
 
     /**
      * Parses a string of the contents typically in a .fos file. All parser settings are default.
-     * @param network RoadNetwork; network to build the fos information in.
      * @param fosString String; string of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromString(final RoadNetwork network, final String fosString) throws NetworkException
+    public static void parseFromString(final String fosString) throws NetworkException
     {
-        parseFromString(network, new EnumMap<>(ParserSetting.class), fosString);
+        parseFromString(new EnumMap<>(ParserSetting.class), fosString);
     }
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param network RoadNetwork; network to build the fos information in.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param fosString String; string of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromString(final RoadNetwork network, final Map<ParserSetting, Boolean> parserSettings,
-            final String fosString) throws NetworkException
+    public static void parseFromString(final Map<ParserSetting, Boolean> parserSettings, final String fosString)
+            throws NetworkException
     {
-        FosParser parser = new FosParser(network, parserSettings);
+        FosParser parser = new FosParser(parserSettings);
         new BufferedReader(new StringReader(fosString)).lines().forEach(parser::parseLine);
         parser.build();
     }
@@ -313,7 +363,7 @@ public class FosParser
         if (line.startsWith("vehicle specific param"))
         {
             int[] indices = fieldIndices(line);
-            getSubList(this.specificParameter, indices[0]).set(indices[1], new FosParameter(fieldValue(line)));
+            getSubList(this.specificParameter, indices[1]).set(indices[0], new FosParameter(fieldValue(line)));
             return;
         }
         if (line.startsWith("flow"))
@@ -415,34 +465,59 @@ public class FosParser
         // test
         validityTest();
 
-        // map out network
-        for (int sectionIndex = 0; sectionIndex < this.sections.size(); sectionIndex++)
+        // simulator and network
+        // TODO: allow simulator without animation
+        OtsSimulatorInterface simulator = new OtsAnimator("FOSIM parser");
+        this.network = new RoadNetwork("FOSIM parser", simulator);
+        FosimModel model = new FosimModel(this.network, this.seed);
+        try
         {
-            int fromLane = 0;
-            while (fromLane < this.lane.size())
+            simulator.initialize(Time.ZERO, Duration.ZERO, this.timeStep.times(this.maximumSimulationTime), model);
+
+            // map out network
+            for (int sectionIndex = 0; sectionIndex < this.sections.size(); sectionIndex++)
             {
-                fromLane = mapOutLink(sectionIndex, fromLane);
+                int fromLane = 0;
+                while (fromLane < this.lane.size())
+                {
+                    fromLane = mapOutLink(sectionIndex, fromLane);
+                }
             }
-        }
-        mapOutNodes();
+            mapOutNodes();
 
-        // build network
-        for (FosNode node : this.nodes)
+            // build network
+            for (FosNode node : this.nodes)
+            {
+                buildNode(node);
+            }
+            for (FosLink link : this.links.values())
+            {
+                buildLink(link);
+            }
+
+            // GTU types
+            buildGtuTypes();
+
+            // generators
+            buildGenerators();
+
+            // detectors
+            buildDetecors();
+
+            printMappings(); // TODO remove test code
+
+            GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
+            OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(800, 600),
+                    (OtsAnimator) this.network.getSimulator(), model, colorer, this.network);
+            animationPanel.enableSimulationControlButtons();
+            new OtsSimulationApplication<FosimModel>(model, animationPanel);
+        }
+        catch (SimRuntimeException | NamingException | RemoteException | DSOLException | OtsDrawingException
+                | OtsGeometryException | ParameterException e)
         {
-            buildNode(node);
-        }
-        for (FosLink link : this.links.values())
-        {
-            buildLink(link);
+            throw new RuntimeException(e);
         }
 
-        // build generators
-
-        printMappings(); // TODO remove test code
-
-        double q = 8;
-
-        // TODO
     }
 
     /**
@@ -598,6 +673,7 @@ public class FosParser
         {
             FosLink link = getSourceSinkLink(source);
             FosNode sourceNode = new FosNode(this.lastMappedNode++);
+            sourceNode.source = source;
             sourceNode.name = source.name;
             sourceNode.outLinks.add(link);
             link.fromNode = sourceNode;
@@ -611,25 +687,20 @@ public class FosParser
         {
             FosLink link = getSourceSinkLink(sink);
             FosNode sinkNode = new FosNode(this.lastMappedNode++);
-            sinkNode.name = sink.name;
+            sinkNode.sink = sink;
+            String name = sink.name;
             // sources and sinks can have the same name, in that case create a new node
-            while (sourceNames.contains(sinkNode.getName()) || sinkNames.contains(sinkNode.getName()))
+            if (sourceNames.contains(name) || sinkNames.contains(name))
             {
-                /**
-                 * Why we also check for sinkNames.contains(sinkNode.getName()), example:<br>
-                 * 1. We have a source named "A20".<br>
-                 * 2. We have a sink named "AZ" (e.g. the soccer stadium).<br>
-                 * 3. We have another sink generated with a number that gives default name "AY", but name it "A20".<br>
-                 * 4. That name is already taken by a source, so we create a new node for the sink.<br>
-                 * 5. That new node has a number that gives default name "AZ" (i.e. "AY" + 1).<br>
-                 * 6. A sink "AZ" was already there, so we need to create a new node again.<br>
-                 * Note that a source could also have a name like "AZ".<br>
-                 * Note also that we can't use sinkNode.hasForbiddenName(), as that checks all desired source and sink names,
-                 * including the one we are trying to create, and hence then sinks would never be allowed to have their own
-                 * actual name.
-                 */
-                sinkNode = new FosNode(this.lastMappedNode++);
+                name = sinkNode.getName() + " (" + sink.name + ")"; // number to "AY" and sink name
             }
+            while (sourceNames.contains(name) || sinkNames.contains(name))
+            {
+                // even as "AY (Amsterdam)" it's duplicate, increase number until the name is unique
+                sinkNode = new FosNode(this.lastMappedNode++);
+                name = sinkNode.getName() + " (" + sink.name + ")"; // number to "AZ" and sink name
+            }
+            sinkNode.name = name;
             sinkNode.inLinks.add(link);
             link.toNode = sinkNode;
             this.nodes.add(sinkNode);
@@ -749,38 +820,45 @@ public class FosParser
         {
             y = Length.min(y, getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane));
         }
-        new Node(this.network, node.getName(), new OtsPoint3d(x.si, y.si, 0.0), Direction.ZERO);
+        Node n = new Node(this.network, node.getName(), new OtsPoint3d(x.si, y.si, 0.0), Direction.ZERO);
+        // store node in sink and/or source object
+        if (node.source != null)
+        {
+            node.source.node = n;
+        }
+        if (node.sink != null)
+        {
+            node.sink.node = n;
+        }
     }
 
     /**
      * Builds a link, including the lanes on it.
      * @param link FosLink; parsed link information.
      * @throws NetworkException on exceptions creating the link or lane objects.
+     * @throws OtsGeometryException when lane or stripe geometry is not correct
      */
-    private void buildLink(final FosLink link) throws NetworkException
+    private void buildLink(final FosLink link) throws NetworkException, OtsGeometryException
     {
         // create the link
         String name = String.format("Link %d", link.number);
         Node startNode = (Node) this.network.getNode(link.fromNode.getName());
         Node endNode = (Node) this.network.getNode(link.toNode.getName());
-        // TODO: Use Bezier if any of the lanes makes a shift?
-        OtsLine3d designLine = Try.assign(() -> new OtsLine3d(startNode.getPoint(), endNode.getPoint()), NetworkException.class,
-                "Design line could not be generated for link at lane %s, section %s.", link.fromLane, link.sectionIndex);
+        OtsPoint3d startPoint = startNode.getPoint();
+        OtsPoint3d endPoint = endNode.getPoint();
+        OtsLine3d designLine = Try.assign(() -> new OtsLine3d(startPoint, new OtsPoint3d(endPoint.x, startPoint.y, 0.0)),
+                NetworkException.class, "Design line could not be generated for link at lane %s, section %s.", link.fromLane,
+                link.sectionIndex);
         CrossSectionLink otsLink = new CrossSectionLink(this.network, name, startNode, endNode, DefaultsNl.FREEWAY, designLine,
                 LaneKeepingPolicy.KEEPRIGHT);
-
-        // TODO: we must do this all relative to the y-coordinates of the nodes, as these may be anywhere in case of multiple
-        // links
-        // we should maybe work with absolute y-values, and subtract the node value
 
         // calculate offsets
         List<Length> lateralOffsetAtStarts = new ArrayList<>();
         List<Length> lateralOffsetAtEnds = new ArrayList<>();
         // initialize relative to nodes
-        Length leftEdgeOffsetStart = getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane)
-                .minus(Length.instantiateSI(startNode.getPoint().y));
-        Length leftEdgeOffsetEnd = getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane)
-                .minus(Length.instantiateSI(endNode.getPoint().y));
+        Length leftLinkEdge = getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane);
+        Length leftEdgeOffsetStart = leftLinkEdge.minus(Length.instantiateSI(startNode.getPoint().y));
+        Length leftEdgeOffsetEnd = leftLinkEdge.minus(Length.instantiateSI(endNode.getPoint().y));
         int offsetEnd = 0; // to detect change in the number of lanes a lane shifts, relative to left-hand lanes
         for (int i = 0; i < link.lanes.size(); i++)
         {
@@ -794,16 +872,16 @@ public class FosParser
             else
             {
                 // otherwise, add halve the lane width to the left edge, and increment the left edge for the next lane
-                lateralOffsetAtStarts.add(leftEdgeOffsetStart.plus(link.lanes.get(i).laneWidth.times(0.5)));
-                leftEdgeOffsetStart = leftEdgeOffsetStart.plus(link.lanes.get(i).laneWidth);
+                lateralOffsetAtStarts.add(leftEdgeOffsetStart.minus(link.lanes.get(i).laneWidth.times(0.5)));
+                leftEdgeOffsetStart = leftEdgeOffsetStart.minus(link.lanes.get(i).laneWidth);
             }
 
             int currentOffsetEnd = link.lanes.get(i).laneOut - (link.fromLane + i); // in # of lanes
             if (currentOffsetEnd == offsetEnd)
             {
-                // same offset as previous lane, build from there, and increment the left edge for the next lane
-                lateralOffsetAtEnds.add(leftEdgeOffsetEnd.plus(link.lanes.get(i).laneWidth.times(0.5)));
-                leftEdgeOffsetEnd = leftEdgeOffsetEnd.plus(link.lanes.get(i).laneWidth);
+                // same lane # offset as previous lane, build from there, and increment the left edge for the next lane
+                lateralOffsetAtEnds.add(leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth.times(0.5)));
+                leftEdgeOffsetEnd = leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth);
             }
             else if (currentOffsetEnd > offsetEnd || i == 0)
             {
@@ -816,15 +894,15 @@ public class FosParser
 
                 // margin between actual left edge and left edge in grid assuming maximum lane widths
                 Length leftEdgeMargin =
-                        getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane).minus(getLeftEdgeMax(link.fromLane));
+                        getLeftEdgeMax(link.fromLane).minus(getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane));
 
                 // add this margin to the left edge assuming maximum lane widths on the output lane
-                Length actualLeftEdge = getLeftEdgeMax(link.lanes.get(i).laneOut).plus(leftEdgeMargin);
-                leftEdgeOffsetEnd = actualLeftEdge.minus(Length.instantiateSI(endNode.getPoint().y)); // relative to node
+                Length actualLeftEdge = getLeftEdgeMax(link.lanes.get(i).laneOut).minus(leftEdgeMargin);
+                leftEdgeOffsetEnd = Length.instantiateSI(endNode.getPoint().y).minus(actualLeftEdge); // relative to node
 
                 // build from that left edge onwards
-                lateralOffsetAtEnds.add(leftEdgeOffsetEnd.plus(link.lanes.get(i).laneWidth.times(0.5)));
-                leftEdgeOffsetEnd = leftEdgeOffsetEnd.plus(link.lanes.get(i).laneWidth);
+                lateralOffsetAtEnds.add(leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth.times(0.5)));
+                leftEdgeOffsetEnd = leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth);
             }
             else
             {
@@ -842,24 +920,61 @@ public class FosParser
         }
 
         // build the lanes
-        int laneNum = 0;
-        for (FosLane lane : link.lanes)
+        FosLane prevLane = null;
+        boolean stripedAreas = getSetting(ParserSetting.STRIPED_AREAS);
+        for (int laneNum = 0; laneNum < link.lanes.size(); laneNum++)
         {
+            FosLane lane = link.lanes.get(laneNum);
             String id = String.format("Lane %d", laneNum + 1);
             // calculate offset as y-distance between start/end node and from/to point, and add halve the lane width
             Length lateralOffsetAtStart = lateralOffsetAtStarts.get(laneNum);
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
-            Try.assign(
-                    () -> new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
-                            DefaultsRoadNl.HIGHWAY, Map.of(DefaultsNl.ROAD_USER, lane.speedLimit), false),
-                    NetworkException.class, "Geometry failed for lane %s at section %s.", laneNum, link.sectionIndex);
-            laneNum++;
+            new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
+                    DefaultsRoadNl.HIGHWAY, Map.of(DefaultsNl.ROAD_USER, lane.speedLimit), false);
+            if (laneNum == 0)
+            {
+                CrossSectionSlice start = new CrossSectionSlice(Length.ZERO,
+                        lateralOffsetAtStart.minus(EDGE_STRIPE_GAP).plus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                CrossSectionSlice end = new CrossSectionSlice(otsLink.getLength(),
+                        lateralOffsetAtEnd.minus(EDGE_STRIPE_GAP).plus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                new Stripe(Type.SOLID, otsLink, List.of(start, end));
+            }
+            else
+            {
+                Type type = null;
+                Length width = null;
+                if (lane.canChangeLeft(stripedAreas) && prevLane.canChangeRight(stripedAreas))
+                {
+                    type = Type.DASHED;
+                    width = Length.instantiateSI(0.2);
+                }
+                else if (lane.canChangeLeft(stripedAreas))
+                {
+                    type = Type.LEFT;
+                    width = Length.instantiateSI(0.6);
+                }
+                else
+                {
+                    type = Type.RIGHT;
+                    width = Length.instantiateSI(0.6);
+                }
+                CrossSectionSlice start =
+                        new CrossSectionSlice(Length.ZERO, lateralOffsetAtStart.plus(lane.laneWidth.times(0.5)), width);
+                CrossSectionSlice end =
+                        new CrossSectionSlice(otsLink.getLength(), lateralOffsetAtEnd.plus(lane.laneWidth.times(0.5)), width);
+                new Stripe(type, otsLink, List.of(start, end));
+            }
+
+            if (laneNum == link.lanes.size() - 1)
+            {
+                CrossSectionSlice start = new CrossSectionSlice(Length.ZERO,
+                        lateralOffsetAtStart.plus(EDGE_STRIPE_GAP).minus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                CrossSectionSlice end = new CrossSectionSlice(otsLink.getLength(),
+                        lateralOffsetAtEnd.plus(EDGE_STRIPE_GAP).minus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                new Stripe(Stripe.Type.SOLID, otsLink, List.of(start, end));
+            }
+            prevLane = lane;
         }
-
-        // Bezier.cubic(from.getLocation(), to.getLocation());
-
-        // TODO
-
     }
 
     /**
@@ -900,7 +1015,7 @@ public class FosParser
         }
 
         // add halve of space to left edge
-        return leftEdgeMax.plus(linkWidthMax.minus(linkWidth).times(.5));
+        return leftEdgeMax.minus(linkWidthMax.minus(linkWidth).times(.5));
     }
 
     /**
@@ -913,9 +1028,139 @@ public class FosParser
         Length leftEdgeMax = Length.ZERO;
         for (int laneIndex = 0; laneIndex < lane; laneIndex++)
         {
-            leftEdgeMax = leftEdgeMax.plus(this.maxLaneWidth[laneIndex]);
+            leftEdgeMax = leftEdgeMax.minus(this.maxLaneWidth[laneIndex]);
         }
         return leftEdgeMax;
+    }
+
+    /**
+     * Builds the GTU types.
+     */
+    private void buildGtuTypes()
+    {
+        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypes; vehicleTypeNumber++)
+        {
+            this.gtuTypes.add(new GtuType(Integer.toString(vehicleTypeNumber), DefaultsNl.ROAD_USER));
+        }
+    }
+
+    /**
+     * Build the vehicle generators.
+     * @throws ParameterException if a parameter is missing
+     * @throws SimRuntimeException if this method is called after simulation time 0
+     */
+    private void buildGenerators() throws SimRuntimeException, ParameterException
+    {
+        List<Node> origins = new ArrayList<>();
+        this.source.forEach((s) -> origins.add(s.node));
+        List<Node> destinations = new ArrayList<>();
+        this.sink.forEach((s) -> destinations.add(s.node));
+        Categorization categorization = new Categorization("GTU type", GtuType.class);
+        TimeVector globalTimeVector = new TimeVector(DoubleVectorData.instantiate(
+                new Time[] {Time.ZERO, Time.instantiateSI(this.timeStep.times(this.maximumSimulationTime).si)},
+                StorageType.DENSE), TimeUnit.BASE_SECOND);
+        Interpolation globalInterpolation = Interpolation.LINEAR;
+        OdMatrix od = new OdMatrix("Fosim OD", origins, destinations, categorization, globalTimeVector, globalInterpolation);
+
+        // prepare categories
+        List<Category> categories = new ArrayList<>();
+        for (GtuType gtuType : this.gtuTypes)
+        {
+            categories.add(new Category(categorization, gtuType));
+        }
+
+        // prepare options
+        StreamInterface stream = this.network.getSimulator().getModel().getStream("generation");
+        OdOptions options = new OdOptions();
+        options.set(OdOptions.INSTANT_LC, true);
+        ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
+        parameterFactory.addParameter(ParameterTypes.FSPEED, new DistNormal(stream, 123.7 / 120.0, 0.1));
+        LmrsFactory lmrsFactory = new LmrsFactory(new IdmPlusFactory(stream), new DefaultLmrsPerceptionFactory());
+        LaneBasedStrategicalRoutePlannerFactory strategicalFactory =
+                new LaneBasedStrategicalRoutePlannerFactory(lmrsFactory, parameterFactory);
+        Set<GtuTemplate> templates = new LinkedHashSet<>();
+        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypes; vehicleTypeNumber++)
+        {
+            Length length = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "length"));
+            Length width = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "vehicle width"));
+            Generator<Speed> speed;
+            if (width.gt(TRUCK_THRESHOLD))
+            {
+                speed = new ContinuousDistSpeed(new DistNormal(stream, 85.0, 2.5), SpeedUnit.KM_PER_HOUR);
+            }
+            else
+            {
+                Speed vMax = new Speed(180.0, SpeedUnit.KM_PER_HOUR);
+                speed = () -> vMax;
+            }
+            templates.add(new GtuTemplate(this.gtuTypes.get(vehicleTypeNumber), () -> length, () -> width, speed));
+        }
+
+        for (int sourceIndex = 0; sourceIndex < this.flow.size(); sourceIndex++)
+        {
+            FosFlow flow = this.flow.get(sourceIndex);
+            Node sourceNode = origins.get(sourceIndex);
+            FosList<List<Double>> sinks = this.sourceToSink.get(sourceIndex);
+            for (int sinkIndex = 0; sinkIndex < sinks.size(); sinkIndex++)
+            {
+                Node sinkNode = destinations.get(sinkIndex);
+                List<Double> sinkFractions = sinks.get(sinkIndex);
+                for (int vehicleTypeIndex = 0; vehicleTypeIndex < sinkFractions.size(); vehicleTypeIndex++)
+                {
+                    double sinkFraction = sinkFractions.get(vehicleTypeIndex);
+                    double vehicleFraction = this.vehicleProbabilities.get(sourceIndex).get(vehicleTypeIndex);
+                    od.putDemandVector(sourceNode, sinkNode, categories.get(vehicleTypeIndex), flow.getFrequencyVector(),
+                            flow.getTimeVector(), Interpolation.LINEAR, sinkFraction * vehicleFraction);
+                }
+            }
+            Distribution<GtuType> gtuTypeGenerator;
+            try
+            {
+                gtuTypeGenerator = new Distribution<>(stream);
+                for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypes; vehicleTypeNumber++)
+                {
+                    gtuTypeGenerator.add(
+                            new FrequencyAndObject<GtuType>(this.vehicleProbabilities.get(sourceIndex).get(vehicleTypeNumber),
+                                    this.gtuTypes.get(vehicleTypeNumber)));
+                }
+            }
+            catch (ProbabilityException pe)
+            {
+                throw new RuntimeException(pe);
+            }
+
+            // options per origin
+            LaneBasedGtuCharacteristicsGeneratorOd characteristicsGenerator =
+                    new DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory(strategicalFactory).setGtuTypeGenerator(null)
+                            .setTemplates(templates).create();
+            options.set(sourceNode, OdOptions.GTU_TYPE, characteristicsGenerator);
+        }
+
+        OdApplier.applyOd(this.network, od, options, DefaultsRoadNl.ROAD_USERS);
+    }
+    
+    /**
+     * Returns the parameter value for given vehicle type number, and parameter name.
+     * @param vehicleTypeNumber int; vehicle type number.
+     * @param parameterName String; parameter name as in FOSIM specification.
+     * @return double; parameter value.
+     * @throws ParameterException if the parameter is not found for the vehicle type.
+     */
+    private double getParameterValue(final int vehicleTypeNumber, final String parameterName) throws ParameterException
+    {
+        for (FosParameter param : this.specificParameter.get(vehicleTypeNumber))
+        {
+            if (param.name.equals(parameterName))
+            {
+                return param.value;
+            }
+        }
+        throw new ParameterException("No parameter " + parameterName + " for vehicle type " + vehicleTypeNumber);
+    }
+
+    private void buildDetecors()
+    {
+
     }
 
     /**

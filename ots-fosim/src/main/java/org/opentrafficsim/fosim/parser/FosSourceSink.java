@@ -1,5 +1,7 @@
 package org.opentrafficsim.fosim.parser;
 
+import org.opentrafficsim.core.network.Node;
+
 /**
  * Parsed source or sink info (this is the same info).
  * <p>
@@ -21,6 +23,9 @@ class FosSourceSink
 
     /** Name. */
     public final String name;
+    
+    /** Node that is created for this source or sink. */
+    public Node node;
 
     /**
      * Parses a single source or sink.
@@ -42,4 +47,5 @@ class FosSourceSink
         return "FosSourceSink [name=" + this.name + ", section=" + this.sectionFromEnd + ", fromLane=" + this.fromLane
                 + ", toLane=" + this.toLane + "]";
     }
+    
 }
