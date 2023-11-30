@@ -48,6 +48,7 @@ import org.opentrafficsim.core.geometry.OtsLine3d;
 import org.opentrafficsim.core.geometry.OtsPoint3d;
 import org.opentrafficsim.core.gtu.GtuTemplate;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
@@ -68,6 +69,7 @@ import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.Stripe;
 import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
+import org.opentrafficsim.road.network.lane.object.detector.LoopDetector;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
 import org.opentrafficsim.road.od.Interpolation;
@@ -128,7 +130,6 @@ public class FosParser
     private FosList<FosTrafficLight> trafficLight = new FosList<>();
 
     /** Detector times [step#] containing two values: first detector output time and interval after that. */
-    // TODO: OTS does not support an irregular first interval (see git issue #6)
     private List<Integer> detectorTimes = new ArrayList<>();
 
     /** Detector positions. */
@@ -504,7 +505,7 @@ public class FosParser
             // detectors
             buildDetecors();
 
-            printMappings(); // TODO remove test code
+            printMappings(); // TODO: remove test code
 
             GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
             OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(800, 600),
@@ -1138,7 +1139,7 @@ public class FosParser
 
         OdApplier.applyOd(this.network, od, options, DefaultsRoadNl.ROAD_USERS);
     }
-    
+
     /**
      * Returns the parameter value for given vehicle type number, and parameter name.
      * @param vehicleTypeNumber int; vehicle type number.
@@ -1158,9 +1159,56 @@ public class FosParser
         throw new ParameterException("No parameter " + parameterName + " for vehicle type " + vehicleTypeNumber);
     }
 
-    private void buildDetecors()
+    /**
+     * Build the detectors.
+     * @throws NetworkException; on network exception
+     */
+    private void buildDetecors() throws NetworkException
     {
+        // TODO: OTS does not support an irregular first interval (see git issue #6)
+        this.detectorTimes.get(0); // time of first detector measurement (time step #), i.e. end of aggregation period
+        Duration interval = this.timeStep.times(this.detectorTimes.get(1));
 
+        for (int detectorCrossSection = 0; detectorCrossSection < this.detectorPositions.size(); detectorCrossSection++)
+        {
+            Length position = this.detectorPositions.get(detectorCrossSection);
+            for (Link link : this.network.getLinkMap().values())
+            {
+                if (link.getStartNode().getLocation().x <= position.si && position.si < link.getEndNode().getLocation().x)
+                {
+                    double fraction = (position.si - link.getStartNode().getLocation().x)
+                            / (link.getEndNode().getLocation().x - link.getStartNode().getLocation().x);
+                    CrossSectionLink crossSectionLink = (CrossSectionLink) link;
+                    int firstLane = -1;
+                    for (int i = 0; i < this.mappedLinks.length; i++)
+                    {
+                        for (int j = 0; j < this.mappedLinks[i].length; j++)
+                        {
+                            int linkNum = this.mappedLinks[i][j];
+                            if (linkNum > 0 && ("Link " + linkNum).equals(link.getId()))
+                            {
+                                firstLane = i;
+                                break;
+                            }
+                        }
+                        if (firstLane >= 0)
+                        {
+                            break;
+                        }
+                    }
+                    for (Lane lane : crossSectionLink.getLanes())
+                    {
+                        Length longitudinalPosition = lane.getLength().times(fraction);
+                        int laneNum = Integer.valueOf(lane.getId().substring(5)) + firstLane;
+                        // Id's are "1_2" where 1=detector cross-section, and 2=second lane (both start counting at 1)
+                        String id = (detectorCrossSection + 1) + "_" + laneNum;
+                        // TODO: add measurements if required
+                        new LoopDetector(id, lane, longitudinalPosition, Length.instantiateSI(15), DefaultsRoadNl.ROAD_USERS,
+                                this.network.getSimulator(), interval, LoopDetector.MEAN_SPEED);
+                    }
+                }
+            }
+        }
     }
 
     /**
