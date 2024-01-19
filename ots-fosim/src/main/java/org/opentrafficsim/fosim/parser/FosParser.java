@@ -11,7 +11,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -70,6 +69,7 @@ import org.opentrafficsim.road.network.lane.Stripe;
 import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.lane.object.detector.LoopDetector;
+import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
 import org.opentrafficsim.road.od.Interpolation;
@@ -105,8 +105,17 @@ public class FosParser
     /** Network. */
     private RoadNetwork network;
 
+    /** Model. */
+    private FosimModel model;
+
+    /** Application. */
+    private OtsSimulationApplication<FosimModel> app;
+
     /** Parser settings. */
-    private final Map<ParserSetting, Boolean> parserSettings;
+    private Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();
+
+    /** Parameter supplier. */
+    private ParameterSupplier parameterSupplier = new ParameterSupplier();
 
     // parsed info
 
@@ -199,86 +208,92 @@ public class FosParser
     private List<GtuType> gtuTypes = new ArrayList<>();
 
     /**
-     * Constructor. For parser settings that are not specified the default value is used.
+     * Sets the settings.
      * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
+     * @return FosParser; this parser for method chaining.
      */
-    private FosParser(final Map<ParserSetting, Boolean> parserSettings)
+    public FosParser setSettings(final Map<ParserSetting, Boolean> parserSettings)
     {
         this.parserSettings = parserSettings;
+        return this;
     }
 
     /**
-     * Parses a .fos file. All parser settings are default.
-     * @param file String; location of a .pos file.
-     * @throws InvalidPathException if the path is invalid.
-     * @throws IOException if the file could not be read.
-     * @throws NetworkException if anything fails critically during parsing.
+     * Sets the parameter supplier.
+     * @param parameterSupplier ParameterSupplier; parameter supplier.
+     * @return FosParser; this parser for method chaining.
      */
-    public static void parseFromFile(final String file) throws InvalidPathException, IOException, NetworkException
+    public FosParser setParameterSupplier(final ParameterSupplier parameterSupplier)
     {
-        parseFromString(new EnumMap<>(ParserSetting.class), Files.readString(Path.of(file)));
+        this.parameterSupplier = parameterSupplier;
+        return this;
     }
 
     /**
      * Parses a .fos file.
-     * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param file String; location of a .pos file.
      * @throws InvalidPathException if the path is invalid.
      * @throws IOException if the file could not be read.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromFile(final Map<ParserSetting, Boolean> parserSettings, final String file)
-            throws InvalidPathException, IOException, NetworkException
+    public void parseFromFile(final String file) throws InvalidPathException, IOException, NetworkException
     {
-        parseFromString(parserSettings, Files.readString(Path.of(file)));
-    }
-
-    /**
-     * Parses a string of the contents typically in a .fos file. All parser settings are default.
-     * @param stream InputStream; stream of the contents typically in a .fos file.
-     * @throws NetworkException if anything fails critically during parsing.
-     * @throws IOException if the stream cannot be read
-     */
-    public static void parseFromStream(final InputStream stream) throws NetworkException, IOException
-    {
-        parseFromStream(new EnumMap<>(ParserSetting.class), stream);
+        parseFromString(Files.readString(Path.of(file)));
     }
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param stream InputStream; stream of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      * @throws IOException if the stream cannot be read
      */
-    public static void parseFromStream(final Map<ParserSetting, Boolean> parserSettings, final InputStream stream)
-            throws NetworkException, IOException
+    public void parseFromStream(final InputStream stream) throws NetworkException, IOException
     {
-        parseFromString(parserSettings, new String(stream.readAllBytes(), StandardCharsets.UTF_8));
-    }
-
-    /**
-     * Parses a string of the contents typically in a .fos file. All parser settings are default.
-     * @param fosString String; string of the contents typically in a .fos file.
-     * @throws NetworkException if anything fails critically during parsing.
-     */
-    public static void parseFromString(final String fosString) throws NetworkException
-    {
-        parseFromString(new EnumMap<>(ParserSetting.class), fosString);
+        parseFromString(new String(stream.readAllBytes(), StandardCharsets.UTF_8));
     }
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
      * @param fosString String; string of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      */
-    public static void parseFromString(final Map<ParserSetting, Boolean> parserSettings, final String fosString)
-            throws NetworkException
+    public void parseFromString(final String fosString) throws NetworkException
     {
-        FosParser parser = new FosParser(parserSettings);
-        new BufferedReader(new StringReader(fosString)).lines().forEach(parser::parseLine);
-        parser.build();
+        new BufferedReader(new StringReader(fosString)).lines().forEach(this::parseLine);
+        build();
+    }
+
+    /**
+     * Returns the network after parsing.
+     * @return RoadNetwork; network.
+     * @throws IllegalStateException when no parsing was yet performed.
+     */
+    public RoadNetwork getNetwork()
+    {
+        Throw.when(this.network == null, IllegalStateException.class, "No fos information was parsed.");
+        return this.network;
+    }
+
+    /**
+     * Returns the model after parsing.
+     * @return FosimModel; model.
+     * @throws IllegalStateException when no parsing was yet performed.
+     */
+    public FosimModel getModel()
+    {
+        Throw.when(this.model == null, IllegalStateException.class, "No fos information was parsed.");
+        return this.model;
+    }
+
+    /**
+     * Returns the application after parsing.
+     * @return OtsSimulationApplication&lt;FosimModel&gt;; application.
+     * @throws IllegalStateException when no parsing was yet performed.
+     */
+    public OtsSimulationApplication<FosimModel> getApplication()
+    {
+        Throw.when(this.app == null, IllegalStateException.class, "No fos information was parsed.");
+        return this.app;
     }
 
     /**
@@ -470,10 +485,10 @@ public class FosParser
         // TODO: allow simulator without animation
         OtsSimulatorInterface simulator = new OtsAnimator("FOSIM parser");
         this.network = new RoadNetwork("FOSIM parser", simulator);
-        FosimModel model = new FosimModel(this.network, this.seed);
+        this.model = new FosimModel(this.network, this.seed);
         try
         {
-            simulator.initialize(Time.ZERO, Duration.ZERO, this.timeStep.times(this.maximumSimulationTime), model);
+            simulator.initialize(Time.ZERO, Duration.ZERO, this.timeStep.times(this.maximumSimulationTime), this.model);
 
             // map out network
             for (int sectionIndex = 0; sectionIndex < this.sections.size(); sectionIndex++)
@@ -505,13 +520,13 @@ public class FosParser
             // detectors
             buildDetecors();
 
-            printMappings(); // TODO: remove test code
+            //printMappings(); // TODO: remove test code
 
             GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
-            OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(800, 600),
-                    (OtsAnimator) this.network.getSimulator(), model, colorer, this.network);
+            OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),
+                    (OtsAnimator) this.network.getSimulator(), this.model, colorer, this.network);
             animationPanel.enableSimulationControlButtons();
-            new OtsSimulationApplication<FosimModel>(model, animationPanel);
+            this.app = new OtsSimulationApplication<FosimModel>(this.model, animationPanel);
         }
         catch (SimRuntimeException | NamingException | RemoteException | DSOLException | OtsDrawingException
                 | OtsGeometryException | ParameterException e)
@@ -926,7 +941,7 @@ public class FosParser
         for (int laneNum = 0; laneNum < link.lanes.size(); laneNum++)
         {
             FosLane lane = link.lanes.get(laneNum);
-            String id = String.format("Lane %d", laneNum + 1);
+            String id = String.format("Lane %d_%d", laneNum + 1, laneNum + link.fromLane + 1);
             // calculate offset as y-distance between start/end node and from/to point, and add halve the lane width
             Length lateralOffsetAtStart = lateralOffsetAtStarts.get(laneNum);
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
@@ -1075,6 +1090,9 @@ public class FosParser
         OdOptions options = new OdOptions();
         options.set(OdOptions.INSTANT_LC, true);
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
+
+        // TODO: use parameter supplier
+
         parameterFactory.addParameter(ParameterTypes.FSPEED, new DistNormal(stream, 123.7 / 120.0, 0.1));
         LmrsFactory lmrsFactory = new LmrsFactory(new IdmPlusFactory(stream), new DefaultLmrsPerceptionFactory());
         LaneBasedStrategicalRoutePlannerFactory strategicalFactory =
@@ -1138,6 +1156,23 @@ public class FosParser
         }
 
         OdApplier.applyOd(this.network, od, options, DefaultsRoadNl.ROAD_USERS);
+
+        // TODO: remove after update to later OTS version which fixes DestinationDetector/SinkDetector confusion
+        for (FosSourceSink sink : this.sink)
+        {
+            for (Link link : sink.node.getLinks())
+            {
+                if (link.getEndNode().equals(sink.node))
+                {
+                    for (Lane lane : ((CrossSectionLink) link).getLanes())
+                    {
+                        Length pos = lane.getLength().minus(Length.instantiateSI(50.0));
+                        Try.execute(() -> new SinkDetector(lane, pos, this.network.getSimulator(), DefaultsRoadNl.ROAD_USERS),
+                                "Exception while creating sink detector.");
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1199,7 +1234,8 @@ public class FosParser
                     for (Lane lane : crossSectionLink.getLanes())
                     {
                         Length longitudinalPosition = lane.getLength().times(fraction);
-                        int laneNum = Integer.valueOf(lane.getId().substring(5)) + firstLane;
+                        int underscore = lane.getId().indexOf("_");
+                        int laneNum = Integer.valueOf(lane.getId().substring(5, underscore)) + firstLane;
                         // Id's are "1_2" where 1=detector cross-section, and 2=second lane (both start counting at 1)
                         String id = (detectorCrossSection + 1) + "_" + laneNum;
                         // TODO: add measurements if required

@@ -29,7 +29,7 @@ public class ParserDemo
         parserSettings.put(ParserSetting.STRIPED_AREAS, false);
 
         String fileName = "Terbregseplein_6.5_aangepast.fos";
-        FosParser.parseFromStream(parserSettings, ParserDemo.class.getResourceAsStream("/" + fileName));
+        new FosParser().setSettings(parserSettings).parseFromStream(ParserDemo.class.getResourceAsStream("/" + fileName));
     }
 
 }

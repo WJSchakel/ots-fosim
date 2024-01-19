@@ -1,6 +1,7 @@
 package org.opentrafficsim.fosim.sim0mq;
 
 import java.awt.Dimension;
+import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +72,7 @@ import picocli.CommandLine.Option;
  * </p>
  * @author <a href="https://dittlab.tudelft.nl">Wouter Schakel</a>
  */
-public class TechnicalDemo
+public class SingleLaneDemo
 {
 
     /** Federation id to receive/sent messages. */
@@ -100,16 +101,16 @@ public class TechnicalDemo
 
     /** Show GUI. */
     @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "false")
-    private boolean showGUI;
+    protected boolean showGUI;
 
     /** The simulator. */
-    private OtsSimulatorInterface simulator;
+    protected OtsSimulatorInterface simulator;
 
     /** The network. */
-    private RoadNetwork network;
+    protected RoadNetwork network;
 
     /** Application screen. */
-    private OtsSimulationApplication<FosimModel> app;
+    protected OtsSimulationApplication<FosimModel> app;
 
     /** Step number. */
     private int stepNumber = 1;
@@ -121,20 +122,20 @@ public class TechnicalDemo
      */
     public static void main(final String... args) throws Exception
     {
-        TechnicalDemo demo = new TechnicalDemo();
+        SingleLaneDemo demo = new SingleLaneDemo();
         CliUtil.execute(demo, args);
         demo.setupSimulator();
     }
 
     /**
      * Starts a simulator/animator
-     * @throws SimRuntimeException
-     * @throws NamingException
-     * @throws RemoteException
-     * @throws DSOLException
-     * @throws OtsDrawingException
+     * @throws SimRuntimeException timing exception
+     * @throws NamingException naming exception
+     * @throws RemoteException communication exception
+     * @throws DSOLException exception in DSOL 
+     * @throws OtsDrawingException exception in GUI
      */
-    private void setupSimulator()
+    protected void setupSimulator()
             throws SimRuntimeException, NamingException, RemoteException, DSOLException, OtsDrawingException
     {
         Duration simulationTime = Duration.instantiateSI(3600.0);
@@ -168,13 +169,14 @@ public class TechnicalDemo
      * Builds the network and demand.
      * @param sim OtsSimulatorInterface; simulator.
      * @return OtsRoadNetwork; network.
-     * @throws NetworkException
-     * @throws OtsGeometryException
-     * @throws ParameterException
-     * @throws SimRuntimeException
+     * @throws NetworkException exception in network
+     * @throws OtsGeometryException exception in geometry
+     * @throws ParameterException wrong parameter value
+     * @throws SimRuntimeException timing exception
+     * @throws IOException when stream cannot be read
      */
     private RoadNetwork setupSimulation(final OtsSimulatorInterface sim)
-            throws NetworkException, OtsGeometryException, SimRuntimeException, ParameterException
+            throws NetworkException, OtsGeometryException, SimRuntimeException, ParameterException, IOException
     {
         RoadNetwork network = new RoadNetwork("Ots-Fosim", sim);
 
@@ -234,7 +236,7 @@ public class TechnicalDemo
      * Worker thread to listen to messages and respond.
      * @author wjschakel
      */
-    private class Worker extends Thread
+    protected class Worker extends Thread
     {
 
         /** */
@@ -259,7 +261,7 @@ public class TechnicalDemo
         {
             this.context = new ZContext(1);
             this.responder = this.context.createSocket(SocketType.REP);
-            this.responder.bind("tcp://*:" + TechnicalDemo.this.port);
+            this.responder.bind("tcp://*:" + SingleLaneDemo.this.port);
             System.out.println("Server is running");
 
             try
@@ -272,26 +274,28 @@ public class TechnicalDemo
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
                         // System.out.println("Performing STEP");
-                        TechnicalDemo.this.step(); // Performance of this line is terrible when using an OtsAnimator
-                        int numGtus = TechnicalDemo.this.network.getGTUs().size();
+                        SingleLaneDemo.this.step(); // Performance of this line is terrible when using an OtsAnimator
+                        int numGtus = SingleLaneDemo.this.network.getGTUs().size();
                         Object[] payload = new Object[1 + 4 * numGtus];
                         payload[0] = numGtus;
                         int k = 1;
-                        for (Gtu gtu : TechnicalDemo.this.network.getGTUs())
+                        for (Gtu gtu : SingleLaneDemo.this.network.getGTUs())
                         {
-                            payload[k++] = Integer.parseInt(((LaneBasedGtu) gtu).getReferencePosition().getLane().getId());
+                            String laneId = ((LaneBasedGtu) gtu).getReferencePosition().getLane().getId();
+                            int underscore = laneId.indexOf("_");
+                            payload[k++] = Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
                             payload[k++] = Length.instantiateSI(gtu.getLocation().x);
                             payload[k++] = gtu.getSpeed();
                             payload[k++] = gtu.getAcceleration();
                         }
                         // System.out.println("Ots replies STEP command with " + numGtus + " GTUs");
-                        this.responder.send(Sim0MQMessage.encodeUTF8(TechnicalDemo.this.bigEndian,
-                                TechnicalDemo.this.federation, TechnicalDemo.this.ots, TechnicalDemo.this.fosim, "STEP_REPLY",
+                        this.responder.send(Sim0MQMessage.encodeUTF8(SingleLaneDemo.this.bigEndian,
+                                SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim, "STEP_REPLY",
                                 this.messageId++, payload), 0);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {
-                        System.out.println("Ots received STOP command at " + TechnicalDemo.this.simulator.getSimulatorTime());
+                        System.out.println("Ots received STOP command at " + SingleLaneDemo.this.simulator.getSimulatorTime());
                         break;
                     }
                 }

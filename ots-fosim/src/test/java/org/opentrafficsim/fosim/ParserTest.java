@@ -1,7 +1,6 @@
 package org.opentrafficsim.fosim;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.nio.file.InvalidPathException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -66,9 +65,10 @@ public class ParserTest
         });
         Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();
         parserSettings.put(ParserSetting.STRIPED_AREAS, false);
-        
+
         String fileName = "Terbregseplein_6.5_aangepast.fos";
-        FosParser.parseFromStream(parserSettings, ParametersJsonTest.class.getResourceAsStream("/" + fileName));
+        new FosParser().setSettings(parserSettings)
+                .parseFromStream(ParametersJsonTest.class.getResourceAsStream("/" + fileName));
     }
-    
+
 }

@@ -1,7 +1,5 @@
 package org.opentrafficsim.fosim.sim0mq;
 
-import java.util.Arrays;
-
 import org.djutils.serialization.SerializationException;
 import org.sim0mq.Sim0MQException;
 import org.sim0mq.message.Sim0MQMessage;
@@ -34,10 +32,10 @@ public class TechnicalDemoFosim
     /**
      * Main method.
      * @param args String[]; command line arguments.
-     * @throws SerializationException
-     * @throws Sim0MQException
+     * @throws SerializationException serialization exception
+     * @throws Sim0MQException sim0mq exception
      */
-    public static void main(String... args) throws Sim0MQException, SerializationException
+    public static void main(final String... args) throws Sim0MQException, SerializationException
     {
         ZContext context = new ZContext(1);
         ZMQ.Socket requester = context.createSocket(SocketType.REQ);
@@ -49,7 +47,7 @@ public class TechnicalDemoFosim
         {
             byte[] encodedMessage =
                     Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "STEP", messageId++, new Object[] {});
-            System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
+            //System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
             requester.send(encodedMessage, 0);
 
             byte[] reply = requester.recv(0);
