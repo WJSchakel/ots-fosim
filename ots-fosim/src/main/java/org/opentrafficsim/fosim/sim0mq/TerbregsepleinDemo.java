@@ -7,6 +7,7 @@ import javax.naming.NamingException;
 
 import org.djutils.cli.CliUtil;
 import org.djutils.exceptions.Try;
+import org.opentrafficsim.base.Resource;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.network.NetworkException;
@@ -18,7 +19,7 @@ import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.language.DSOLException;
 
 /**
- * Demo of Terbregseplein network. 
+ * Demo of Terbregseplein network.
  * <p>
  * Copyright (c) 2023-2023 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
@@ -55,7 +56,7 @@ public class TerbregsepleinDemo extends SingleLaneDemo
         this.network =
                 Try.assign(() -> this.setupSimulation(), RuntimeException.class, "Exception while setting up simulation.");
         this.simulator = this.network.getSimulator();
-        new Worker().start();
+        // new Worker().start();
     }
 
     /**
@@ -71,7 +72,7 @@ public class TerbregsepleinDemo extends SingleLaneDemo
             throws NetworkException, OtsGeometryException, SimRuntimeException, ParameterException, IOException
     {
         FosParser parser = new FosParser();
-        parser.parseFromStream(TerbregsepleinDemo.class.getResourceAsStream("/Terbregseplein_6.5_aangepast.fos"));
+        parser.parseFromStream(Resource.getResourceAsStream("/Terbregseplein_6.5_aangepast.fos"));
         this.app = parser.getApplication();
         return parser.getNetwork();
     }
