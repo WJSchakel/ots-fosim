@@ -26,6 +26,7 @@ import org.djutils.exceptions.Try;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
+import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulator;
@@ -35,11 +36,16 @@ import org.opentrafficsim.core.geometry.OtsLine3d;
 import org.opentrafficsim.core.geometry.OtsPoint3d;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
+import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.fosim.simulator.OtsAnimationStep;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
+import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
+import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
+import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
@@ -61,16 +67,17 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
+import nl.tudelft.simulation.jstats.streams.StreamInterface;
 import nl.tudelft.simulation.language.DSOLException;
 import picocli.CommandLine.Option;
 
 /**
  * Simple technical demo of a single straight lane.
  * <p>
- * Copyright (c) 2023-2023 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
+ * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
  * </p>
- * @author <a href="https://dittlab.tudelft.nl">Wouter Schakel</a>
+ * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
 public class SingleLaneDemo
 {
@@ -96,7 +103,7 @@ public class SingleLaneDemo
     private int port;
 
     /** Simulation step. */
-    @Option(names = "--step", description = "Simulation step", defaultValue = "0.5s")
+    @Option(names = "--step", description = "Simulation step", defaultValue = "0,5s")
     private Duration step;
 
     /** Show GUI. */
@@ -132,33 +139,35 @@ public class SingleLaneDemo
      * @throws SimRuntimeException timing exception
      * @throws NamingException naming exception
      * @throws RemoteException communication exception
-     * @throws DSOLException exception in DSOL 
+     * @throws DSOLException exception in DSOL
      * @throws OtsDrawingException exception in GUI
      */
     protected void setupSimulator()
             throws SimRuntimeException, NamingException, RemoteException, DSOLException, OtsDrawingException
     {
         Duration simulationTime = Duration.instantiateSI(3600.0);
-        this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
-                "Exception while setting up simulation.");
         if (!this.showGUI)
         {
             this.simulator = new OtsSimulator("Ots-Fosim");
-            final FosimModel fosimModel = new FosimModel(this.network, 1L);
+            final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
+            this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
+                    "Exception while setting up simulation.");
+            fosimModel.setNetwork(this.network);
         }
         else
         {
-            OtsAnimator animator = new OtsAnimator("Ots-Fosim");
+            OtsAnimator animator = new OtsAnimationStep("Ots-Fosim");
             this.simulator = animator;
-            final FosimModel fosimModel = new FosimModel(this.network, 1L);
+            final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
+            this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
+                    "Exception while setting up simulation.");
+            fosimModel.setNetwork(this.network);
             GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
             OtsAnimationPanel animationPanel = new OtsAnimationPanel(fosimModel.getNetwork().getExtent(),
                     new Dimension(800, 600), (OtsAnimator) this.simulator, fosimModel, colorer, fosimModel.getNetwork());
             this.app = new OtsSimulationApplication<FosimModel>(fosimModel, animationPanel);
-            this.app.setExitOnClose(true);
-            animator.setAnimation(false);
             animator.setSpeedFactor(Double.MAX_VALUE, false);
             // animationPanel.enableSimulationControlButtons();
         }
@@ -207,6 +216,14 @@ public class SingleLaneDemo
         od.putDemandVector(nodeFrom, nodeTo, Category.UNCATEGORIZED, flowVector);
 
         OdOptions odOptions = new OdOptions();
+
+        StreamInterface stream = this.simulator.getModel().getStreams().get("generation");
+        LaneBasedStrategicalRoutePlannerFactory defaultLmrsFactory =
+                DefaultLaneBasedGtuCharacteristicsGeneratorOd.defaultLmrs(stream);
+        Factory characteristicsGeneratorFactory = new Factory(defaultLmrsFactory);
+        GtuType.registerTemplateSupplier(DefaultsNl.CAR, Defaults.NL);
+        odOptions.set(OdOptions.GTU_TYPE, characteristicsGeneratorFactory.create());
+
         OdApplier.applyOd(network, od, odOptions, DefaultsRoadNl.ROAD_USERS);
 
         new SinkDetector(lane, Length.instantiateSI(1950.0), sim, DefaultsRoadNl.ROAD_USERS);
@@ -218,18 +235,50 @@ public class SingleLaneDemo
      * Run a simulation step, where a 'step' is defined as a fixed time step. Note that within Ots usually a step is defined as
      * a single event in DSOL.
      */
-    private void step()
+    private synchronized void step()
     {
         Duration until = this.step.times(this.stepNumber++);
-        if (this.simulator.isStartingOrRunning())
+        if (!this.showGUI)
         {
-            this.simulator.stop();
+            // This code makes single-lane demo run at 80x without animation
+            this.simulator.scheduleEventAbs(until, this, "showTime", null);
+            while (this.simulator.getSimulatorTime().lt(until))
+            {
+                this.simulator.step();
+            }
         }
-        this.simulator.runUpToAndIncluding(until);
-        while (this.simulator.isStartingOrRunning())
+        else
         {
-            Thread.onSpinWait();
+            // This code makes single-lane demo run at 20x without animation
+            // This code makes single-lane demo run at 10x with OtsAnimator
+            // This code makes single-lane demo run at 20x with OtsAnimatorStep
+            if (this.simulator.isStartingOrRunning())
+            {
+                this.simulator.stop();
+            }
+            this.simulator.runUpToAndIncluding(until);
+            while (this.simulator.isStartingOrRunning())
+            {
+                try
+                {
+                    // In order to allow resources to go to other processes, we sleep before checking again
+                    Thread.sleep(3);
+                }
+                catch (InterruptedException e)
+                {
+                }
+            }
         }
+    }
+
+    /**
+     * Shows the time. This is mostly a dummy method scheduled at the 'run until' time such that the simulator stops at this
+     * time.
+     */
+    @SuppressWarnings("unused") // used through scheduling
+    private void showTime()
+    {
+        System.out.println(this.simulator.getSimulatorTime());
     }
 
     /**
@@ -269,7 +318,19 @@ public class SingleLaneDemo
                 while (!Thread.currentThread().isInterrupted())
                 {
                     // Wait for next request from the client
-                    byte[] request = this.responder.recv(0);
+                    byte[] request = this.responder.recv(ZMQ.DONTWAIT);
+                    while (request == null)
+                    {
+                        try
+                        {
+                            // In order to allow resources to go to other processes, we sleep before checking again
+                            Thread.sleep(3);
+                        }
+                        catch (InterruptedException e)
+                        {
+                        }
+                        request = this.responder.recv(ZMQ.DONTWAIT);
+                    }
                     Sim0MQMessage message = Sim0MQMessage.decode(request);
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
@@ -290,8 +351,8 @@ public class SingleLaneDemo
                         }
                         // System.out.println("Ots replies STEP command with " + numGtus + " GTUs");
                         this.responder.send(Sim0MQMessage.encodeUTF8(SingleLaneDemo.this.bigEndian,
-                                SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim, "STEP_REPLY",
-                                this.messageId++, payload), 0);
+                                SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim,
+                                "STEP_REPLY", this.messageId++, payload), 0);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {

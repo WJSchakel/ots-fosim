@@ -11,7 +11,7 @@ import org.zeromq.ZMQ;
  * Class acting as if it is Fosim for testing.
  * @author wjschakel
  */
-public class TechnicalDemoFosim
+public class FosimEmulator
 {
 
     /** Federation id to receive/sent messages. */
@@ -29,6 +29,9 @@ public class TechnicalDemoFosim
     /** Port number. */
     private static final int PORT = 5556;
 
+    /** Simulation speed. */
+    private static final double SPEED = 20;
+
     /**
      * Main method.
      * @param args String[]; command line arguments.
@@ -43,17 +46,39 @@ public class TechnicalDemoFosim
         System.out.println("Client is running");
 
         int messageId = 0;
+        long step = (long) (500 / SPEED);
+        long t0 = -1;
         for (int i = 0; i < 7200; i++)
         {
+            if (t0 > 0)
+            {
+                long wait = t0 + (long) (i * step) - System.currentTimeMillis();
+                //System.out.println("wait: " + wait + "ms");
+                if (wait > 0)
+                {
+                    try
+                    {
+                        Thread.sleep(wait);
+                    }
+                    catch (InterruptedException e)
+                    {
+                    }
+                }
+            }
             byte[] encodedMessage =
                     Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "STEP", messageId++, new Object[] {});
-            //System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
+            // System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
             requester.send(encodedMessage, 0);
 
             byte[] reply = requester.recv(0);
             Sim0MQMessage message = Sim0MQMessage.decode(reply);
             if ("STEP_REPLY".equals(message.getMessageTypeId()))
             {
+                if (t0 < 0)
+                {
+                    // set t0 after the first time step, to skip over initial setup time
+                    t0 = System.currentTimeMillis() - step;
+                }
                 // Object[] payload = message.createObjectArray();
                 // System.out.println(Sim0MQMessage.print(payload));
             }

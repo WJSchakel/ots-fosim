@@ -9,6 +9,7 @@ import org.djutils.cli.CliUtil;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.Resource;
 import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.draw.core.OtsDrawingException;
@@ -21,10 +22,10 @@ import nl.tudelft.simulation.language.DSOLException;
 /**
  * Demo of Terbregseplein network.
  * <p>
- * Copyright (c) 2023-2023 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
+ * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
  * </p>
- * @author <a href="https://dittlab.tudelft.nl">Wouter Schakel</a>
+ * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
 public class TerbregsepleinDemo extends SingleLaneDemo
 {
@@ -56,7 +57,11 @@ public class TerbregsepleinDemo extends SingleLaneDemo
         this.network =
                 Try.assign(() -> this.setupSimulation(), RuntimeException.class, "Exception while setting up simulation.");
         this.simulator = this.network.getSimulator();
-        // new Worker().start();
+        if (this.simulator instanceof OtsAnimator)
+        {
+            ((OtsAnimator) this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
+        }
+        new Worker().start();
     }
 
     /**

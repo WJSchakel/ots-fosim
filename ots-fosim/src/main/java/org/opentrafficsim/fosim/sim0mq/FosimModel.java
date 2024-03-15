@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.opentrafficsim.core.dsol.AbstractOtsModel;
+import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.road.network.RoadNetwork;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
@@ -13,10 +14,10 @@ import nl.tudelft.simulation.jstats.streams.StreamInterface;
 /**
  * Model for FOSIM simulations.
  * <p>
- * Copyright (c) 2023-2023 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
+ * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
  * </p>
- * @author <a href="https://dittlab.tudelft.nl">Wouter Schakel</a>
+ * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
 public class FosimModel extends AbstractOtsModel
 {
@@ -24,20 +25,19 @@ public class FosimModel extends AbstractOtsModel
     private static final long serialVersionUID = 20231123L;
 
     /** Network. */
-    private final RoadNetwork network;
+    private RoadNetwork network;
     
     /** Seed. */
     private final long seed;
     
     /**
      * Constructor.
-     * @param network RoadNetwork; network.
+     * @param simulator OtsSimulatorInterface; simulator.
      * @param seed long; seed.
      */
-    public FosimModel(final RoadNetwork network, final long seed)
+    public FosimModel(final OtsSimulatorInterface simulator, final long seed)
     {
-        super(network.getSimulator());
-        this.network = network;
+        super(simulator);
         this.seed = seed;
     }
 
@@ -51,6 +51,15 @@ public class FosimModel extends AbstractOtsModel
         stream = new MersenneTwister(this.seed + 1);
         streams.put("default", stream);
         getSimulator().getModel().getStreams().putAll(streams);
+    }
+    
+    /**
+     * Set network.
+     * @param network RoadNetwork; network.
+     */
+    public void setNetwork(final RoadNetwork network)
+    {
+        this.network = network;
     }
 
     /** {@inheritDoc} */
