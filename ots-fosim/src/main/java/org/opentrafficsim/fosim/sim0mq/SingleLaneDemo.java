@@ -40,7 +40,7 @@ import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.draw.core.OtsDrawingException;
-import org.opentrafficsim.fosim.simulator.OtsAnimationStep;
+import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory;
@@ -157,7 +157,7 @@ public class SingleLaneDemo
         }
         else
         {
-            OtsAnimator animator = new OtsAnimationStep("Ots-Fosim");
+            OtsAnimator animator = new OtsAnimatorStep("Ots-Fosim");
             this.simulator = animator;
             final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);

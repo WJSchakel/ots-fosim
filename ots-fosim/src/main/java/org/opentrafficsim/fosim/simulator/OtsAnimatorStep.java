@@ -20,7 +20,7 @@ import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public class OtsAnimationStep extends OtsAnimator
+public class OtsAnimatorStep extends OtsAnimator
 {
 
     /** */
@@ -33,7 +33,7 @@ public class OtsAnimationStep extends OtsAnimator
      * Constructor.
      * @param simulatorId Serializable; simulator id.
      */
-    public OtsAnimationStep(final Serializable simulatorId)
+    public OtsAnimatorStep(final Serializable simulatorId)
     {
         super(simulatorId);
     }
