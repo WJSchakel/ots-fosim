@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.naming.NamingException;
 
@@ -376,7 +377,18 @@ public class SingleLaneDemo
                         int k = 1;
                         for (Gtu gtu : SingleLaneDemo.this.network.getGTUs())
                         {
-                            String laneId = ((LaneBasedGtu) gtu).getReferencePosition().getLane().getId();
+                            Map<Lane, Length> positions = ((LaneBasedGtu) gtu).positions(gtu.getFront());
+                            Length position = Length.POSITIVE_INFINITY;
+                            String laneId = null;
+                            for (Entry<Lane, Length> entry : positions.entrySet())
+                            {
+                                Length pos = entry.getValue();
+                                if (pos.ge0() && pos.lt(position))
+                                {
+                                    position = pos;
+                                    laneId = entry.getKey().getId();
+                                }
+                            }
                             int underscore = laneId.indexOf("_");
                             int lane = Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
                             LaneChange lc = lcInfo.get(gtu);
