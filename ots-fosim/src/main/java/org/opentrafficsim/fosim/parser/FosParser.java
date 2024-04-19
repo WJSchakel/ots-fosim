@@ -54,6 +54,7 @@ import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
 import org.opentrafficsim.draw.core.OtsDrawingException;
 import org.opentrafficsim.fosim.sim0mq.FosimModel;
+import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
@@ -262,7 +263,7 @@ public class FosParser
         new BufferedReader(new StringReader(fosString)).lines().forEach(this::parseLine);
         build();
     }
-    
+
     // TODO: parse to Xml, similar to XsdTreeNode.saveXmlNodes() in the editor
 
     /**
@@ -485,7 +486,7 @@ public class FosParser
 
         // simulator and network
         // TODO: allow simulator without animation
-        OtsSimulatorInterface simulator = new OtsAnimator("FOSIM parser");
+        OtsSimulatorInterface simulator = new OtsAnimatorStep("FOSIM parser");
         this.network = new RoadNetwork("FOSIM parser", simulator);
         this.model = new FosimModel(simulator, this.seed);
         this.model.setNetwork(this.network);
@@ -523,7 +524,7 @@ public class FosParser
             // detectors
             buildDetecors();
 
-            //printMappings(); // TODO: remove test code
+            // printMappings(); // TODO: remove test code
 
             GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
             OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),

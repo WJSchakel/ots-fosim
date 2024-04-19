@@ -279,7 +279,5 @@ public class OtsAnimatorStep extends OtsAnimator
             this.animationThread = null;
         }
     }
-    
-    
 
 }
