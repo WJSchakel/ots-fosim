@@ -2,8 +2,10 @@ package org.opentrafficsim.fosim.sim0mq;
 
 import java.awt.Dimension;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +47,10 @@ import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
+import org.opentrafficsim.road.gtu.lane.plan.operational.LaneChange;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
@@ -332,12 +338,40 @@ public class SingleLaneDemo
                         request = this.responder.recv(ZMQ.DONTWAIT);
                     }
                     Sim0MQMessage message = Sim0MQMessage.decode(request);
+                    
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
-                        // System.out.println("Performing STEP");
-                        SingleLaneDemo.this.step(); // Performance of this line is terrible when using an OtsAnimator
+                        SingleLaneDemo.this.step();
+                    }
+                    else if ("VEHICLE_REQUEST".equals(message.getMessageTypeId()))
+                    {
                         int numGtus = SingleLaneDemo.this.network.getGTUs().size();
-                        Object[] payload = new Object[1 + 4 * numGtus];
+                        Map<Gtu, LaneChange> lcInfo = new LinkedHashMap<>();
+                        Map<Gtu, Double> madatoryDesire = new LinkedHashMap<>();
+                        for (Gtu gtu : SingleLaneDemo.this.network.getGTUs())
+                        {
+                            LaneBasedGtu laneGtu = (LaneBasedGtu) gtu;
+                            Lmrs lmrs = (Lmrs) laneGtu.getTacticalPlanner();
+                            // need to use reflection to access certain information
+                            try
+                            {
+                                Field lcField = Lmrs.class.getDeclaredField("laneChange");
+                                lcField.setAccessible(true);
+                                LaneChange lc = (LaneChange) lcField.get(lmrs);
+                                if (lc.isChangingLane())
+                                {
+                                    madatoryDesire.put(gtu, lmrs.getLatestDesire(IncentiveRoute.class).get(lc.getDirection()));
+                                    lcInfo.put(gtu, lc);
+                                }
+                            }
+                            catch (NoSuchFieldException | SecurityException | IllegalArgumentException
+                                    | IllegalAccessException ex)
+                            {
+                                // ignore; no LC will be shown in FOSIM
+                            }
+                        }
+                        int lcGtus = lcInfo.size();
+                        Object[] payload = new Object[1 + 5 * (numGtus - lcGtus) + 7 * lcGtus];
                         payload[0] = numGtus;
                         int k = 1;
                         for (Gtu gtu : SingleLaneDemo.this.network.getGTUs())
@@ -348,16 +382,44 @@ public class SingleLaneDemo
                             payload[k++] = Length.instantiateSI(gtu.getLocation().x);
                             payload[k++] = gtu.getSpeed();
                             payload[k++] = gtu.getAcceleration();
+                            if (!lcInfo.containsKey(gtu))
+                            {
+                                payload[k++] = 0;
+                            }
+                            else
+                            {
+                                LaneChange lc = lcInfo.get(gtu);
+                                double totalDesire;
+                                try
+                                {
+                                    totalDesire =
+                                            lc.getDirection().isLeft() ? gtu.getParameters().getParameter(LmrsParameters.DLEFT)
+                                                    : gtu.getParameters().getParameter(LmrsParameters.DRIGHT);
+                                }
+                                catch (ParameterException ex)
+                                {
+                                    totalDesire = 1.0;
+                                }
+                                // 1 = for overtaking, 2 = for destination
+                                payload[k++] = madatoryDesire.get(gtu) / totalDesire < 0.5 ? 1 : 2;
+                                payload[k++] = lc.isChangingLeft();
+                                payload[k++] = lc.getFraction();
+                            }
                         }
-                        // System.out.println("Ots replies STEP command with " + numGtus + " GTUs");
                         this.responder.send(Sim0MQMessage.encodeUTF8(SingleLaneDemo.this.bigEndian,
                                 SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim,
-                                "STEP_REPLY", this.messageId++, payload), 0);
+                                "VEHICLE_REPLY", this.messageId++, payload), 0);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {
                         System.out.println("Ots received STOP command at " + SingleLaneDemo.this.simulator.getSimulatorTime());
                         break;
+                    }
+                    else if ("PING".equals(message.getMessageTypeId()))
+                    {
+                        this.responder.send(Sim0MQMessage.encodeUTF8(SingleLaneDemo.this.bigEndian,
+                                SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim,
+                                "PONG", this.messageId++, new Object[0]), 0);
                     }
                 }
             }
