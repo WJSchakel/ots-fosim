@@ -944,7 +944,7 @@ public class FosParser
         for (int laneNum = 0; laneNum < link.lanes.size(); laneNum++)
         {
             FosLane lane = link.lanes.get(laneNum);
-            String id = String.format("Lane %d_%d", laneNum + 1, laneNum + link.fromLane + 1);
+            String id = String.format("Lane %d_%d", laneNum + 1, laneNum + link.fromLane);
             // calculate offset as y-distance between start/end node and from/to point, and add halve the lane width
             Length lateralOffsetAtStart = lateralOffsetAtStarts.get(laneNum);
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
@@ -1091,7 +1091,7 @@ public class FosParser
         // prepare options
         StreamInterface stream = this.network.getSimulator().getModel().getStream("generation");
         OdOptions options = new OdOptions();
-        options.set(OdOptions.INSTANT_LC, true);
+        options.set(OdOptions.INSTANT_LC, false);
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
 
         // TODO: use parameter supplier
