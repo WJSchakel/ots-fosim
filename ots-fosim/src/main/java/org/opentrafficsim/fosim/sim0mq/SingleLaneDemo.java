@@ -338,7 +338,7 @@ public class SingleLaneDemo
                         request = this.responder.recv(ZMQ.DONTWAIT);
                     }
                     Sim0MQMessage message = Sim0MQMessage.decode(request);
-                    
+
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
                         SingleLaneDemo.this.step();
@@ -378,17 +378,18 @@ public class SingleLaneDemo
                         {
                             String laneId = ((LaneBasedGtu) gtu).getReferencePosition().getLane().getId();
                             int underscore = laneId.indexOf("_");
-                            payload[k++] = Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
+                            int lane = Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
+                            LaneChange lc = lcInfo.get(gtu);
+                            payload[k++] = lc == null ? lane : (lc.getDirection().isLeft() ? lane - 1 : lane + 1);
                             payload[k++] = Length.instantiateSI(gtu.getLocation().x);
                             payload[k++] = gtu.getSpeed();
                             payload[k++] = gtu.getAcceleration();
-                            if (!lcInfo.containsKey(gtu))
+                            if (lc == null)
                             {
                                 payload[k++] = 0;
                             }
                             else
                             {
-                                LaneChange lc = lcInfo.get(gtu);
                                 double totalDesire;
                                 try
                                 {
@@ -418,8 +419,8 @@ public class SingleLaneDemo
                     else if ("PING".equals(message.getMessageTypeId()))
                     {
                         this.responder.send(Sim0MQMessage.encodeUTF8(SingleLaneDemo.this.bigEndian,
-                                SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim,
-                                "PONG", this.messageId++, new Object[0]), 0);
+                                SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim, "PONG",
+                                this.messageId++, new Object[0]), 0);
                     }
                 }
             }
