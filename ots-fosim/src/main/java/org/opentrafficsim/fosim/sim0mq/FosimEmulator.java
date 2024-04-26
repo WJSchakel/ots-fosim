@@ -53,7 +53,7 @@ public class FosimEmulator
             if (t0 > 0)
             {
                 long wait = t0 + (long) (i * step) - System.currentTimeMillis();
-                //System.out.println("wait: " + wait + "ms");
+                // System.out.println("wait: " + wait + "ms");
                 if (wait > 0)
                 {
                     try
@@ -65,11 +65,12 @@ public class FosimEmulator
                     }
                 }
             }
+
+            // Step
             byte[] encodedMessage =
                     Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "STEP", messageId++, new Object[] {});
             // System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
             requester.send(encodedMessage, 0);
-
             byte[] reply = requester.recv(0);
             Sim0MQMessage message = Sim0MQMessage.decode(reply);
             if ("STEP_REPLY".equals(message.getMessageTypeId()))
@@ -79,6 +80,22 @@ public class FosimEmulator
                     // set t0 after the first time step, to skip over initial setup time
                     t0 = System.currentTimeMillis() - step;
                 }
+                System.out.println("STEP_REPLY received");
+                // Object[] payload = message.createObjectArray();
+                // System.out.println(Sim0MQMessage.print(payload));
+            }
+
+            // Vehicles info
+            encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "VEHICLE_REQUEST", messageId++,
+                    new Object[] {});
+            // System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
+            requester.send(encodedMessage, 0);
+
+            reply = requester.recv(0);
+            message = Sim0MQMessage.decode(reply);
+            if ("VEHICLE_REPLY".equals(message.getMessageTypeId()))
+            {
+                System.out.println("VEHICLE_REPLY received");
                 // Object[] payload = message.createObjectArray();
                 // System.out.println(Sim0MQMessage.print(payload));
             }

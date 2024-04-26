@@ -86,6 +86,7 @@ import picocli.CommandLine.Option;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
+// TODO: abstract this class to one that leaves the specification of the simulation to sub classes
 public class SingleLaneDemo
 {
 
@@ -343,6 +344,9 @@ public class SingleLaneDemo
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
                         SingleLaneDemo.this.step();
+                        this.responder.send(Sim0MQMessage.encodeUTF8(SingleLaneDemo.this.bigEndian,
+                                SingleLaneDemo.this.federation, SingleLaneDemo.this.ots, SingleLaneDemo.this.fosim,
+                                "STEP_REPLY", this.messageId++, new Object[0]), 0);
                     }
                     else if ("VEHICLE_REQUEST".equals(message.getMessageTypeId()))
                     {
