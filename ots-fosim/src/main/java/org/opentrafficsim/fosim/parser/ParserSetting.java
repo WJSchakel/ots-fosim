@@ -23,7 +23,10 @@ public enum ParserSetting
     DETECTORS(true),
 
     /** Whether to include the striped area's as valid lane change area's. */
-    STRIPED_AREAS(false);
+    STRIPED_AREAS(false),
+    
+    /** Whether to build a GUI, or just a simulator. */
+    GUI(true);
 
     /** Default value. */
     private final boolean defaultValue;

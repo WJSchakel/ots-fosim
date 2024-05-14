@@ -3,6 +3,7 @@ package org.opentrafficsim.fosim.parser;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.exceptions.Throw;
+import org.opentrafficsim.road.network.lane.Lane;
 
 /**
  * Parsed lane info. The interpretation if this has been reverse-engineered by setting various properties in a .fos file.
@@ -69,6 +70,9 @@ class FosLane
 
     /** Trajectory control. */
     public final boolean trajectoryControl;
+    
+    /** Lane object created. */
+    private Lane lane;
 
     /**
      * Switched lane.
@@ -142,6 +146,24 @@ class FosLane
     {
         Throw.when(!isSwitched(), RuntimeException.class, "Requesting switch times of lane that is not switched.");
         return Math.abs(this.switchedLane);
+    }
+    
+    /**
+     * Get the lane.
+     * @return Lane; lane.
+     */
+    public Lane getLane()
+    {
+        return this.lane;
+    }
+
+    /**
+     * Set the lane.
+     * @param lane Lane; lane.
+     */
+    public void setLane(final Lane lane)
+    {
+        this.lane = lane;
     }
 
     /** {@inheritDoc} */

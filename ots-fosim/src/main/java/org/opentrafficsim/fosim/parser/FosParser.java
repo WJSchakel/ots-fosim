@@ -16,7 +16,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.DoubleFunction;
+import java.util.function.Function;
 
 import javax.naming.NamingException;
 
@@ -41,6 +41,7 @@ import org.opentrafficsim.core.distributions.Distribution.FrequencyAndObject;
 import org.opentrafficsim.core.distributions.Generator;
 import org.opentrafficsim.core.distributions.ProbabilityException;
 import org.opentrafficsim.core.dsol.OtsAnimator;
+import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine3d;
@@ -71,6 +72,7 @@ import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.lane.object.detector.LoopDetector;
 import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
+import org.opentrafficsim.road.network.lane.object.trafficlight.TrafficLight;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
 import org.opentrafficsim.road.od.Interpolation;
@@ -80,6 +82,8 @@ import org.opentrafficsim.road.od.OdOptions;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.opentrafficsim.swing.gui.OtsSwingApplication;
+import org.opentrafficsim.trafficcontrol.FixedTimeController;
+import org.opentrafficsim.trafficcontrol.FixedTimeController.SignalGroup;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.jstats.distributions.DistNormal;
@@ -318,7 +322,7 @@ public class FosParser
         }
         if (line.startsWith("sections"))
         {
-            parseValueList(this.sections, fieldValue(line), v -> Length.instantiateSI(v));
+            parseValueList(this.sections, fieldValue(line), v -> Length.instantiateSI(Double.parseDouble(v)));
             return;
         }
         // beware of overlap between "lane" and "lane change" as line starts
@@ -358,14 +362,22 @@ public class FosParser
         }
         if (line.startsWith("detector times"))
         {
-            parseValueList(this.detectorTimes, fieldValue(line), v -> (int) v);
+            String value = fieldValue(line);
+            if (value.contains("s"))
+            {
+                parseValueList(this.detectorTimes, value, v -> (int) (Duration.valueOf(v).si / 0.5));
+            }
+            else
+            {
+                parseValueList(this.detectorTimes, value, v -> (int) Double.parseDouble(v));
+            }
             return;
         }
         if (line.startsWith("detector positions"))
         {
             if (getSetting(ParserSetting.DETECTORS))
             {
-                parseValueList(this.detectorPositions, fieldValue(line), v -> Length.instantiateSI(v));
+                parseValueList(this.detectorPositions, fieldValue(line), v -> Length.instantiateSI(Double.parseDouble(v)));
             }
             return;
         }
@@ -395,14 +407,15 @@ public class FosParser
         }
         if (line.startsWith("vehicle probabilities"))
         {
-            this.vehicleProbabilities.set(fieldIndex(line), parseValueList(new ArrayList<>(), fieldValue(line), v -> v));
+            this.vehicleProbabilities.set(fieldIndex(line),
+                    parseValueList(new ArrayList<>(), fieldValue(line), v -> Double.parseDouble(v)));
             return;
         }
         if (line.startsWith("source to sink"))
         {
             int[] indices = fieldIndices(line);
             getSubList(this.sourceToSink, indices[0]).set(indices[1],
-                    parseValueList(new ArrayList<>(), fieldValue(line), v -> v));
+                    parseValueList(new ArrayList<>(), fieldValue(line), v -> Double.parseDouble(v)));
             return;
         }
         if (line.startsWith("lane change"))
@@ -435,12 +448,33 @@ public class FosParser
         }
         if (line.startsWith("maximum simulation time"))
         {
-            this.maximumSimulationTime = Integer.parseInt(fieldValue(line));
+            String value = fieldValue(line);
+            int blank = value.indexOf(" ");
+            if (blank > 0)
+            {
+                // second value is time of day of start simulation, this can be ignored by OTS
+                value = value.substring(0, blank);
+            }
+            if (value.contains("s"))
+            {
+                this.maximumSimulationTime = (int) (Duration.valueOf(value).si / 0.5);
+                this.timeStep = Duration.instantiateSI(0.5);
+            }
+            else
+            {
+                this.maximumSimulationTime = Integer.parseInt(value);
+            }
             return;
         }
         if (line.startsWith("end of file"))
         {
             this.endOfFile = true;
+            return;
+        }
+        // TODO: this anticipates a future change in Fos files, might be called differently
+        if (line.startsWith("start of simulation time"))
+        {
+            // this can be ignored
             return;
         }
         // all supported line variants did not take the line
@@ -486,7 +520,8 @@ public class FosParser
 
         // simulator and network
         // TODO: allow simulator without animation
-        OtsSimulatorInterface simulator = new OtsAnimatorStep("FOSIM parser");
+        boolean gui = getSetting(ParserSetting.GUI);
+        OtsSimulatorInterface simulator = gui ? new OtsAnimatorStep("FOSIM parser") : new OtsSimulator("FOSIM parser");
         this.network = new RoadNetwork("FOSIM parser", simulator);
         this.model = new FosimModel(simulator, this.seed);
         this.model.setNetwork(this.network);
@@ -524,13 +559,19 @@ public class FosParser
             // detectors
             buildDetecors();
 
+            // traffic lights
+            buildTrafficLights();
+
             // printMappings(); // TODO: remove test code
 
-            GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
-            OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),
-                    (OtsAnimator) this.network.getSimulator(), this.model, colorer, this.network);
-            animationPanel.enableSimulationControlButtons();
-            this.app = new OtsSimulationApplication<FosimModel>(this.model, animationPanel);
+            if (gui)
+            {
+                GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
+                OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(), new Dimension(100, 100),
+                        (OtsAnimator) this.network.getSimulator(), this.model, colorer, this.network);
+                animationPanel.enableSimulationControlButtons();
+                this.app = new OtsSimulationApplication<FosimModel>(this.model, animationPanel);
+            }
         }
         catch (SimRuntimeException | NamingException | RemoteException | DSOLException | OtsDrawingException
                 | OtsGeometryException | ParameterException e)
@@ -736,7 +777,21 @@ public class FosParser
     private FosLink getSourceSinkLink(final FosSourceSink sourceSink)
     {
         int sectionIndexFromStart = this.sections.size() - sourceSink.sectionFromEnd - 1;
-        return this.links.get(this.mappedLinks[sourceSink.fromLane][sectionIndexFromStart]);
+        FosLink link = this.links.get(this.mappedLinks[sourceSink.fromLane][sectionIndexFromStart]);
+        if (link == null)
+        {
+            // attaching link to a sink must be a diagonal lane, find it
+            for (int i = 0; i < this.lane.size(); i++)
+            {
+                FosLane lane = this.lane.get(i).get(sectionIndexFromStart);
+                if (!"u".equals(lane.type) && lane.laneOut >= sourceSink.fromLane && lane.laneOut <= sourceSink.toLane)
+                {
+                    link = this.links.get(this.mappedLinks[i][sectionIndexFromStart]);
+                    break;
+                }
+            }
+        }
+        return link;
     }
 
     /**
@@ -822,15 +877,18 @@ public class FosParser
     {
         int deltaSection;
         Set<FosLink> links;
+        boolean inLinks;
         if (node.outLinks.isEmpty())
         {
             deltaSection = 0;
             links = node.inLinks;
+            inLinks = true;
         }
         else
         {
             deltaSection = -1;
             links = node.outLinks;
+            inLinks = false;
         }
 
         int sectionIndex = links.iterator().next().sectionIndex + deltaSection;
@@ -838,7 +896,24 @@ public class FosParser
         Length y = Length.POSITIVE_INFINITY;
         for (FosLink link : links)
         {
-            y = Length.min(y, getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane));
+            int from;
+            int to;
+            if (inLinks)
+            {
+                from = Integer.MAX_VALUE;
+                to = Integer.MIN_VALUE;
+                for (FosLane lane : link.lanes)
+                {
+                    from = from < lane.laneOut ? from : lane.laneOut;
+                    to = to > lane.laneOut ? to : lane.laneOut;
+                }
+            }
+            else
+            {
+                from = link.fromLane;
+                to = link.toLane;
+            }
+            y = Length.min(y, getLeftLinkEdge(link.sectionIndex, from, to));
         }
         Node n = new Node(this.network, node.getName(), new OtsPoint3d(x.si, y.si, 0.0), Direction.ZERO);
         // store node in sink and/or source object
@@ -918,7 +993,7 @@ public class FosParser
 
                 // add this margin to the left edge assuming maximum lane widths on the output lane
                 Length actualLeftEdge = getLeftEdgeMax(link.lanes.get(i).laneOut).minus(leftEdgeMargin);
-                leftEdgeOffsetEnd = Length.instantiateSI(endNode.getPoint().y).minus(actualLeftEdge); // relative to node
+                leftEdgeOffsetEnd = actualLeftEdge.minus(Length.instantiateSI(endNode.getPoint().y)); // relative to node
 
                 // build from that left edge onwards
                 lateralOffsetAtEnds.add(leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth.times(0.5)));
@@ -949,8 +1024,9 @@ public class FosParser
             // calculate offset as y-distance between start/end node and from/to point, and add halve the lane width
             Length lateralOffsetAtStart = lateralOffsetAtStarts.get(laneNum);
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
-            new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
+            Lane otsLane = new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
                     DefaultsRoadNl.HIGHWAY, Map.of(DefaultsNl.ROAD_USER, lane.speedLimit), false);
+            lane.setLane(otsLane);
             if (laneNum == 0)
             {
                 CrossSectionSlice start = new CrossSectionSlice(Length.ZERO,
@@ -1013,11 +1089,19 @@ public class FosParser
             this.maxLaneWidth = new Length[this.lane.size()];
             for (int laneIndex = 0; laneIndex < this.lane.size(); laneIndex++)
             {
-                // for each lane, loop all sections and store the maximum width
                 this.maxLaneWidth[laneIndex] = Length.ZERO;
+            }
+            for (int laneIndex = 0; laneIndex < this.lane.size(); laneIndex++)
+            {
+                // for each lane, loop all sections and store the maximum width
                 for (FosLane lane : this.lane.get(laneIndex))
                 {
                     this.maxLaneWidth[laneIndex] = Length.max(this.maxLaneWidth[laneIndex], lane.laneWidth);
+                    if (lane.laneOut != laneIndex)
+                    {
+                        // also maximize out lane for diagonal lanes
+                        this.maxLaneWidth[lane.laneOut] = Length.max(this.maxLaneWidth[lane.laneOut], lane.laneWidth);
+                    }
                 }
             }
         }
@@ -1132,6 +1216,11 @@ public class FosParser
                 {
                     double sinkFraction = sinkFractions.get(vehicleTypeIndex);
                     double vehicleFraction = this.vehicleProbabilities.get(sourceIndex).get(vehicleTypeIndex);
+                    if (flow.getFrequencyVector().size() == 1)
+                    {
+                        flow.flow.add(flow.flow.get(0));
+                        flow.time.add(Time.instantiateSI(this.maximumSimulationTime * this.timeStep.si));
+                    }
                     od.putDemandVector(sourceNode, sinkNode, categories.get(vehicleTypeIndex), flow.getFrequencyVector(),
                             flow.getTimeVector(), Interpolation.LINEAR, sinkFraction * vehicleFraction);
                 }
@@ -1243,9 +1332,47 @@ public class FosParser
                         // Id's are "1_2" where 1=detector cross-section, and 2=second lane (both start counting at 1)
                         String id = (detectorCrossSection + 1) + "_" + laneNum;
                         // TODO: add measurements if required
-                        new LoopDetector(id, lane, longitudinalPosition, Length.instantiateSI(15), DefaultsRoadNl.ROAD_USERS,
+                        new LoopDetector(id, lane, longitudinalPosition, Length.instantiateSI(1.5), DefaultsRoadNl.ROAD_USERS,
                                 this.network.getSimulator(), interval, LoopDetector.MEAN_SPEED);
                     }
+                }
+            }
+        }
+    }
+
+    /**
+     * Build the traffic lights.
+     * @throws NetworkException; on network exception
+     */
+    private void buildTrafficLights() throws NetworkException
+    {
+        int lightNum = 0;
+        for (FosTrafficLight light : this.trafficLight)
+        {
+            for (int section = 0; section < this.sections.size() - 1; section++)
+            {
+                Length to = this.sections.get(section + 1);
+                if (to.gt(light.position))
+                {
+                    FosLane lane = this.lane.get(light.lane).get(section + 1);
+                    Lane otsLane = lane.getLane();
+                    if (otsLane == null)
+                    {
+                        System.out.println("Traffic light refers to a lane that was not created.");
+                    }
+                    else
+                    {
+                        Length from = this.sections.get(section);
+                        double f = (light.position.si - from.si) / (to.si - from.si);
+                        Length position = otsLane.getLength().times(f);
+                        new TrafficLight("" + lightNum, otsLane, position, this.network.getSimulator());
+                        SignalGroup group = new SignalGroup(("" + lightNum), Set.of(otsLane.getFullId() + "." + lightNum),
+                                light.startOffset, light.greenTime, light.yellowTime);
+                        new FixedTimeController("" + lightNum, this.network.getSimulator(), this.network, light.cycleTime,
+                                Duration.ZERO, Set.of(group)); // offset already in group
+                        lightNum++;
+                    }
+                    break;
                 }
             }
         }
@@ -1303,11 +1430,11 @@ public class FosParser
      * @return List&lt;T&gt;; the input list.
      */
     private static <T> List<T> parseValueList(final List<T> list, final String string,
-            final DoubleFunction<? extends T> converter)
+            final Function<String, ? extends T> converter)
     {
         for (String numString : splitStringByBlank(string, 0))
         {
-            list.add(converter.apply(Double.parseDouble(numString)));
+            list.add(converter.apply(numString));
         }
         return list;
     }

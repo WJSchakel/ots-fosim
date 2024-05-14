@@ -15,10 +15,10 @@ public class FosimEmulator
 {
 
     /** Federation id to receive/sent messages. */
-    private static final String FEDERATION = "OTS_Fosim";
+    private static final String FEDERATION = "Ots_Fosim";
 
     /** OTS id to receive/sent messages. */
-    private static final String OTS = "OTS";
+    private static final String OTS = "Ots";
 
     /** Fosim id to receive/sent messages. */
     private static final String FOSIM = "Fosim";
@@ -69,7 +69,7 @@ public class FosimEmulator
             // Step
             byte[] encodedMessage =
                     Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "STEP", messageId++, new Object[] {});
-            // System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
+            //System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
             requester.send(encodedMessage, 0);
             byte[] reply = requester.recv(0);
             Sim0MQMessage message = Sim0MQMessage.decode(reply);
@@ -80,7 +80,7 @@ public class FosimEmulator
                     // set t0 after the first time step, to skip over initial setup time
                     t0 = System.currentTimeMillis() - step;
                 }
-                System.out.println("STEP_REPLY received");
+                // System.out.println("STEP_REPLY received");
                 // Object[] payload = message.createObjectArray();
                 // System.out.println(Sim0MQMessage.print(payload));
             }
@@ -88,16 +88,16 @@ public class FosimEmulator
             // Vehicles info
             encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "VEHICLE_REQUEST", messageId++,
                     new Object[] {});
-            // System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
+            //System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
             requester.send(encodedMessage, 0);
 
             reply = requester.recv(0);
             message = Sim0MQMessage.decode(reply);
             if ("VEHICLE_REPLY".equals(message.getMessageTypeId()))
             {
-                System.out.println("VEHICLE_REPLY received");
+                // System.out.println("VEHICLE_REPLY received");
                 // Object[] payload = message.createObjectArray();
-                // System.out.println(Sim0MQMessage.print(payload));
+                // System.out.println(payload[8] + " vehicles");
             }
         }
 

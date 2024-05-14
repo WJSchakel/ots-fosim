@@ -1,0 +1,205 @@
+#FOSIM configuration file written Tue Jan 21 16:59:54 2020
+version: 6.5 build 0
+sections:  1200  2200  2500  3000  4000
+#physical section info (lane: type,no-overtaking trucks,speed suppression,speed limit,slope,all lane change required,trajectory control[,switched lane]...)
+lane  0: r,-, 0, 0,1.0,120.0,0.000,0,3.50,0,0 r,-, 0, 0,1.0,120.0,0.000,0,3.50,0,0 r,-, 0, 0,1.0,120.0,0.000,0,3.50,0,0 r,-, 0, 0,1.0,120.0,0.000,0,3.50,0,0 r,-, 0, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  1: l,-, 1, 0,1.0,120.0,0.000,0,3.50,0,0 l,-, 1, 0,1.0,120.0,0.000,0,3.50,0,0 c,-, 1, 0,1.0,120.0,0.000,0,3.50,0,0 l,-, 1, 0,1.0,120.0,0.000,0,3.50,0,0 l,-, 1, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  2: u,-, 2, 0,1.0,120.0,0.000,0,3.50,0,0 s,-, 2, 0,0.8,120.0,0.000,0,3.50,0,0 l,-, 2, 0,1.0,120.0,0.000,0,3.50,0,0 L,-, 2, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 2, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  3: u,-, 3, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 3, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 3, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 3, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 3, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  4: u,-, 4, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 4, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 4, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 4, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 4, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  5: u,-, 5, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 5, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 5, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 5, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 5, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  6: u,-, 6, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 6, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 6, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 6, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 6, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  7: u,-, 7, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 7, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 7, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 7, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 7, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  8: u,-, 8, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 8, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 8, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 8, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 8, 0,1.0,120.0,0.000,0,3.50,0,0
+lane  9: u,-, 9, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 9, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 9, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 9, 0,1.0,120.0,0.000,0,3.50,0,0 u,-, 9, 0,1.0,120.0,0.000,0,3.50,0,0
+lane 10: u,-,10, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,10, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,10, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,10, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,10, 0,1.0,120.0,0.000,0,3.50,0,0
+lane 11: u,-,11, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,11, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,11, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,11, 0,1.0,120.0,0.000,0,3.50,0,0 u,-,11, 0,1.0,120.0,0.000,0,3.50,0,0
+#source locations and names (source rank: section, from lane, until lane, name)
+source  0: 3 2 2 1
+source  1: 4 0 1 2
+#sink locations and names (sink rank: section, from lane, until lane, name)
+sink  0: 0 0 1 1
+#traffic lights (traffic light rank: controller, position, lane, number, cycle-time, green-time, yellow-time, start-offset)
+#traffic detector times (detector times: first sample time, interval)
+detector times: 600 600
+#detector positions
+detector positions:   300   500  1000  1500  2000  2500
+vehicle types: 5
+#vehicle general params (vehicle general param param_number: value, name
+vehicle general param  0: 3.0 lane change T
+vehicle general param  1: 0.3 Treac a
+vehicle general param  2: 0.2 Treac d
+#vehicle specific params (vehicle specific param: param-number vehicle-type: value, name
+vehicle specific param  0  0:   1.000 max delta a
+vehicle specific param  0  1:   0.600 max delta a
+vehicle specific param  0  2:   0.600 max delta a
+vehicle specific param  0  3:   0.500 max delta a
+vehicle specific param  0  4:   0.400 max delta a
+vehicle specific param  1  0:   0.560 z2
+vehicle specific param  1  1:   0.720 z2
+vehicle specific param  1  2:   1.280 z2
+vehicle specific param  1  3:   2.080 z2
+vehicle specific param  1  4:   2.230 z2
+vehicle specific param  2  0:   4.000 max a
+vehicle specific param  2  1:   2.400 max a
+vehicle specific param  2  2:   2.400 max a
+vehicle specific param  2  3:   1.000 max a
+vehicle specific param  2  4:   0.400 max a
+vehicle specific param  3  0:  -0.500 passive d
+vehicle specific param  3  1:  -0.500 passive d
+vehicle specific param  3  2:  -0.500 passive d
+vehicle specific param  3  3:  -0.500 passive d
+vehicle specific param  3  4:  -0.500 passive d
+vehicle specific param  4  0:  -3.000 lane change d
+vehicle specific param  4  1:  -2.400 lane change d
+vehicle specific param  4  2:  -2.400 lane change d
+vehicle specific param  4  3:  -2.000 lane change d
+vehicle specific param  4  4:  -1.600 lane change d
+vehicle specific param  5  0:  -7.000 max d
+vehicle specific param  5  1:  -7.000 max d
+vehicle specific param  5  2:  -7.000 max d
+vehicle specific param  5  3:  -6.000 max d
+vehicle specific param  5  4:  -6.000 max d
+vehicle specific param  6  0: 125.000 preferred v
+vehicle specific param  6  1: 115.000 preferred v
+vehicle specific param  6  2: 100.000 preferred v
+vehicle specific param  6  3:  95.000 preferred v
+vehicle specific param  6  4:  85.000 preferred v
+vehicle specific param  7  0:   4.500 length
+vehicle specific param  7  1:   4.000 length
+vehicle specific param  7  2:   4.000 length
+vehicle specific param  7  3:   8.000 length
+vehicle specific param  7  4:  14.000 length
+vehicle specific param  8  0:   3.000 z1
+vehicle specific param  8  1:   3.000 z1
+vehicle specific param  8  2:   3.000 z1
+vehicle specific param  8  3:   3.000 z1
+vehicle specific param  8  4:   3.000 z1
+vehicle specific param  9  0:   0.005 z3
+vehicle specific param  9  1:   0.005 z3
+vehicle specific param  9  2:   0.005 z3
+vehicle specific param  9  3:   0.005 z3
+vehicle specific param  9  4:   0.005 z3
+vehicle specific param 10  0:  95.000 prefV70
+vehicle specific param 10  1:  85.000 prefV70
+vehicle specific param 10  2:  75.000 prefV70
+vehicle specific param 10  3:  75.000 prefV70
+vehicle specific param 10  4:  75.000 prefV70
+vehicle specific param 11  0:  80.000 specific power
+vehicle specific param 11  1:  50.000 specific power
+vehicle specific param 11  2:  35.000 specific power
+vehicle specific param 11  3:  12.000 specific power
+vehicle specific param 11  4:   9.000 specific power
+vehicle specific param 12  0:   0.000 std dev spec pwr
+vehicle specific param 12  1:   0.000 std dev spec pwr
+vehicle specific param 12  2:   0.000 std dev spec pwr
+vehicle specific param 12  3:   5.000 std dev spec pwr
+vehicle specific param 12  4:   5.000 std dev spec pwr
+vehicle specific param 13  0:   0.600 air resistance coeff
+vehicle specific param 13  1:   0.500 air resistance coeff
+vehicle specific param 13  2:   0.400 air resistance coeff
+vehicle specific param 13  3:   0.200 air resistance coeff
+vehicle specific param 13  4:   0.100 air resistance coeff
+vehicle specific param 14  0:  -3.500 a traffic light
+vehicle specific param 14  1:  -3.500 a traffic light
+vehicle specific param 14  2:  -3.000 a traffic light
+vehicle specific param 14  3:  -3.000 a traffic light
+vehicle specific param 14  4:  -2.500 a traffic light
+vehicle specific param 15  0:   0.200 narrow W marking
+vehicle specific param 15  1:   0.200 narrow W marking
+vehicle specific param 15  2:   0.200 narrow W marking
+vehicle specific param 15  3:   0.200 narrow W marking
+vehicle specific param 15  4:   0.200 narrow W marking
+vehicle specific param 16  0:   0.600 narrow W barrier
+vehicle specific param 16  1:   0.600 narrow W barrier
+vehicle specific param 16  2:   0.600 narrow W barrier
+vehicle specific param 16  3:   0.600 narrow W barrier
+vehicle specific param 16  4:   0.600 narrow W barrier
+vehicle specific param 17  0:   1.400 narrow gamma
+vehicle specific param 17  1:   1.400 narrow gamma
+vehicle specific param 17  2:   1.400 narrow gamma
+vehicle specific param 17  3:   1.400 narrow gamma
+vehicle specific param 17  4:   1.400 narrow gamma
+vehicle specific param 18  0:   0.200 narrow eta
+vehicle specific param 18  1:   0.200 narrow eta
+vehicle specific param 18  2:   0.200 narrow eta
+vehicle specific param 18  3:   0.200 narrow eta
+vehicle specific param 18  4:   0.200 narrow eta
+vehicle specific param 19  0:   1.000 narrow phi
+vehicle specific param 19  1:   1.000 narrow phi
+vehicle specific param 19  2:   1.000 narrow phi
+vehicle specific param 19  3:   1.000 narrow phi
+vehicle specific param 19  4:   1.000 narrow phi
+vehicle specific param 20  0:   1.000 narrow alpha
+vehicle specific param 20  1:   1.000 narrow alpha
+vehicle specific param 20  2:   1.000 narrow alpha
+vehicle specific param 20  3:   1.000 narrow alpha
+vehicle specific param 20  4:   1.000 narrow alpha
+vehicle specific param 21  0:   0.800 narrow theta
+vehicle specific param 21  1:   0.800 narrow theta
+vehicle specific param 21  2:   0.800 narrow theta
+vehicle specific param 21  3:   0.800 narrow theta
+vehicle specific param 21  4:   0.800 narrow theta
+vehicle specific param 22  0:   0.500 narrow w0
+vehicle specific param 22  1:   0.500 narrow w0
+vehicle specific param 22  2:   0.500 narrow w0
+vehicle specific param 22  3:   0.500 narrow w0
+vehicle specific param 22  4:   0.500 narrow w0
+vehicle specific param 23  0:   0.700 narrow w1
+vehicle specific param 23  1:   0.700 narrow w1
+vehicle specific param 23  2:   0.700 narrow w1
+vehicle specific param 23  3:   0.700 narrow w1
+vehicle specific param 23  4:   0.700 narrow w1
+vehicle specific param 24  0:   3.000 narrow w2
+vehicle specific param 24  1:   3.000 narrow w2
+vehicle specific param 24  2:   3.000 narrow w2
+vehicle specific param 24  3:   3.000 narrow w2
+vehicle specific param 24  4:   3.000 narrow w2
+vehicle specific param 25  0:   1.670 vehicle width
+vehicle specific param 25  1:   1.670 vehicle width
+vehicle specific param 25  2:   1.840 vehicle width
+vehicle specific param 25  3:   2.530 vehicle width
+vehicle specific param 25  4:   2.530 vehicle width
+vehicle specific param 26  0:   0.900 probability peak lane
+vehicle specific param 26  1:   0.500 probability peak lane
+vehicle specific param 26  2:   0.100 probability peak lane
+vehicle specific param 26  3:   0.900 probability peak lane
+vehicle specific param 26  4:   1.000 probability peak lane
+vehicle specific param 27  0:   0.500 probability plus lane
+vehicle specific param 27  1:   0.800 probability plus lane
+vehicle specific param 27  2:   1.000 probability plus lane
+vehicle specific param 27  3:   0.500 probability plus lane
+vehicle specific param 27  4:   0.000 probability plus lane
+vehicle specific param 28  0:   1.000 narrow alpha pass
+vehicle specific param 28  1:   1.000 narrow alpha pass
+vehicle specific param 28  2:   1.000 narrow alpha pass
+vehicle specific param 28  3:   1.000 narrow alpha pass
+vehicle specific param 28  4:   1.000 narrow alpha pass
+vehicle specific param 29  0:   3.600 narrow trajcontrol overtake const
+vehicle specific param 29  1:   3.600 narrow trajcontrol overtake const
+vehicle specific param 29  2:   3.600 narrow trajcontrol overtake const
+vehicle specific param 29  3:   3.600 narrow trajcontrol overtake const
+vehicle specific param 29  4:   3.600 narrow trajcontrol overtake const
+#flow graphs (flow sourceno: time|flow ...)
+flow  0:     0|00800   900|01300  2400|01300  3600|00800
+flow  1:     0|02000   900|03200  2400|03200  3600|02000
+#vehicle type distribution (vehicle probabilities sourceno: probability ...)
+vehicle probabilities  0: 0.300 0.300 0.300 0.050 0.050
+vehicle probabilities  1: 0.300 0.300 0.300 0.050 0.050
+#Source sink (OD) matrix (source to sink source sink: list of values for each vehicle type)
+source to sink  0  0: 1.00 1.00 1.00 1.00 1.00
+source to sink  1  0: 1.00 1.00 1.00 1.00 1.00
+#lane changes (lane change sink rank: [*closedgroups] lane, mergedirection, end position, required-length, voluntarylength, type, route choice group, [probabilities (for each vehicle type)])
+lane change  0  0:  2 L  2500   300     0 0
+#Switched areas (switched area times rank: openTime closeTime openSpeed closeSpeed openIntensity closeIntensity openMode closeMode detectorIndex)
+switched area times 1: 0 0 0 0 0 0 0 0 0
+switched area times 2: 0 0 0 0 0 0 0 0 0
+switched area times 3: 0 0 0 0 0 0 0 0 0
+switched area times 4: 0 0 0 0 0 0 0 0 0
+switched area times 5: 0 0 0 0 0 0 0 0 0
+switched area times 6: 0 0 0 0 0 0 0 0 0
+switched area times 7: 0 0 0 0 0 0 0 0 0
+random seed: 1
+time step size: 0.50
+maximum simulation time: 28800
+end of file:

@@ -35,7 +35,7 @@ class FosNode extends FosElement
     public FosNode(final int nodeNumber)
     {
         super(nodeNumber);
-        System.out.println("Created node " + this.number + " with name " + getName());
+        //System.out.println("Created node " + this.number + " with name " + getName());
     }
 
     /**
