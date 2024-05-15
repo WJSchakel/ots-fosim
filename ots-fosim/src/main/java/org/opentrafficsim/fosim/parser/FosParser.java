@@ -954,15 +954,13 @@ public class FosParser
         Length leftLinkEdge = getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane);
         Length leftEdgeOffsetStart = leftLinkEdge.minus(Length.instantiateSI(startNode.getPoint().y));
         Length leftEdgeOffsetEnd = leftLinkEdge.minus(Length.instantiateSI(endNode.getPoint().y));
-        int offsetEnd = 0; // to detect change in the number of lanes a lane shifts, relative to left-hand lanes
+        double offsetEnd = 0; // to detect change in the number of lanes a lane shifts, relative to left-hand lanes
         for (int i = 0; i < link.lanes.size(); i++)
         {
-            if (link.lanes.get(i).taper.equals("\\"))
+            if (link.lanes.get(i).taper.equals("<"))
             {
-                // for the lane adjacent to a diverge taper, re-use the same origin point as the previous lane
-                Throw.when(lateralOffsetAtStarts.isEmpty(), NetworkException.class,
-                        "Lane adjacent to diverge taper (i.e. \\) is not to the right of another lane in the same link.");
-                lateralOffsetAtStarts.add(lateralOffsetAtStarts.get(lateralOffsetAtStarts.size() - 1));
+                // at taper, do not shift left edge
+                lateralOffsetAtStarts.add(leftEdgeOffsetStart);
             }
             else
             {
@@ -971,10 +969,13 @@ public class FosParser
                 leftEdgeOffsetStart = leftEdgeOffsetStart.minus(link.lanes.get(i).laneWidth);
             }
 
-            int currentOffsetEnd = link.lanes.get(i).laneOut - (link.fromLane + i); // in # of lanes
+            double currentOffsetEnd = link.lanes.get(i).laneOut - (link.fromLane + i); // in # of lanes
+            if (link.lanes.get(i).taper.equals(">"))
+            {
+                currentOffsetEnd = currentOffsetEnd - 0.5;
+            }
             if (currentOffsetEnd == offsetEnd)
             {
-                // same lane # offset as previous lane, build from there, and increment the left edge for the next lane
                 lateralOffsetAtEnds.add(leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth.times(0.5)));
                 leftEdgeOffsetEnd = leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth);
             }
@@ -1002,13 +1003,9 @@ public class FosParser
             else
             {
                 // a shift to the left, relative to the previous lane
-                int stepsBack = offsetEnd - currentOffsetEnd;
-                Throw.when(stepsBack != 1, NetworkException.class,
-                        "Lane makes a shift to the left, relative to its left lane, by some other number than 1."
-                                + " I.e. it does not merge with its left lane.");
-
-                // copy last value, i.e. of the left lane
-                lateralOffsetAtEnds.add(lateralOffsetAtEnds.get(lateralOffsetAtEnds.size() - 1));
+                double stepsBack = offsetEnd - currentOffsetEnd;
+                lateralOffsetAtEnds.add(lateralOffsetAtEnds.get(lateralOffsetAtEnds.size() - 1)
+                        .minus(link.lanes.get(i).laneWidth.times(stepsBack)));
             }
             offsetEnd = currentOffsetEnd;
 
@@ -1024,22 +1021,34 @@ public class FosParser
             // calculate offset as y-distance between start/end node and from/to point, and add halve the lane width
             Length lateralOffsetAtStart = lateralOffsetAtStarts.get(laneNum);
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
-            Lane otsLane = new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, lane.laneWidth, lane.laneWidth,
+            Length startWidth = lane.taper.equals("<") ? Length.ZERO : lane.laneWidth;
+            Length endWidth = lane.taper.equals(">") ? Length.ZERO : lane.laneWidth;
+            Lane otsLane = new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, startWidth, endWidth,
                     DefaultsRoadNl.HIGHWAY, Map.of(DefaultsNl.ROAD_USER, lane.speedLimit), false);
             lane.setLane(otsLane);
             if (laneNum == 0)
             {
                 CrossSectionSlice start = new CrossSectionSlice(Length.ZERO,
-                        lateralOffsetAtStart.minus(EDGE_STRIPE_GAP).plus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                        lateralOffsetAtStart.minus(EDGE_STRIPE_GAP).plus(startWidth.times(0.5)), Length.instantiateSI(0.2));
                 CrossSectionSlice end = new CrossSectionSlice(otsLink.getLength(),
-                        lateralOffsetAtEnd.minus(EDGE_STRIPE_GAP).plus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                        lateralOffsetAtEnd.minus(EDGE_STRIPE_GAP).plus(endWidth.times(0.5)), Length.instantiateSI(0.2));
                 new Stripe(Type.SOLID, otsLink, List.of(start, end));
             }
             else
             {
                 Type type = null;
                 Length width = null;
-                if (lane.canChangeLeft(stripedAreas) && prevLane.canChangeRight(stripedAreas))
+                if (lane.taper.equals(">"))
+                {
+                    type = Type.LEFT;
+                    width = Length.instantiateSI(0.6);
+                }
+                else if (lane.taper.equals("<") || prevLane.taper.equals(">") || prevLane.taper.equals("<"))
+                {
+                    type = Type.RIGHT;
+                    width = Length.instantiateSI(0.6);
+                }
+                else if (lane.canChangeLeft(stripedAreas) && prevLane.canChangeRight(stripedAreas))
                 {
                     type = Type.DASHED;
                     width = Length.instantiateSI(0.2);
@@ -1055,18 +1064,18 @@ public class FosParser
                     width = Length.instantiateSI(0.6);
                 }
                 CrossSectionSlice start =
-                        new CrossSectionSlice(Length.ZERO, lateralOffsetAtStart.plus(lane.laneWidth.times(0.5)), width);
+                        new CrossSectionSlice(Length.ZERO, lateralOffsetAtStart.plus(startWidth.times(0.5)), width);
                 CrossSectionSlice end =
-                        new CrossSectionSlice(otsLink.getLength(), lateralOffsetAtEnd.plus(lane.laneWidth.times(0.5)), width);
+                        new CrossSectionSlice(otsLink.getLength(), lateralOffsetAtEnd.plus(endWidth.times(0.5)), width);
                 new Stripe(type, otsLink, List.of(start, end));
             }
 
             if (laneNum == link.lanes.size() - 1)
             {
                 CrossSectionSlice start = new CrossSectionSlice(Length.ZERO,
-                        lateralOffsetAtStart.plus(EDGE_STRIPE_GAP).minus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                        lateralOffsetAtStart.plus(EDGE_STRIPE_GAP).minus(startWidth.times(0.5)), Length.instantiateSI(0.2));
                 CrossSectionSlice end = new CrossSectionSlice(otsLink.getLength(),
-                        lateralOffsetAtEnd.plus(EDGE_STRIPE_GAP).minus(lane.laneWidth.times(0.5)), Length.instantiateSI(0.2));
+                        lateralOffsetAtEnd.plus(EDGE_STRIPE_GAP).minus(endWidth.times(0.5)), Length.instantiateSI(0.2));
                 new Stripe(Stripe.Type.SOLID, otsLink, List.of(start, end));
             }
             prevLane = lane;
@@ -1294,7 +1303,7 @@ public class FosParser
     private void buildDetecors() throws NetworkException
     {
         // TODO: OTS does not support an irregular first interval (see git issue #6)
-        this.detectorTimes.get(0); // time of first detector measurement (time step #), i.e. end of aggregation period
+        Time firstMeasurement = Time.instantiateSI(this.timeStep.si * this.detectorTimes.get(0));
         Duration interval = this.timeStep.times(this.detectorTimes.get(1));
 
         for (int detectorCrossSection = 0; detectorCrossSection < this.detectorPositions.size(); detectorCrossSection++)
