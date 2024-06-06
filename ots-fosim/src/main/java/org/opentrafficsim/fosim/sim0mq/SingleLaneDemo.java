@@ -111,8 +111,8 @@ public class SingleLaneDemo
     private int port;
 
     /** Simulation step. */
-    @Option(names = "--step", description = "Simulation step", defaultValue = "0,5s")
-    private Duration step;
+    @Option(names = "--step", description = "Simulation step") // Locale bug: , defaultValue = "0,5s"
+    private Duration step = Duration.instantiateSI(0.5);
 
     /** Show GUI. */
     @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "false")
@@ -396,7 +396,7 @@ public class SingleLaneDemo
                             int underscore = laneId.indexOf("_");
                             int lane = Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
                             LaneChange lc = lcInfo.get(gtu);
-                            payload[k++] = lc == null ? lane : (lc.getDirection().isLeft() ? lane - 1 : lane + 1);
+                            payload[k++] = (lc == null || lc.getDirection().isLeft()) ? lane : lane + 1;
                             payload[k++] = Length.instantiateSI(gtu.getLocation().x);
                             payload[k++] = gtu.getSpeed();
                             payload[k++] = gtu.getAcceleration();
