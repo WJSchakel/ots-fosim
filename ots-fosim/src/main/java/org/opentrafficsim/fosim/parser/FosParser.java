@@ -1200,7 +1200,7 @@ public class FosParser
             Length length = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "length"));
             Length width = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "vehicle width"));
             Generator<Speed> speed;
-            if (width.gt(TRUCK_THRESHOLD))
+            if (length.gt(TRUCK_THRESHOLD))
             {
                 speed = new ContinuousDistSpeed(new DistNormal(stream, 85.0, 2.5), SpeedUnit.KM_PER_HOUR);
             }
