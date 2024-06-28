@@ -1,6 +1,8 @@
-package org.opentrafficsim.fosim.parameters;
+package org.opentrafficsim.fosim.parameters.distributions;
 
 import java.util.LinkedHashMap;
+
+import org.opentrafficsim.fosim.parameters.DefaultValue;
 
 /**
  * Stores information about a distributed parameter. Implements {@code DefaultValue} so it can be (de)serialized as a default
@@ -18,11 +20,11 @@ public class DistributionValue implements DefaultValue
     public final DistributionType type;
 
     /**
-     * Value. This is solely used when a parameter distribution is selected by the user, where the mean/mode/median needs to get
-     * a default value. This value is then the default value of the parameter. In case that default value is a distribution
-     * (i.e. this distribution), this field is the typical value.
+     * Default value. This is solely used when a parameter distribution is selected by the user, where the mean/mode/median
+     * needs to get a default value. This value is then the default value of the parameter. In case that default value is a
+     * distribution (i.e. this distribution), this field is the typical value.
      */
-    public final double value;
+    public final double defaultValue;
 
     /** Names and values of distribution parameters. */
     public final LinkedHashMap<String, Double> values = new LinkedHashMap<>();;
@@ -30,12 +32,12 @@ public class DistributionValue implements DefaultValue
     /**
      * Constructor.
      * @param type Type; distribution type.
-     * @param value double; value of the default mean/mode/median value in another distribution should the user select it.
+     * @param defaultValue double; value of the default mean/mode/median value in another distribution should the user select it.
      */
-    private DistributionValue(final DistributionType type, final double value)
+    private DistributionValue(final DistributionType type, final double defaultValue)
     {
         this.type = type;
-        this.value = value;
+        this.defaultValue = defaultValue;
     }
 
     /**
@@ -45,11 +47,11 @@ public class DistributionValue implements DefaultValue
      */
     public static DistributionValue exponential(final double lambda)
     {
-        DistributionValue dist = new DistributionValue(DistributionType.Triangular, lambda);
+        DistributionValue dist = new DistributionValue(DistributionType.Exponential, lambda);
         dist.values.put("lambda", lambda);
         return dist;
     }
-    
+
     /**
      * Creates a triangular distribution.
      * @param min double; minimum value.
