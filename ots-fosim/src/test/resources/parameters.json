@@ -1,739 +1,748 @@
-[
-  {
-    "groupNl": "Voertuig",
-    "groupEn": "Vehicle",
-    "defaultState": "ALWAYS",
-    "descriptionNl": "Voertuig parameters.",
-    "descriptionEn": "Vehicle parameters.",
-    "parameters": [
-      {
-        "id": "l",
-        "descriptionNl": "Voertuiglengte.",
-        "descriptionEn": "Vehicle length.",
-        "unit": "m",
-        "defaultValue": [
-          4.19,
-          12.0
-        ],
-        "minimum": {
-          "value": 3.0
-        },
-        "maximum": {
-          "value": 26.0
-        },
-        "nameNl": "<i>lengte</i>",
-        "nameEn": "<i>length</i>"
-      },
-      {
-        "id": "w",
-        "descriptionNl": "Voertuigbreedte.",
-        "descriptionEn": "Vehicle width.",
-        "unit": "m",
-        "defaultValue": [
-          1.7,
-          2.55
-        ],
-        "minimum": {
-          "value": 1.5
-        },
-        "maximum": {
-          "value": 2.6
-        },
-        "nameNl": "<i>breedte</i>",
-        "nameEn": "<i>width</i>"
-      },
-      {
-        "id": "vMax",
-        "descriptionNl": "Maximale voertuigsnelheid.",
-        "descriptionEn": "Maximum vehicle speed.",
-        "unit": "km/h",
-        "defaultValue": [
-          180.0,
-          {
-            "type": "Normal",
-            "value": 85.0,
-            "values": {
-              "mu": 85.0,
-              "sigma": 2.5,
-              "min": 60.0,
-              "max": 100.0
-            }
-          }
-        ],
-        "minimum": {
-          "value": 50.0
-        },
-        "maximum": {
-          "value": 200.0
-        },
-        "nameNl": "<i>v<sub>max</sub></i>",
-        "nameEn": "<i>v<sub>max</sub></i>"
-      }
-    ]
-  },
-  {
-    "groupNl": "Bestuurder",
-    "groupEn": "Driver",
-    "defaultState": "ALWAYS",
-    "descriptionNl": "Algemene bestuurder parameters.",
-    "descriptionEn": "General driver parameters.",
-    "parameters": [
-      {
-        "id": "Tmax",
-        "descriptionNl": "Normale volgtijd.",
-        "descriptionEn": "Regular desired headway.",
-        "unit": "s",
-        "defaultValue": [
-          1.2,
-          1.2
-        ],
-        "minimum": {
-          "parameter": "Tmin"
-        },
-        "maximum": {
-          "value": 10.0
-        },
-        "nameNl": "<i>T<sub>max</sub></i>",
-        "nameEn": "<i>T<sub>max</sub></i>"
-      },
-      {
-        "id": "Tmin",
-        "descriptionNl": "Minimale volgtijd bij rijstrookwisselen.",
-        "descriptionEn": "Minimum desired headway when changing lanes.",
-        "unit": "s",
-        "defaultValue": [
-          0.56,
-          0.56
-        ],
-        "minimum": {
-          "value": 0.1
-        },
-        "maximum": {
-          "parameter": "Tmax"
-        },
-        "nameNl": "<i>T<sub>min</sub></i>",
-        "nameEn": "<i>T<sub>min</sub></i>"
-      },
-      {
-        "id": "fSpeed",
-        "descriptionNl": "Factor gewenste snelheid/maximum snelheid.",
-        "descriptionEn": "Factor desired speed/legal speed limit.",
-        "unit": "-",
-        "defaultValue": [
-          {
-            "type": "Normal",
-            "value": 1.0308,
-            "values": {
-              "mu": 1.0308,
-              "sigma": 0.1,
-              "min": 0.5,
-              "max": 2.0
-            }
+{
+  "version": "v0.0.1",
+  "parameterGroups": [
+    {
+      "id": "Vehicle",
+      "groupNl": "Voertuig",
+      "groupEn": "Vehicle",
+      "defaultState": "ALWAYS",
+      "descriptionNl": "Voertuig parameters.",
+      "descriptionEn": "Vehicle parameters.",
+      "parameters": [
+        {
+          "id": "l",
+          "descriptionNl": "Voertuiglengte.",
+          "descriptionEn": "Vehicle length.",
+          "unit": "m",
+          "defaultValue": [
+            4.19,
+            12.0
+          ],
+          "minimum": {
+            "value": 3.0
           },
-          {
-            "type": "Normal",
-            "value": 1.0308,
-            "values": {
-              "mu": 1.0308,
-              "sigma": 0.1,
-              "min": 0.5,
-              "max": 2.0
-            }
-          }
-        ],
-        "minimum": {
-          "value": 0.1
-        },
-        "maximum": {
-          "value": 2.0
-        },
-        "nameNl": "<i>f<sub>speed</sub></i>",
-        "nameEn": "<i>f<sub>speed</sub></i>"
-      }
-    ]
-  },
-  {
-    "groupNl": "Voertuig-volg model",
-    "groupEn": "Car-following model",
-    "defaultState": "ALWAYS",
-    "descriptionNl": "Parameters van het IDM+ voertuig-volg model. Dit wordt ook gebruikt voor het accepteren van gaten bij rijstrookwisselen en het remmen voor verkeerslichten.",
-    "descriptionEn": "Parameters of the IDM+ car-following model. This is also used for gap-acceptance when changing lane, and for braking for traffic lights.",
-    "parameters": [
-      {
-        "id": "a",
-        "descriptionNl": "Maximale acceleratie.",
-        "descriptionEn": "Maximum acceleration.",
-        "unit": "m/s<sup>2</sup>",
-        "defaultValue": [
-          1.25,
-          0.4
-        ],
-        "minimum": {
-          "value": 0.0
-        },
-        "maximum": {
-          "value": 8.0
-        },
-        "nameNl": "<i>a</i>",
-        "nameEn": "<i>a</i>"
-      },
-      {
-        "id": "b0",
-        "descriptionNl": "Aanpassingsdeceleratie, bv. bij verlaging van maximum snelheid.",
-        "descriptionEn": "Adjustment deceleration, e.g. at reduction of legal speed limit.",
-        "unit": "m/s<sup>2</sup>",
-        "defaultValue": [
-          0.5,
-          0.5
-        ],
-        "minimum": {
-          "value": 0.0
-        },
-        "maximum": {
-          "parameter": "b"
-        },
-        "nameNl": "<i>b</i><sub>0</sub>",
-        "nameEn": "<i>b</i><sub>0</sub>"
-      },
-      {
-        "id": "b",
-        "descriptionNl": "Maximale gewenste deceleratie.",
-        "descriptionEn": "Maximum desired deceleration.",
-        "unit": "m/s<sup>2</sup>",
-        "defaultValue": [
-          2.09,
-          2.09
-        ],
-        "minimum": {
-          "parameter": "b0"
-        },
-        "maximum": {
-          "parameter": "bCrit"
-        },
-        "nameNl": "<i>b</i>",
-        "nameEn": "<i>b</i>"
-      },
-      {
-        "id": "bCrit",
-        "descriptionNl": "Kritieke deceleratie, bv. bij verkeerslichten.",
-        "descriptionEn": "Critical deceleration, e.g. at traffic lights.",
-        "unit": "m/s<sup>2</sup>",
-        "defaultValue": [
-          3.5,
-          3.5
-        ],
-        "minimum": {
-          "parameter": "b"
-        },
-        "maximum": {
-          "value": 8.0
-        },
-        "nameNl": "<i>b<sub>crit</sub></i>",
-        "nameEn": "<i>b<sub>crit</sub></i>"
-      },
-      {
-        "id": "s0",
-        "descriptionNl": "Stopafstand tussen voertuigen.",
-        "descriptionEn": "Stopping distance between vehicles.",
-        "unit": "m",
-        "defaultValue": [
-          3.0,
-          3.0
-        ],
-        "minimum": {
-          "value": 0.5
-        },
-        "maximum": {
-          "value": 8.0
-        },
-        "nameNl": "<i>s</i><sub>0</sub>",
-        "nameEn": "<i>s</i><sub>0</sub>"
-      },
-      {
-        "id": "delta",
-        "descriptionNl": "Persistentie maximale acceleratie bij toenemen snelheid.",
-        "descriptionEn": "Persistence of maximum acceleration as speed increases.",
-        "unit": "-",
-        "defaultValue": [
-          4.0,
-          4.0
-        ],
-        "minimum": {
-          "value": 0.0
-        },
-        "maximum": {
-          "value": 1000.0
-        },
-        "nameNl": "<i>δ</i>",
-        "nameEn": "<i>δ</i>"
-      }
-    ]
-  },
-  {
-    "groupNl": "Rijstrookwisselmodel",
-    "groupEn": "Lane-change model",
-    "defaultState": "ALWAYS",
-    "descriptionNl": "Parameters van het 'Lane-change Model with Relaxation and Synchronization' (LMRS) gebaseerd op rijstrookwisselwens.",
-    "descriptionEn": "Parameters of the Lane-change Model with Relaxation and Synchronization (LMRS) based on lane change desire.",
-    "parameters": [
-      {
-        "id": "dFree",
-        "descriptionNl": "Drempelwaarde rijstrookwisselwens vrije wisseling.",
-        "descriptionEn": "Lane change desire threshold for free lane changes.",
-        "unit": "-",
-        "defaultValue": [
-          0.365,
-          0.365
-        ],
-        "minimum": {
-          "value": 0.0
-        },
-        "maximum": {
-          "parameter": "dSync"
-        },
-        "nameNl": "<i>d<sub>free</sub></i>",
-        "nameEn": "<i>d<sub>free</sub></i>"
-      },
-      {
-        "id": "dSync",
-        "descriptionNl": "Drempelwaarde rijstrookwisselwens synchroniseren snelheid.",
-        "descriptionEn": "Lane change desire threshold for synchronizing speed.",
-        "unit": "-",
-        "defaultValue": [
-          0.577,
-          0.577
-        ],
-        "minimum": {
-          "parameter": "dFree"
-        },
-        "maximum": {
-          "parameter": "dCoop"
-        },
-        "nameNl": "<i>d<sub>sync</sub></i>",
-        "nameEn": "<i>d<sub>sync</sub></i>"
-      },
-      {
-        "id": "dCoop",
-        "descriptionNl": "Drempelwaarde rijstrookwisselwens cooperatie.",
-        "descriptionEn": "Lane change desire threshold for cooperation.",
-        "unit": "-",
-        "defaultValue": [
-          0.788,
-          0.788
-        ],
-        "minimum": {
-          "parameter": "dSync"
-        },
-        "maximum": {
-          "value": 1.0
-        },
-        "nameNl": "<i>d<sub>coop</sub></i>",
-        "nameEn": "<i>d<sub>coop</sub></i>"
-      },
-      {
-        "id": "tau",
-        "descriptionNl": "Relaxatietijd naar normale volgtijd.",
-        "descriptionEn": "Relaxation time to regular headway.",
-        "unit": "s",
-        "defaultValue": [
-          25.0,
-          25.0
-        ],
-        "minimum": {
-          "value": 1.0
-        },
-        "maximum": {
-          "value": 120.0
-        },
-        "nameNl": "<i>τ</i>",
-        "nameEn": "<i>τ</i>"
-      },
-      {
-        "id": "x0",
-        "descriptionNl": "Anticipatie afstand rijstrookwisselen per strook.",
-        "descriptionEn": "Lane change anticipation distance per lane change.",
-        "unit": "m",
-        "defaultValue": [
-          295.0,
-          295.0
-        ],
-        "minimum": {
-          "value": 100.0
-        },
-        "maximum": {
-          "value": 1000.0
-        },
-        "nameNl": "<i>x</i><sub>0</sub>",
-        "nameEn": "<i>x</i><sub>0</sub>"
-      },
-      {
-        "id": "t0",
-        "descriptionNl": "Anticipatie tijd rijstrookwisselen per strook.",
-        "descriptionEn": "Lane change anticipation time per lane change.",
-        "unit": "s",
-        "defaultValue": [
-          43.0,
-          43.0
-        ],
-        "minimum": {
-          "value": 10.0
-        },
-        "maximum": {
-          "value": 120.0
-        },
-        "nameNl": "<i>t</i><sub>0</sub>",
-        "nameEn": "<i>t</i><sub>0</sub>"
-      },
-      {
-        "id": "vGain",
-        "descriptionNl": "Snelheidswinst voor maximaal gewenste rijstrookwisseling.",
-        "descriptionEn": "Speed gain for maximally desired lane change.",
-        "unit": "km/h",
-        "defaultValue": [
-          69.6,
-          69.6
-        ],
-        "minimum": {
-          "value": 1.0
-        },
-        "maximum": {
-          "value": 130.0
-        },
-        "nameNl": "<i>v<sub>gain</sub></i>",
-        "nameEn": "<i>v<sub>gain</sub></i>"
-      },
-      {
-        "id": "vCong",
-        "descriptionNl": "File drempelsnelheid.",
-        "descriptionEn": "Threshold speed for congestion.",
-        "unit": "km/h",
-        "defaultValue": [
-          60.0,
-          60.0
-        ],
-        "minimum": {
-          "value": 1.0
-        },
-        "maximum": {
-          "value": 130.0
-        },
-        "nameNl": "<i>v<sub>cong</sub></i>",
-        "nameEn": "<i>v<sub>cong</sub></i>"
-      },
-      {
-        "id": "LCdur",
-        "descriptionNl": "Duur van een strookwisseling.",
-        "descriptionEn": "Duration of a lane change.",
-        "unit": "s",
-        "defaultValue": [
-          3.0,
-          3.0
-        ],
-        "minimum": {
-          "value": 1.0
-        },
-        "maximum": {
-          "value": 5.0
-        },
-        "nameNl": "<i>LC<sub>dur</sub></i>",
-        "nameEn": "<i>LC<sub>dur</sub></i>"
-      }
-    ]
-  },
-  {
-    "groupNl": "Sociale interacties",
-    "groupEn": "Social interactions",
-    "defaultState": "ON",
-    "descriptionNl": "Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.",
-    "descriptionEn": "Endogenous influence on desired speed, desired headway and lane change desire from social pressure. This mostly influences the number of lane changes and the headway distribution. It is important to use different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.",
-    "parameters": [
-      {
-        "id": "sigma",
-        "descriptionNl": "Gevoeligheid voor gewenste snelheid anderen.",
-        "descriptionEn": "Socio-speed sensitivity.",
-        "unit": "-",
-        "defaultValue": [
-          {
-            "type": "Triangular",
-            "value": 0.25,
-            "values": {
-              "min": 0.0,
-              "mode": 0.25,
-              "max": 1.0
-            }
+          "maximum": {
+            "value": 26.0
           },
-          1.0
-        ],
-        "minimum": {
-          "value": 0.0
+          "nameNl": "<i>lengte</i>",
+          "nameEn": "<i>length</i>"
         },
-        "maximum": {
-          "value": 1.0
+        {
+          "id": "w",
+          "descriptionNl": "Voertuigbreedte.",
+          "descriptionEn": "Vehicle width.",
+          "unit": "m",
+          "defaultValue": [
+            1.7,
+            2.55
+          ],
+          "minimum": {
+            "value": 1.5
+          },
+          "maximum": {
+            "value": 2.6
+          },
+          "nameNl": "<i>breedte</i>",
+          "nameEn": "<i>width</i>"
         },
-        "nameNl": "<i>σ</i>",
-        "nameEn": "<i>σ</i>"
-      },
-      {
-        "id": "courtesy",
-        "descriptionNl": "Bereid rijstrook te wisselen voor anderen.",
-        "descriptionEn": "Willing to change lane for others.",
-        "unit": "0|1",
-        "defaultValue": [
-          1.0,
-          0.0
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "vMax",
+          "descriptionNl": "Maximale voertuigsnelheid.",
+          "descriptionEn": "Maximum vehicle speed.",
+          "unit": "km/h",
+          "defaultValue": [
+            180.0,
+            {
+              "type": "Normal",
+              "defaultValue": 85.0,
+              "values": {
+                "mu": 85.0,
+                "sigma": 2.5,
+                "min": 60.0,
+                "max": 100.0
+              }
+            }
+          ],
+          "minimum": {
+            "value": 50.0
+          },
+          "maximum": {
+            "value": 200.0
+          },
+          "nameNl": "<i>v<sub>max</sub></i>",
+          "nameEn": "<i>v<sub>max</sub></i>"
+        }
+      ]
+    },
+    {
+      "id": "Driver",
+      "groupNl": "Bestuurder",
+      "groupEn": "Driver",
+      "defaultState": "ALWAYS",
+      "descriptionNl": "Algemene bestuurder parameters.",
+      "descriptionEn": "General driver parameters.",
+      "parameters": [
+        {
+          "id": "Tmax",
+          "descriptionNl": "Normale volgtijd.",
+          "descriptionEn": "Regular desired headway.",
+          "unit": "s",
+          "defaultValue": [
+            1.2,
+            1.2
+          ],
+          "minimum": {
+            "parameter": "Tmin"
+          },
+          "maximum": {
+            "value": 10.0
+          },
+          "nameNl": "<i>T<sub>max</sub></i>",
+          "nameEn": "<i>T<sub>max</sub></i>"
         },
-        "maximum": {
-          "value": 1.0
+        {
+          "id": "Tmin",
+          "descriptionNl": "Minimale volgtijd bij rijstrookwisselen.",
+          "descriptionEn": "Minimum desired headway when changing lanes.",
+          "unit": "s",
+          "defaultValue": [
+            0.56,
+            0.56
+          ],
+          "minimum": {
+            "value": 0.1
+          },
+          "maximum": {
+            "parameter": "Tmax"
+          },
+          "nameNl": "<i>T<sub>min</sub></i>",
+          "nameEn": "<i>T<sub>min</sub></i>"
         },
-        "nameNl": "<i>courtesy</i>",
-        "nameEn": "<i>courtesy</i>"
-      }
-    ]
-  },
-  {
-    "groupNl": "Perceptie",
-    "groupEn": "Perception",
-    "defaultState": "OFF",
-    "descriptionNl": "Endogene processen voor imperfecte perceptie, afhankelijk van mentale druk door rijtaken.",
-    "descriptionEn": "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.",
-    "parameters": [
-      {
-        "id": "TC",
-        "descriptionNl": "Taak capaciteit.",
-        "descriptionEn": "Task capacity.",
-        "unit": "-",
-        "defaultValue": [
-          1.0,
-          1.0
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "fSpeed",
+          "descriptionNl": "Factor gewenste snelheid/maximum snelheid.",
+          "descriptionEn": "Factor desired speed/legal speed limit.",
+          "unit": "-",
+          "defaultValue": [
+            {
+              "type": "Normal",
+              "defaultValue": 1.0308,
+              "values": {
+                "mu": 1.0308,
+                "sigma": 0.1,
+                "min": 0.5,
+                "max": 2.0
+              }
+            },
+            {
+              "type": "Normal",
+              "defaultValue": 1.0308,
+              "values": {
+                "mu": 1.0308,
+                "sigma": 0.1,
+                "min": 0.5,
+                "max": 2.0
+              }
+            }
+          ],
+          "minimum": {
+            "value": 0.1
+          },
+          "maximum": {
+            "value": 2.0
+          },
+          "nameNl": "<i>f<sub>speed</sub></i>",
+          "nameEn": "<i>f<sub>speed</sub></i>"
+        }
+      ]
+    },
+    {
+      "id": "Car-following model",
+      "groupNl": "Voertuig-volg model",
+      "groupEn": "Car-following model",
+      "defaultState": "ALWAYS",
+      "descriptionNl": "Parameters van het IDM+ voertuig-volg model. Dit wordt ook gebruikt voor het accepteren van gaten bij rijstrookwisselen en het remmen voor verkeerslichten.",
+      "descriptionEn": "Parameters of the IDM+ car-following model. This is also used for gap-acceptance when changing lane, and for braking for traffic lights.",
+      "parameters": [
+        {
+          "id": "a",
+          "descriptionNl": "Maximale acceleratie.",
+          "descriptionEn": "Maximum acceleration.",
+          "unit": "m/s<sup>2</sup>",
+          "defaultValue": [
+            1.25,
+            0.4
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 8.0
+          },
+          "nameNl": "<i>a</i>",
+          "nameEn": "<i>a</i>"
         },
-        "maximum": {
-          "value": 2.0
+        {
+          "id": "b0",
+          "descriptionNl": "Aanpassingsdeceleratie, bv. bij verlaging van maximum snelheid.",
+          "descriptionEn": "Adjustment deceleration, e.g. at reduction of legal speed limit.",
+          "unit": "m/s<sup>2</sup>",
+          "defaultValue": [
+            0.5,
+            0.5
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "parameter": "b"
+          },
+          "nameNl": "<i>b</i><sub>0</sub>",
+          "nameEn": "<i>b</i><sub>0</sub>"
         },
-        "nameNl": "<i>TC</i>",
-        "nameEn": "<i>TC</i>"
-      },
-      {
-        "id": "TScrit",
-        "descriptionNl": "Kritische taak saturatie, waarboven <i>SA</i> afneemt en <i>T<sub>r</sub></i> toeneemt.",
-        "descriptionEn": "Critical task saturation, above which <i>SA</i> reduces and <i>T<sub>r</sub></i> increases.",
-        "unit": "-",
-        "defaultValue": [
-          0.8,
-          0.8
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "b",
+          "descriptionNl": "Maximale gewenste deceleratie.",
+          "descriptionEn": "Maximum desired deceleration.",
+          "unit": "m/s<sup>2</sup>",
+          "defaultValue": [
+            2.09,
+            2.09
+          ],
+          "minimum": {
+            "parameter": "b0"
+          },
+          "maximum": {
+            "parameter": "bCrit"
+          },
+          "nameNl": "<i>b</i>",
+          "nameEn": "<i>b</i>"
         },
-        "maximum": {
-          "parameter": "TSmax"
+        {
+          "id": "bCrit",
+          "descriptionNl": "Kritieke deceleratie, bv. bij verkeerslichten.",
+          "descriptionEn": "Critical deceleration, e.g. at traffic lights.",
+          "unit": "m/s<sup>2</sup>",
+          "defaultValue": [
+            3.5,
+            3.5
+          ],
+          "minimum": {
+            "parameter": "b"
+          },
+          "maximum": {
+            "value": 8.0
+          },
+          "nameNl": "<i>b<sub>crit</sub></i>",
+          "nameEn": "<i>b<sub>crit</sub></i>"
         },
-        "nameNl": "<i>TS<sub>crit</sub></i>",
-        "nameEn": "<i>TS<sub>crit</sub></i>"
-      },
-      {
-        "id": "TSmax",
-        "descriptionNl": "Maximale taak saturatie <i>TS</i>.",
-        "descriptionEn": "Maximum task saturation <i>TS</i>.",
-        "unit": "-",
-        "defaultValue": [
-          2.0,
-          2.0
-        ],
-        "minimum": {
-          "parameter": "TScrit"
+        {
+          "id": "s0",
+          "descriptionNl": "Stopafstand tussen voertuigen.",
+          "descriptionEn": "Stopping distance between vehicles.",
+          "unit": "m",
+          "defaultValue": [
+            3.0,
+            3.0
+          ],
+          "minimum": {
+            "value": 0.5
+          },
+          "maximum": {
+            "value": 8.0
+          },
+          "nameNl": "<i>s</i><sub>0</sub>",
+          "nameEn": "<i>s</i><sub>0</sub>"
         },
-        "maximum": {
-          "value": 3.0
+        {
+          "id": "delta",
+          "descriptionNl": "Persistentie maximale acceleratie bij toenemen snelheid.",
+          "descriptionEn": "Persistence of maximum acceleration as speed increases.",
+          "unit": "-",
+          "defaultValue": [
+            4.0,
+            4.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 1000.0
+          },
+          "nameNl": "<i>δ</i>",
+          "nameEn": "<i>δ</i>"
+        }
+      ]
+    },
+    {
+      "id": "Lane-change model",
+      "groupNl": "Rijstrookwisselmodel",
+      "groupEn": "Lane-change model",
+      "defaultState": "ALWAYS",
+      "descriptionNl": "Parameters van het 'Lane-change Model with Relaxation and Synchronization' (LMRS) gebaseerd op rijstrookwisselwens.",
+      "descriptionEn": "Parameters of the Lane-change Model with Relaxation and Synchronization (LMRS) based on lane change desire.",
+      "parameters": [
+        {
+          "id": "dFree",
+          "descriptionNl": "Drempelwaarde rijstrookwisselwens vrije wisseling.",
+          "descriptionEn": "Lane change desire threshold for free lane changes.",
+          "unit": "-",
+          "defaultValue": [
+            0.365,
+            0.365
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "parameter": "dSync"
+          },
+          "nameNl": "<i>d<sub>free</sub></i>",
+          "nameEn": "<i>d<sub>free</sub></i>"
         },
-        "nameNl": "<i>TS<sub>max</sub></i>",
-        "nameEn": "<i>TS<sub>max</sub></i>"
-      },
-      {
-        "id": "SAmin",
-        "descriptionNl": "Minimale situationele aandacht <i>SA</i>.",
-        "descriptionEn": "Minimum situational awareness <i>SA</i>.",
-        "unit": "-",
-        "defaultValue": [
-          0.5,
-          0.5
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "dSync",
+          "descriptionNl": "Drempelwaarde rijstrookwisselwens synchroniseren snelheid.",
+          "descriptionEn": "Lane change desire threshold for synchronizing speed.",
+          "unit": "-",
+          "defaultValue": [
+            0.577,
+            0.577
+          ],
+          "minimum": {
+            "parameter": "dFree"
+          },
+          "maximum": {
+            "parameter": "dCoop"
+          },
+          "nameNl": "<i>d<sub>sync</sub></i>",
+          "nameEn": "<i>d<sub>sync</sub></i>"
         },
-        "maximum": {
-          "parameter": "SAmax"
+        {
+          "id": "dCoop",
+          "descriptionNl": "Drempelwaarde rijstrookwisselwens cooperatie.",
+          "descriptionEn": "Lane change desire threshold for cooperation.",
+          "unit": "-",
+          "defaultValue": [
+            0.788,
+            0.788
+          ],
+          "minimum": {
+            "parameter": "dSync"
+          },
+          "maximum": {
+            "value": 1.0
+          },
+          "nameNl": "<i>d<sub>coop</sub></i>",
+          "nameEn": "<i>d<sub>coop</sub></i>"
         },
-        "nameNl": "<i>SA<sub>min</sub></i>",
-        "nameEn": "<i>SA<sub>min</sub></i>"
-      },
-      {
-        "id": "SAmax",
-        "descriptionNl": "Maximale situationele aandacht <i>SA</i>.",
-        "descriptionEn": "Maximum situational awareness <i>SA</i>.",
-        "unit": "-",
-        "defaultValue": [
-          1.0,
-          1.0
-        ],
-        "minimum": {
-          "parameter": "SAmin"
+        {
+          "id": "tau",
+          "descriptionNl": "Relaxatietijd naar normale volgtijd.",
+          "descriptionEn": "Relaxation time to regular headway.",
+          "unit": "s",
+          "defaultValue": [
+            25.0,
+            25.0
+          ],
+          "minimum": {
+            "value": 1.0
+          },
+          "maximum": {
+            "value": 120.0
+          },
+          "nameNl": "<i>τ</i>",
+          "nameEn": "<i>τ</i>"
         },
-        "maximum": {
-          "value": 1.0
+        {
+          "id": "x0",
+          "descriptionNl": "Anticipatie afstand rijstrookwisselen per strook.",
+          "descriptionEn": "Lane change anticipation distance per lane change.",
+          "unit": "m",
+          "defaultValue": [
+            295.0,
+            295.0
+          ],
+          "minimum": {
+            "value": 100.0
+          },
+          "maximum": {
+            "value": 1000.0
+          },
+          "nameNl": "<i>x</i><sub>0</sub>",
+          "nameEn": "<i>x</i><sub>0</sub>"
         },
-        "nameNl": "<i>SA<sub>max</sub></i>",
-        "nameEn": "<i>SA<sub>max</sub></i>"
-      },
-      {
-        "id": "Trmax",
-        "descriptionNl": "Maximale reactietijd <i>T<sub>r</sub></i>.",
-        "descriptionEn": "Maximum reaction time <i>T<sub>r</sub></i>.",
-        "unit": "s",
-        "defaultValue": [
-          2.0,
-          2.0
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "t0",
+          "descriptionNl": "Anticipatie tijd rijstrookwisselen per strook.",
+          "descriptionEn": "Lane change anticipation time per lane change.",
+          "unit": "s",
+          "defaultValue": [
+            43.0,
+            43.0
+          ],
+          "minimum": {
+            "value": 10.0
+          },
+          "maximum": {
+            "value": 120.0
+          },
+          "nameNl": "<i>t</i><sub>0</sub>",
+          "nameEn": "<i>t</i><sub>0</sub>"
         },
-        "maximum": {
-          "value": 3.0
+        {
+          "id": "vGain",
+          "descriptionNl": "Snelheidswinst voor maximaal gewenste rijstrookwisseling.",
+          "descriptionEn": "Speed gain for maximally desired lane change.",
+          "unit": "km/h",
+          "defaultValue": [
+            69.6,
+            69.6
+          ],
+          "minimum": {
+            "value": 1.0
+          },
+          "maximum": {
+            "value": 130.0
+          },
+          "nameNl": "<i>v<sub>gain</sub></i>",
+          "nameEn": "<i>v<sub>gain</sub></i>"
         },
-        "nameNl": "<i>T<sub>r,max</sub></i>",
-        "nameEn": "<i>T<sub>r,max</sub></i>"
-      },
-      {
-        "id": "hexp",
-        "descriptionNl": "Helling van afname volg-taak last bij toenemen volgtijd.",
-        "descriptionEn": "Slope of reduction of car-following task demand as headway increases.",
-        "unit": "s",
-        "defaultValue": [
-          4.0,
-          4.0
-        ],
-        "minimum": {
-          "value": 1.0
+        {
+          "id": "vCong",
+          "descriptionNl": "File drempelsnelheid.",
+          "descriptionEn": "Threshold speed for congestion.",
+          "unit": "km/h",
+          "defaultValue": [
+            60.0,
+            60.0
+          ],
+          "minimum": {
+            "value": 1.0
+          },
+          "maximum": {
+            "value": 130.0
+          },
+          "nameNl": "<i>v<sub>cong</sub></i>",
+          "nameEn": "<i>v<sub>cong</sub></i>"
         },
-        "maximum": {
-          "value": 10.0
+        {
+          "id": "LCdur",
+          "descriptionNl": "Duur van een strookwisseling.",
+          "descriptionEn": "Duration of a lane change.",
+          "unit": "s",
+          "defaultValue": [
+            3.0,
+            3.0
+          ],
+          "minimum": {
+            "value": 1.0
+          },
+          "maximum": {
+            "value": 5.0
+          },
+          "nameNl": "<i>LC<sub>dur</sub></i>",
+          "nameEn": "<i>LC<sub>dur</sub></i>"
+        }
+      ]
+    },
+    {
+      "id": "Social interactions",
+      "groupNl": "Sociale interacties",
+      "groupEn": "Social interactions",
+      "defaultState": "ON",
+      "descriptionNl": "Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.",
+      "descriptionEn": "Endogenous influence on desired speed, desired headway and lane change desire from social pressure. This mostly influences the number of lane changes and the headway distribution. It is important to use different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.",
+      "parameters": [
+        {
+          "id": "sigma",
+          "descriptionNl": "Gevoeligheid voor gewenste snelheid anderen.",
+          "descriptionEn": "Socio-speed sensitivity.",
+          "unit": "-",
+          "defaultValue": [
+            {
+              "type": "Triangular",
+              "defaultValue": 0.25,
+              "values": {
+                "min": 0.0,
+                "mode": 0.25,
+                "max": 1.0
+              }
+            },
+            1.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 1.0
+          },
+          "nameNl": "<i>σ</i>",
+          "nameEn": "<i>σ</i>"
         },
-        "nameNl": "<i>h<sub>exp</sub></i>",
-        "nameEn": "<i>h<sub>exp</sub></i>"
-      },
-      {
-        "id": "betaT",
-        "descriptionNl": "Gevoeligheid aanpassing volgtijd.",
-        "descriptionEn": "Sensitivity behavioural adaptation of headway.",
-        "unit": "-",
-        "defaultValue": [
-          1.0,
-          1.0
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "courtesy",
+          "descriptionNl": "Bereid rijstrook te wisselen voor anderen.",
+          "descriptionEn": "Willing to change lane for others.",
+          "unit": "0|1",
+          "defaultValue": [
+            1.0,
+            0.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 1.0
+          },
+          "nameNl": "<i>courtesy</i>",
+          "nameEn": "<i>courtesy</i>"
+        }
+      ]
+    },
+    {
+      "id": "Perception",
+      "groupNl": "Perceptie",
+      "groupEn": "Perception",
+      "defaultState": "OFF",
+      "descriptionNl": "Endogene processen voor imperfecte perceptie, afhankelijk van mentale druk door rijtaken.",
+      "descriptionEn": "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.",
+      "parameters": [
+        {
+          "id": "TC",
+          "descriptionNl": "Taak capaciteit.",
+          "descriptionEn": "Task capacity.",
+          "unit": "-",
+          "defaultValue": [
+            1.0,
+            1.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 2.0
+          },
+          "nameNl": "<i>TC</i>",
+          "nameEn": "<i>TC</i>"
         },
-        "maximum": {
-          "value": 2.0
+        {
+          "id": "TScrit",
+          "descriptionNl": "Kritische taak saturatie, waarboven <i>SA</i> afneemt en <i>T<sub>r</sub></i> toeneemt.",
+          "descriptionEn": "Critical task saturation, above which <i>SA</i> reduces and <i>T<sub>r</sub></i> increases.",
+          "unit": "-",
+          "defaultValue": [
+            0.8,
+            0.8
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "parameter": "TSmax"
+          },
+          "nameNl": "<i>TS<sub>crit</sub></i>",
+          "nameEn": "<i>TS<sub>crit</sub></i>"
         },
-        "nameNl": "<i>β<sub>T</sub></i>",
-        "nameEn": "<i>β<sub>T</sub></i>"
-      },
-      {
-        "id": "betav0",
-        "descriptionNl": "Gevoeligheid aanpassing snelheid.",
-        "descriptionEn": "Sensitivity behavioural adaptation of speed.",
-        "unit": "-",
-        "defaultValue": [
-          1.0,
-          1.0
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "TSmax",
+          "descriptionNl": "Maximale taak saturatie <i>TS</i>.",
+          "descriptionEn": "Maximum task saturation <i>TS</i>.",
+          "unit": "-",
+          "defaultValue": [
+            2.0,
+            2.0
+          ],
+          "minimum": {
+            "parameter": "TScrit"
+          },
+          "maximum": {
+            "value": 3.0
+          },
+          "nameNl": "<i>TS<sub>max</sub></i>",
+          "nameEn": "<i>TS<sub>max</sub></i>"
         },
-        "maximum": {
-          "value": 2.0
+        {
+          "id": "SAmin",
+          "descriptionNl": "Minimale situationele aandacht <i>SA</i>.",
+          "descriptionEn": "Minimum situational awareness <i>SA</i>.",
+          "unit": "-",
+          "defaultValue": [
+            0.5,
+            0.5
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "parameter": "SAmax"
+          },
+          "nameNl": "<i>SA<sub>min</sub></i>",
+          "nameEn": "<i>SA<sub>min</sub></i>"
         },
-        "nameNl": "<i>β<sub>v0</sub></i>",
-        "nameEn": "<i>β<sub>v0</sub></i>"
-      },
-      {
-        "id": "est",
-        "descriptionNl": "Onder- of overschatting afstand en relatieve snelheid.",
-        "descriptionEn": "Under- or overestimation of distance and relative speed.",
-        "unit": "-1|0|1",
-        "defaultValue": [
-          1.0,
-          1.0
-        ],
-        "minimum": {
-          "value": -1.0
+        {
+          "id": "SAmax",
+          "descriptionNl": "Maximale situationele aandacht <i>SA</i>.",
+          "descriptionEn": "Maximum situational awareness <i>SA</i>.",
+          "unit": "-",
+          "defaultValue": [
+            1.0,
+            1.0
+          ],
+          "minimum": {
+            "parameter": "SAmin"
+          },
+          "maximum": {
+            "value": 1.0
+          },
+          "nameNl": "<i>SA<sub>max</sub></i>",
+          "nameEn": "<i>SA<sub>max</sub></i>"
         },
-        "maximum": {
-          "value": 1.0
+        {
+          "id": "Trmax",
+          "descriptionNl": "Maximale reactietijd <i>T<sub>r</sub></i>.",
+          "descriptionEn": "Maximum reaction time <i>T<sub>r</sub></i>.",
+          "unit": "s",
+          "defaultValue": [
+            2.0,
+            2.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 3.0
+          },
+          "nameNl": "<i>T<sub>r,max</sub></i>",
+          "nameEn": "<i>T<sub>r,max</sub></i>"
         },
-        "nameNl": "<i>estimation</i>",
-        "nameEn": "<i>estimation</i>"
-      },
-      {
-        "id": "ant",
-        "descriptionNl": "Anticipatie (0=geen, 1=constante snelheid, 2=constante acceleratie).",
-        "descriptionEn": "Anticipation (0=none, 1=constant speed, 2=constant acceleration).",
-        "unit": "0|1|2",
-        "defaultValue": [
-          1.0,
-          1.0
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "hexp",
+          "descriptionNl": "Helling van afname volg-taak last bij toenemen volgtijd.",
+          "descriptionEn": "Slope of reduction of car-following task demand as headway increases.",
+          "unit": "s",
+          "defaultValue": [
+            4.0,
+            4.0
+          ],
+          "minimum": {
+            "value": 1.0
+          },
+          "maximum": {
+            "value": 10.0
+          },
+          "nameNl": "<i>h<sub>exp</sub></i>",
+          "nameEn": "<i>h<sub>exp</sub></i>"
         },
-        "maximum": {
-          "value": 2.0
+        {
+          "id": "betaT",
+          "descriptionNl": "Gevoeligheid aanpassing volgtijd.",
+          "descriptionEn": "Sensitivity behavioural adaptation of headway.",
+          "unit": "-",
+          "defaultValue": [
+            1.0,
+            1.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 2.0
+          },
+          "nameNl": "<i>β<sub>T</sub></i>",
+          "nameEn": "<i>β<sub>T</sub></i>"
         },
-        "nameNl": "<i>anticipation</i>",
-        "nameEn": "<i>anticipation</i>"
-      },
-      {
-        "id": "alpha",
-        "descriptionNl": "Maximale afname primaire taak last door anticipatie.",
-        "descriptionEn": "Maximum reduction of primary task load due to anticipation.",
-        "unit": "-",
-        "defaultValue": [
-          0.8,
-          0.8
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "betav0",
+          "descriptionNl": "Gevoeligheid aanpassing snelheid.",
+          "descriptionEn": "Sensitivity behavioural adaptation of speed.",
+          "unit": "-",
+          "defaultValue": [
+            1.0,
+            1.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 2.0
+          },
+          "nameNl": "<i>β<sub>v0</sub></i>",
+          "nameEn": "<i>β<sub>v0</sub></i>"
         },
-        "maximum": {
-          "value": 1.0
+        {
+          "id": "est",
+          "descriptionNl": "Onder- of overschatting afstand en relatieve snelheid.",
+          "descriptionEn": "Under- or overestimation of distance and relative speed.",
+          "unit": "-1|0|1",
+          "defaultValue": [
+            1.0,
+            1.0
+          ],
+          "minimum": {
+            "value": -1.0
+          },
+          "maximum": {
+            "value": 1.0
+          },
+          "nameNl": "<i>estimation</i>",
+          "nameEn": "<i>estimation</i>"
         },
-        "nameNl": "<i>α</i>",
-        "nameEn": "<i>α</i>"
-      },
-      {
-        "id": "beta",
-        "descriptionNl": "Maximale afname secundaire taak last door anticipatie.",
-        "descriptionEn": "Maximum reduction of secondary task load due to anticipation.",
-        "unit": "-",
-        "defaultValue": [
-          0.6,
-          0.6
-        ],
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "ant",
+          "descriptionNl": "Anticipatie (0=geen, 1=constante snelheid, 2=constante acceleratie).",
+          "descriptionEn": "Anticipation (0=none, 1=constant speed, 2=constant acceleration).",
+          "unit": "0|1|2",
+          "defaultValue": [
+            1.0,
+            1.0
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 2.0
+          },
+          "nameNl": "<i>anticipation</i>",
+          "nameEn": "<i>anticipation</i>"
         },
-        "maximum": {
-          "value": 1.0
+        {
+          "id": "alpha",
+          "descriptionNl": "Maximale afname primaire taak last door anticipatie.",
+          "descriptionEn": "Maximum reduction of primary task load due to anticipation.",
+          "unit": "-",
+          "defaultValue": [
+            0.8,
+            0.8
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 1.0
+          },
+          "nameNl": "<i>α</i>",
+          "nameEn": "<i>α</i>"
         },
-        "nameNl": "<i>β</i>",
-        "nameEn": "<i>β</i>"
-      }
-    ]
-  }
-]
+        {
+          "id": "beta",
+          "descriptionNl": "Maximale afname secundaire taak last door anticipatie.",
+          "descriptionEn": "Maximum reduction of secondary task load due to anticipation.",
+          "unit": "-",
+          "defaultValue": [
+            0.6,
+            0.6
+          ],
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "value": 1.0
+          },
+          "nameNl": "<i>β</i>",
+          "nameEn": "<i>β</i>"
+        }
+      ]
+    }
+  ]
+}

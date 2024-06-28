@@ -3,6 +3,8 @@ package org.opentrafficsim.fosim.parameters;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opentrafficsim.fosim.parameters.distributions.DistributionValue;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -17,6 +19,23 @@ import com.google.gson.GsonBuilder;
  */
 public class ParameterDefinitions
 {
+    
+    /** Version. */
+    @SuppressWarnings("unused") // used to parse to json
+    private final String version;
+    
+    /** Parameter groups. */
+    @SuppressWarnings("unused") // used to parse to json
+    private final List<ParameterGroup> parameterGroups = getParameterGroups();
+    
+    /**
+     * Constructor.
+     * @param version String; version.
+     */
+    public ParameterDefinitions(final String version)
+    {
+        this.version = version;
+    }
 
     /**
      * Return JSON string parameter definitions.
@@ -139,7 +158,7 @@ public class ParameterDefinitions
                         + ", <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.")
                 .setDescriptionEn("Endogenous influence on desired speed, desired headway and lane change desire from social "
                         + "pressure. This mostly influences the number of lane changes and the headway distribution. It is "
-                        + "important to use different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = "
+                        + "important to use a different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = "
                         + "<i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.");
         group.addParameter(new Parameter("sigma", it("σ"), "-").setMin(0.0).setMax(1.0)
                 .setDefault(DistributionValue.triangular(0.0, 0.25, 1.0), 1.0)
@@ -204,7 +223,7 @@ public class ParameterDefinitions
      * @param string String; string to add html tags to.
      * @return String; string with html tags.
      */
-    protected static String it(final String string)
+    public static String it(final String string)
     {
         String str = string;
         String suffix = "";

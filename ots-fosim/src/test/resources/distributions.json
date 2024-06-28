@@ -1,232 +1,235 @@
-[
-  {
-    "type": "Exponential",
-    "parameters": [
-      {
-        "id": "lambda",
-        "defaultValue": {
-          "parameter": "param.default"
+{
+  "version": "v0.0.1",
+  "distributions": [
+    {
+      "type": "Exponential",
+      "parameters": [
+        {
+          "id": "lambda",
+          "defaultValue": {
+            "parameter": "param.default"
+          },
+          "minimum": {
+            "value": 0.0
+          },
+          "maximum": {
+            "parameter": "param.max"
+          },
+          "nameNl": "<i>λ</i>",
+          "nameEn": "<i>λ</i>"
+        }
+      ],
+      "validRange": "positive_inclusive",
+      "nameNl": "Exponentieel",
+      "nameEn": "Exponential"
+    },
+    {
+      "type": "Triangular",
+      "parameters": [
+        {
+          "id": "min",
+          "defaultValue": {
+            "parameter": "param.min"
+          },
+          "minimum": {
+            "parameter": "param.min"
+          },
+          "maximum": {
+            "parameter": "mode"
+          },
+          "nameNl": "<i>min</i>",
+          "nameEn": "<i>min</i>"
         },
-        "minimum": {
-          "value": 0.0
+        {
+          "id": "mode",
+          "defaultValue": {
+            "parameter": "param.default"
+          },
+          "minimum": {
+            "parameter": "min"
+          },
+          "maximum": {
+            "parameter": "max"
+          },
+          "nameNl": "<i>mode</i>",
+          "nameEn": "<i>mode</i>"
         },
-        "maximum": {
-          "parameter": "param.max"
+        {
+          "id": "max",
+          "defaultValue": {
+            "parameter": "param.max"
+          },
+          "minimum": {
+            "parameter": "mode"
+          },
+          "maximum": {
+            "parameter": "param.max"
+          },
+          "nameNl": "<i>max</i>",
+          "nameEn": "<i>max</i>"
+        }
+      ],
+      "validRange": "all",
+      "nameNl": "Driehoek",
+      "nameEn": "Triangular"
+    },
+    {
+      "type": "Normal",
+      "parameters": [
+        {
+          "id": "mu",
+          "defaultValue": {
+            "parameter": "param.default"
+          },
+          "minimum": {
+            "parameter": "min"
+          },
+          "maximum": {
+            "parameter": "max"
+          },
+          "nameNl": "<i>μ</i>",
+          "nameEn": "<i>μ</i>"
         },
-        "nameNl": "<i>λ</i>",
-        "nameEn": "<i>λ</i>"
-      }
-    ],
-    "validRange": "positive_inclusive",
-    "nameNl": "Exponentieel",
-    "nameEn": "Exponential"
-  },
-  {
-    "type": "Triangular",
-    "parameters": [
-      {
-        "id": "min",
-        "defaultValue": {
-          "parameter": "param.min"
+        {
+          "id": "sigma",
+          "defaultValue": {
+            "value": 1.0
+          },
+          "minimum": {
+            "value": 0.0
+          },
+          "nameNl": "<i>σ</i>",
+          "nameEn": "<i>σ</i>"
         },
-        "minimum": {
-          "parameter": "param.min"
+        {
+          "id": "min",
+          "defaultValue": {
+            "parameter": "param.min"
+          },
+          "minimum": {
+            "parameter": "param.min"
+          },
+          "maximum": {
+            "parameter": "mu"
+          },
+          "nameNl": "<i>min</i>",
+          "nameEn": "<i>min</i>"
         },
-        "maximum": {
-          "parameter": "mode"
+        {
+          "id": "max",
+          "defaultValue": {
+            "parameter": "param.max"
+          },
+          "minimum": {
+            "parameter": "mu"
+          },
+          "maximum": {
+            "parameter": "param.max"
+          },
+          "nameNl": "<i>max</i>",
+          "nameEn": "<i>max</i>"
+        }
+      ],
+      "validRange": "all",
+      "nameNl": "Normaal",
+      "nameEn": "Normal"
+    },
+    {
+      "type": "LogNormal",
+      "parameters": [
+        {
+          "id": "mean",
+          "defaultValue": {
+            "parameter": "param.default"
+          },
+          "minimum": {
+            "parameter": "min"
+          },
+          "maximum": {
+            "parameter": "max"
+          },
+          "nameNl": "<i>gemiddeld</i>",
+          "nameEn": "<i>mean</i>"
         },
-        "nameNl": "<i>min</i>",
-        "nameEn": "<i>min</i>"
-      },
-      {
-        "id": "mode",
-        "defaultValue": {
-          "parameter": "param.default"
+        {
+          "id": "std",
+          "defaultValue": {
+            "value": 1.0
+          },
+          "minimum": {
+            "value": 0.0
+          },
+          "nameNl": "<i>std</i>",
+          "nameEn": "<i>std</i>"
         },
-        "minimum": {
-          "parameter": "min"
+        {
+          "id": "min",
+          "defaultValue": {
+            "parameter": "param.min"
+          },
+          "minimum": {
+            "parameter": "param.min"
+          },
+          "maximum": {
+            "parameter": "mean"
+          },
+          "nameNl": "<i>min</i>",
+          "nameEn": "<i>min</i>"
         },
-        "maximum": {
-          "parameter": "max"
+        {
+          "id": "max",
+          "defaultValue": {
+            "parameter": "param.max"
+          },
+          "minimum": {
+            "parameter": "mean"
+          },
+          "maximum": {
+            "parameter": "param.max"
+          },
+          "nameNl": "<i>max</i>",
+          "nameEn": "<i>max</i>"
+        }
+      ],
+      "validRange": "positive",
+      "nameNl": "LogNormaal",
+      "nameEn": "LogNormal"
+    },
+    {
+      "type": "Uniform",
+      "parameters": [
+        {
+          "id": "min",
+          "defaultValue": {
+            "parameter": "param.min"
+          },
+          "minimum": {
+            "parameter": "param.min"
+          },
+          "maximum": {
+            "parameter": "max"
+          },
+          "nameNl": "<i>min</i>",
+          "nameEn": "<i>min</i>"
         },
-        "nameNl": "<i>mode</i>",
-        "nameEn": "<i>mode</i>"
-      },
-      {
-        "id": "max",
-        "defaultValue": {
-          "parameter": "param.max"
-        },
-        "minimum": {
-          "parameter": "mode"
-        },
-        "maximum": {
-          "parameter": "param.max"
-        },
-        "nameNl": "<i>max</i>",
-        "nameEn": "<i>max</i>"
-      }
-    ],
-    "validRange": "all",
-    "nameNl": "Driehoek",
-    "nameEn": "Triangular"
-  },
-  {
-    "type": "Normal",
-    "parameters": [
-      {
-        "id": "mu",
-        "defaultValue": {
-          "parameter": "param.default"
-        },
-        "minimum": {
-          "parameter": "min"
-        },
-        "maximum": {
-          "parameter": "max"
-        },
-        "nameNl": "<i>μ</i>",
-        "nameEn": "<i>μ</i>"
-      },
-      {
-        "id": "sigma",
-        "defaultValue": {
-          "value": 1.0
-        },
-        "minimum": {
-          "value": 0.0
-        },
-        "nameNl": "<i>σ</i>",
-        "nameEn": "<i>σ</i>"
-      },
-      {
-        "id": "min",
-        "defaultValue": {
-          "parameter": "param.min"
-        },
-        "minimum": {
-          "parameter": "param.min"
-        },
-        "maximum": {
-          "parameter": "mu"
-        },
-        "nameNl": "<i>min</i>",
-        "nameEn": "<i>min</i>"
-      },
-      {
-        "id": "max",
-        "defaultValue": {
-          "parameter": "param.max"
-        },
-        "minimum": {
-          "parameter": "mu"
-        },
-        "maximum": {
-          "parameter": "param.max"
-        },
-        "nameNl": "<i>max</i>",
-        "nameEn": "<i>max</i>"
-      }
-    ],
-    "validRange": "all",
-    "nameNl": "Normaal",
-    "nameEn": "Normal"
-  },
-  {
-    "type": "LogNormal",
-    "parameters": [
-      {
-        "id": "mean",
-        "defaultValue": {
-          "parameter": "param.default"
-        },
-        "minimum": {
-          "parameter": "min"
-        },
-        "maximum": {
-          "parameter": "max"
-        },
-        "nameNl": "<i>gemiddeld</i>",
-        "nameEn": "<i>mean</i>"
-      },
-      {
-        "id": "std",
-        "defaultValue": {
-          "value": 1.0
-        },
-        "minimum": {
-          "value": 0.0
-        },
-        "nameNl": "<i>std</i>",
-        "nameEn": "<i>std</i>"
-      },
-      {
-        "id": "min",
-        "defaultValue": {
-          "parameter": "param.min"
-        },
-        "minimum": {
-          "parameter": "param.min"
-        },
-        "maximum": {
-          "parameter": "mean"
-        },
-        "nameNl": "<i>min</i>",
-        "nameEn": "<i>min</i>"
-      },
-      {
-        "id": "max",
-        "defaultValue": {
-          "parameter": "param.max"
-        },
-        "minimum": {
-          "parameter": "mean"
-        },
-        "maximum": {
-          "parameter": "param.max"
-        },
-        "nameNl": "<i>max</i>",
-        "nameEn": "<i>max</i>"
-      }
-    ],
-    "validRange": "positive",
-    "nameNl": "LogNormaal",
-    "nameEn": "LogNormal"
-  },
-  {
-    "type": "Uniform",
-    "parameters": [
-      {
-        "id": "min",
-        "defaultValue": {
-          "parameter": "param.min"
-        },
-        "minimum": {
-          "parameter": "param.min"
-        },
-        "maximum": {
-          "parameter": "max"
-        },
-        "nameNl": "<i>min</i>",
-        "nameEn": "<i>min</i>"
-      },
-      {
-        "id": "max",
-        "defaultValue": {
-          "parameter": "param.max"
-        },
-        "minimum": {
-          "parameter": "min"
-        },
-        "maximum": {
-          "parameter": "param.max"
-        },
-        "nameNl": "<i>max</i>",
-        "nameEn": "<i>max</i>"
-      }
-    ],
-    "validRange": "all",
-    "nameNl": "Uniform",
-    "nameEn": "Uniform"
-  }
-]
+        {
+          "id": "max",
+          "defaultValue": {
+            "parameter": "param.max"
+          },
+          "minimum": {
+            "parameter": "min"
+          },
+          "maximum": {
+            "parameter": "param.max"
+          },
+          "nameNl": "<i>max</i>",
+          "nameEn": "<i>max</i>"
+        }
+      ],
+      "validRange": "all",
+      "nameNl": "Uniform",
+      "nameEn": "Uniform"
+    }
+  ]
+}

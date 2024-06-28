@@ -6,10 +6,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.Reader;
-import java.util.ArrayList;
 
-import org.opentrafficsim.fosim.parameters.distributions.Distribution;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
+import org.opentrafficsim.fosim.sim0mq.OtsTransceiver;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -17,7 +16,8 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
 /**
- * Test code to serialize and deserialize parameter groups and distributions.
+ * Test code to serialize and deserialize parameter groups and distributions. By running this class the parameters.json and
+ * distributions.json files are created in the test resources.
  * <p>
  * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
@@ -43,7 +43,7 @@ public class ParametersJsonTest
     {
         try
         {
-            writeParametersFile(ParameterDefinitions.getParameterGroups(), PARAMETERS_FILENAME, true, false);
+            writeParametersFile(new ParameterDefinitions(OtsTransceiver.VERSION), PARAMETERS_FILENAME, true, false);
         }
         catch (NullPointerException ex)
         {
@@ -54,7 +54,7 @@ public class ParametersJsonTest
         Object t;
         try
         {
-            TypeToken<ArrayList<ParameterGroup>> typeToken = new TypeToken<>()
+            TypeToken<ParameterDefinitions> typeToken = new TypeToken<>()
             {
             };
             t = loadFile(PARAMETERS_FILENAME, typeToken);
@@ -63,10 +63,10 @@ public class ParametersJsonTest
         {
             System.err.println("Unable to load " + PARAMETERS_FILENAME + ".");
         }
-        
+
         try
         {
-            writeParametersFile(DistributionDefinitions.getDistributions(), DISTRIBUTIONS_FILENAME, true, false);
+            writeParametersFile(new DistributionDefinitions(OtsTransceiver.VERSION), DISTRIBUTIONS_FILENAME, true, false);
         }
         catch (NullPointerException ex)
         {
@@ -75,7 +75,7 @@ public class ParametersJsonTest
         }
         try
         {
-            TypeToken<ArrayList<Distribution>> typeToken = new TypeToken<>()
+            TypeToken<DistributionDefinitions> typeToken = new TypeToken<>()
             {
             };
             t = loadFile(DISTRIBUTIONS_FILENAME, typeToken);

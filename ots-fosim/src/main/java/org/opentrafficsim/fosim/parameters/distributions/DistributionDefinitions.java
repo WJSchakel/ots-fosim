@@ -1,11 +1,12 @@
 package org.opentrafficsim.fosim.parameters.distributions;
 
+import static org.opentrafficsim.fosim.parameters.ParameterDefinitions.it;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
-import org.opentrafficsim.fosim.parameters.DistributionType;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 
 import com.google.gson.Gson;
@@ -20,9 +21,26 @@ import com.google.gson.GsonBuilder;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public class DistributionDefinitions extends ParameterDefinitions
+public class DistributionDefinitions
 {
 
+    /** Version. */
+    @SuppressWarnings("unused") // used to parse to json
+    private final String version;
+    
+    /** Distributions. */
+    @SuppressWarnings("unused") // used to parse to json
+    private final List<Distribution> distributions = getDistributions();
+    
+    /**
+     * Constructor.
+     * @param version String; version.
+     */
+    public DistributionDefinitions(final String version)
+    {
+        this.version = version;
+    }
+    
     /**
      * Return JSON string distribution definitions.
      * @param prettyString boolean; whether to use new lines and indentation.
