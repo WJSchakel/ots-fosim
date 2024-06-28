@@ -107,6 +107,9 @@ public class FosParser
     /** Length above which vehicles types are considered a truck. */
     private static Length TRUCK_THRESHOLD = Length.instantiateSI(7.0);
 
+    /** Simulator. */
+    private OtsSimulatorInterface simulator = null;
+
     /** Network. */
     private RoadNetwork network;
 
@@ -231,6 +234,17 @@ public class FosParser
     public FosParser setParameterSupplier(final ParameterSupplier parameterSupplier)
     {
         this.parameterSupplier = parameterSupplier;
+        return this;
+    }
+
+    /**
+     * Sets the simulator. If none is set, one will be created.
+     * @param simulator OtsSimulatorInterface; simulator.
+     * @return FosParser; this parser for method chaining.
+     */
+    public FosParser setSimulator(final OtsSimulatorInterface simulator)
+    {
+        this.simulator = simulator;
         return this;
     }
 
@@ -519,15 +533,22 @@ public class FosParser
         validityTest();
 
         // simulator and network
-        // TODO: allow simulator without animation
-        boolean gui = getSetting(ParserSetting.GUI);
-        OtsSimulatorInterface simulator = gui ? new OtsAnimatorStep("FOSIM parser") : new OtsSimulator("FOSIM parser");
-        this.network = new RoadNetwork("FOSIM parser", simulator);
-        this.model = new FosimModel(simulator, this.seed);
+        boolean gui;
+        if (this.simulator == null)
+        {
+            gui = getSetting(ParserSetting.GUI);
+            this.simulator = gui ? new OtsAnimatorStep("Ots-Fosim") : new OtsSimulator("Ots-Fosim");
+        }
+        else
+        {
+            gui = false;
+        }
+        this.network = new RoadNetwork("Ots-Fosim", this.simulator);
+        this.model = new FosimModel(this.simulator, this.seed);
         this.model.setNetwork(this.network);
         try
         {
-            simulator.initialize(Time.ZERO, Duration.ZERO, this.timeStep.times(this.maximumSimulationTime), this.model);
+            this.simulator.initialize(Time.ZERO, Duration.ZERO, this.timeStep.times(this.maximumSimulationTime), this.model);
 
             // map out network
             for (int sectionIndex = 0; sectionIndex < this.sections.size(); sectionIndex++)
