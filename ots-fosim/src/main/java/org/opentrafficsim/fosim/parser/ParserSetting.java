@@ -25,7 +25,7 @@ public enum ParserSetting
     /** Whether to include the striped area's as valid lane change area's. */
     STRIPED_AREAS(false),
     
-    /** Whether to build a GUI, or just a simulator. */
+    /** Whether to build a GUI, or just a simulator. Ignored when a simulator is set in the parser. */
     GUI(true);
 
     /** Default value. */

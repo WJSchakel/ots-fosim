@@ -2,6 +2,8 @@ package org.opentrafficsim.fosim.parameters;
 
 import java.lang.reflect.Type;
 
+import org.opentrafficsim.fosim.parameters.distributions.DistributionValue;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
@@ -11,7 +13,7 @@ import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 
 /**
- * Adapter for default values, which are either {@code Scalar} or {@code Distribution}. 
+ * Adapter for default values, which are either {@code Scalar} or {@code Distribution}.
  * <p>
  * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
@@ -20,8 +22,8 @@ import com.google.gson.JsonSerializer;
  */
 public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDeserializer<DefaultValue>
 {
-    
-    /** Delegate Gson for default deserialization of a {@code Distribution}. */
+
+    /** Delegate Gson for default deserialization of a {@code DistributionValue}. */
     private final static Gson GSON = new Gson();
 
     /** {@inheritDoc} */
@@ -46,5 +48,5 @@ public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDe
         }
         return GSON.fromJson(json, DistributionValue.class);
     }
-    
+
 }

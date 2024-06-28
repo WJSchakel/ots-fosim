@@ -4,7 +4,7 @@ import org.opentrafficsim.fosim.parameters.Limit;
 import org.opentrafficsim.fosim.parameters.MinMax;
 
 /**
- * Information regarding a distribution parameter.
+ * Information regarding a distribution parameter, i.e. a parameter of the distribution such as min, mu, mode, max, sigma, etc.
  * <p>
  * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.

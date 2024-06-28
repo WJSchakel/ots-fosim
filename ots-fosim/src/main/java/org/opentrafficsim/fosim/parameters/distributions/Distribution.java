@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.opentrafficsim.fosim.parameters.BiLingual;
-import org.opentrafficsim.fosim.parameters.DistributionType;
 
 /**
  * Description of a distribution applicable on parameters.

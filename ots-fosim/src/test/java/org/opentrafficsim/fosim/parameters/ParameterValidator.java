@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.opentrafficsim.fosim.parameters.distributions.Distribution;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionParameter;
+import org.opentrafficsim.fosim.parameters.distributions.DistributionType;
 
 /**
  * Parameter validity checker.
@@ -98,8 +99,8 @@ public class ParameterValidator
     /**
      * Test distribution validity. Distributions have unique types, parameters referred to in the limits exist (or are
      * param.min/max/default), parameters must be unique by their id within the distribution, default values must be between the
-     * minimum and the maximum values (when given), parameters must obey ordinality: param.min &lt; min &lt; any other with
-     * {@code .parameter} field &lt; max &lt; param.max.
+     * minimum and the maximum values (when given), parameters must obey ordinality: param.min &le; min &le; any other with
+     * {@code .param} field &le; max &le; param.max.
      */
     @Test
     public void checkDistributions()

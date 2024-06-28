@@ -1,4 +1,4 @@
-package org.opentrafficsim.fosim.parameters;
+package org.opentrafficsim.fosim.parameters.distributions;
 
 /**
  * Distribution type. 

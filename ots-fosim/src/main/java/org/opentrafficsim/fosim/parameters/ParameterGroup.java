@@ -14,6 +14,9 @@ import java.util.List;
 public class ParameterGroup
 {
 
+    /** Id. */
+    public String id;
+    
     /** Dutch group name. */
     public String groupNl;
 
@@ -35,11 +38,12 @@ public class ParameterGroup
     /**
      * Constructor.
      * @param groupNl String; Dutch group name.
-     * @param groupEn String; English group name.
+     * @param groupEn String; English group name (doubles as id).
      * @param defaultState DefaultState; default state of the group.
      */
     public ParameterGroup(final String groupNl, final String groupEn, final DefaultState defaultState)
     {
+        this.id = groupEn;
         this.groupNl = groupNl;
         this.groupEn = groupEn;
         this.defaultState = defaultState;

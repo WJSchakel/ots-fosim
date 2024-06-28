@@ -3,6 +3,8 @@ package org.opentrafficsim.fosim.parameters;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opentrafficsim.fosim.parameters.distributions.DistributionValue;
+
 /**
  * Contains information on how and what to display for a parameter.
  * <p>
