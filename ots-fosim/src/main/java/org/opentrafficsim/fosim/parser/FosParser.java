@@ -104,7 +104,7 @@ public class FosParser
     /** Offset for stripes that are at the left or right edge. This separates them between links. */
     private static Length EDGE_STRIPE_GAP = Length.instantiateSI(0.2);
 
-    /** Length above which vehicles types are considered a truck. */
+    /** Length above which vehicles types are considered a truck (deprecated versions). */
     private static Length TRUCK_THRESHOLD = Length.instantiateSI(7.0);
 
     /** Simulator. */
@@ -152,8 +152,11 @@ public class FosParser
     /** Detector positions. */
     private List<Length> detectorPositions = new ArrayList<>();
 
-    /** Number of vehicle types. */
-    private int vehicleTypes;
+    /** Vehicle types. */
+    private List<String> vehicleTypeNames = new ArrayList<>();
+
+    /** Whether vehicle types are truck. */
+    private List<Boolean> isTruck = new ArrayList<>();
 
     /** General parameters. */
     private FosList<FosParameter> generalParameter = new FosList<>();
@@ -397,7 +400,28 @@ public class FosParser
         }
         if (line.startsWith("vehicle types"))
         {
-            this.vehicleTypes = Integer.parseInt(fieldValue(line));
+            if (line.startsWith("vehicle types:"))
+            {
+                // old definition: just a number
+                int numberOfVehicleTypes = Integer.parseInt(fieldValue(line));
+                for (int i = 0; i < numberOfVehicleTypes; i++)
+                {
+                    this.vehicleTypeNames.add((i + 1) + "");
+                }
+            }
+            else
+            {
+                int index = fieldIndex(line);
+                List<String> values = new ArrayList<>();
+                parseValueList(values, fieldValue(line), v -> v);
+                while (this.vehicleTypeNames.size() <= index)
+                {
+                    this.isTruck.add(false);
+                    this.vehicleTypeNames.add("");
+                }
+                this.isTruck.set(index, "1".equals(values.get(0)));
+                this.vehicleTypeNames.set(index, values.get(1));
+            }
             return;
         }
         if (line.startsWith("vehicle general param"))
@@ -409,6 +433,11 @@ public class FosParser
         {
             int[] indices = fieldIndices(line);
             getSubList(this.specificParameter, indices[1]).set(indices[0], new FosParameter(fieldValue(line)));
+            return;
+        }
+        if (line.startsWith("ots param"))
+        {
+            // place holder for now
             return;
         }
         if (line.startsWith("flow"))
@@ -532,22 +561,33 @@ public class FosParser
         // test
         validityTest();
 
-        // simulator and network
-        boolean gui;
-        if (this.simulator == null)
-        {
-            gui = getSetting(ParserSetting.GUI);
-            this.simulator = gui ? new OtsAnimatorStep("Ots-Fosim") : new OtsSimulator("Ots-Fosim");
-        }
-        else
-        {
-            gui = false;
-        }
-        this.network = new RoadNetwork("Ots-Fosim", this.simulator);
-        this.model = new FosimModel(this.simulator, this.seed);
-        this.model.setNetwork(this.network);
         try
         {
+            // dealing with older versions
+            if (this.isTruck.isEmpty())
+            {
+                for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
+                {
+                    Length length = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "length"));
+                    this.isTruck.add(length.gt(TRUCK_THRESHOLD));
+                }
+            }
+
+            // simulator and network
+            boolean gui;
+            if (this.simulator == null)
+            {
+                gui = getSetting(ParserSetting.GUI);
+                this.simulator = gui ? new OtsAnimatorStep("Ots-Fosim") : new OtsSimulator("Ots-Fosim");
+            }
+            else
+            {
+                gui = false;
+            }
+            this.network = new RoadNetwork("Ots-Fosim", this.simulator);
+            this.model = new FosimModel(this.simulator, this.seed);
+            this.model.setNetwork(this.network);
+
             this.simulator.initialize(Time.ZERO, Duration.ZERO, this.timeStep.times(this.maximumSimulationTime), this.model);
 
             // map out network
@@ -613,7 +653,7 @@ public class FosParser
                 "No end of file information was found, parsing information likely incomplete.");
 
         // specific parameters
-        for (int vehicleType = 0; vehicleType < this.vehicleTypes; vehicleType++)
+        for (int vehicleType = 0; vehicleType < this.vehicleTypeNames.size(); vehicleType++)
         {
             Throw.when(vehicleType >= this.specificParameter.size() || this.specificParameter.get(vehicleType) == null,
                     NetworkException.class, "No parameters for vehicle type " + vehicleType);
@@ -624,8 +664,8 @@ public class FosParser
         {
             Throw.when(sourceIndex >= this.source.size(), NetworkException.class,
                     "Source " + sourceIndex + " as specified for vehicle probabilities does not exist.");
-            Throw.when(this.vehicleProbabilities.get(sourceIndex).size() != this.vehicleTypes, NetworkException.class,
-                    "Wrong number of vehicle probabilities for source " + sourceIndex + ".");
+            Throw.when(this.vehicleProbabilities.get(sourceIndex).size() != this.vehicleTypeNames.size(),
+                    NetworkException.class, "Wrong number of vehicle probabilities for source " + sourceIndex + ".");
         }
 
         // sink to source
@@ -637,7 +677,7 @@ public class FosParser
             {
                 Throw.when(sinkIndex >= this.sink.size(), NetworkException.class,
                         "Sink " + sinkIndex + " as specified for sink to source does not exist.");
-                Throw.when(this.sourceToSink.get(sourceIndex).get(sinkIndex).size() != this.vehicleTypes,
+                Throw.when(this.sourceToSink.get(sourceIndex).get(sinkIndex).size() != this.vehicleTypeNames.size(),
                         NetworkException.class, "Wrong number of vehicle probabilities for source " + sourceIndex + ".");
             }
         }
@@ -1172,9 +1212,9 @@ public class FosParser
      */
     private void buildGtuTypes()
     {
-        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypes; vehicleTypeNumber++)
+        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
         {
-            this.gtuTypes.add(new GtuType(Integer.toString(vehicleTypeNumber), DefaultsNl.ROAD_USER));
+            this.gtuTypes.add(new GtuType(this.vehicleTypeNames.get(vehicleTypeNumber), DefaultsNl.ROAD_USER));
         }
     }
 
@@ -1216,12 +1256,12 @@ public class FosParser
         LaneBasedStrategicalRoutePlannerFactory strategicalFactory =
                 new LaneBasedStrategicalRoutePlannerFactory(lmrsFactory, parameterFactory);
         Set<GtuTemplate> templates = new LinkedHashSet<>();
-        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypes; vehicleTypeNumber++)
+        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
         {
             Length length = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "length"));
             Length width = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "vehicle width"));
             Generator<Speed> speed;
-            if (length.gt(TRUCK_THRESHOLD))
+            if (this.isTruck.get(vehicleTypeNumber))
             {
                 speed = new ContinuousDistSpeed(new DistNormal(stream, 85.0, 2.5), SpeedUnit.KM_PER_HOUR);
             }
@@ -1259,7 +1299,7 @@ public class FosParser
             try
             {
                 gtuTypeGenerator = new Distribution<>(stream);
-                for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypes; vehicleTypeNumber++)
+                for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
                 {
                     gtuTypeGenerator.add(
                             new FrequencyAndObject<GtuType>(this.vehicleProbabilities.get(sourceIndex).get(vehicleTypeNumber),
