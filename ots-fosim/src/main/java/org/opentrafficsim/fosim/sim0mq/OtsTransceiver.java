@@ -39,6 +39,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.opentrafficsim.swing.gui.OtsSwingApplication;
@@ -197,7 +198,8 @@ public abstract class OtsTransceiver
             {
                 try
                 {
-                    // In order to allow resources to go to other processes, we sleep before checking again
+                    // In order to allow resources to go to other processes, we sleep before
+                    // checking again
                     Thread.sleep(3);
                 }
                 catch (InterruptedException e)
@@ -254,6 +256,7 @@ public abstract class OtsTransceiver
             this.responder.bind("tcp://*:" + OtsTransceiver.this.port);
             System.out.println("Server is running");
 
+            Map<Gtu, Integer> targetLane = new LinkedHashMap<>();
             try
             {
                 while (!Thread.currentThread().isInterrupted())
@@ -264,7 +267,8 @@ public abstract class OtsTransceiver
                     {
                         try
                         {
-                            // In order to allow resources to go to other processes, we sleep before checking again
+                            // In order to allow resources to go to other processes, we sleep before
+                            // checking again
                             Thread.sleep(3);
                         }
                         catch (InterruptedException e)
@@ -288,14 +292,15 @@ public abstract class OtsTransceiver
                         Map<Gtu, Double> madatoryDesire = new LinkedHashMap<>();
                         for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
                         {
-                            LaneBasedGtu laneGtu = (LaneBasedGtu) gtu;
-                            Lmrs lmrs = (Lmrs) laneGtu.getTacticalPlanner();
+                            Lmrs lmrs = (Lmrs) ((LaneBasedGtu) gtu).getTacticalPlanner();
                             // need to use reflection to access certain information
                             try
                             {
                                 Field lcField = Lmrs.class.getDeclaredField("laneChange");
                                 lcField.setAccessible(true);
                                 LaneChange lc = (LaneChange) lcField.get(lmrs);
+                                // note: lc may already have finalized the lane change, while finalizeLaneChange has not yet
+                                // been called on the GTU, i.e. the reference lane is not the correct lane at the end of an lc
                                 if (lc.isChangingLane())
                                 {
                                     madatoryDesire.put(gtu, lmrs.getLatestDesire(IncentiveRoute.class).get(lc.getDirection()));
@@ -314,23 +319,35 @@ public abstract class OtsTransceiver
                         int k = 1;
                         for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
                         {
-                            Map<Lane, Length> positions = ((LaneBasedGtu) gtu).positions(gtu.getFront());
-                            Length position = Length.POSITIVE_INFINITY;
-                            String laneId = null;
-                            for (Entry<Lane, Length> entry : positions.entrySet())
-                            {
-                                Length pos = entry.getValue();
-                                if (pos.ge0() && pos.lt(position))
-                                {
-                                    position = pos;
-                                    laneId = entry.getKey().getId();
-                                }
-                            }
+                            LanePosition pos = ((LaneBasedGtu) gtu).getReferencePosition();
+                            double front = gtu.getFront().getDx().si;
+                            double laneStart = pos.getLane().getParentLink().getStartNode().getPoint().x;
+                            Length position = Length.instantiateSI(pos.getPosition().si + front + laneStart);
+                            String laneId = pos.getLane().getId();
                             int underscore = laneId.indexOf("_");
                             int lane = Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
                             LaneChange lc = lcInfo.get(gtu);
-                            payload[k++] = (lc == null || lc.getDirection().isLeft()) ? lane : lane + 1;
-                            payload[k++] = Length.instantiateSI(gtu.getLocation().x);
+                            if (lc == null)
+                            {
+                                Integer target = targetLane.remove(gtu);
+                                if (target != null)
+                                {
+                                    // first time step LaneChange indicated no lane change; it is just finished,
+                                    // finalizeLaneChange() is not yet called so reference lane is not valid this time step
+                                    lane = target;
+                                }
+                            }
+                            else if (lc.getDirection().isRight())
+                            {
+                                lane++;
+                            }
+                            else if (lc.getDirection().isLeft())
+                            {
+                                lane--;
+                            }
+
+                            payload[k++] = lane;
+                            payload[k++] = position;
                             payload[k++] = gtu.getSpeed();
                             payload[k++] = gtu.getAcceleration();
                             if (lc == null)
@@ -339,6 +356,7 @@ public abstract class OtsTransceiver
                             }
                             else
                             {
+                                targetLane.put(gtu, lane);
                                 double totalDesire;
                                 try
                                 {
