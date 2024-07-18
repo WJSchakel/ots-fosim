@@ -27,7 +27,7 @@ public class DistributionValue implements DefaultValue
     public final double defaultValue;
 
     /** Names and values of distribution parameters. */
-    public final LinkedHashMap<String, Double> values = new LinkedHashMap<>();;
+    public final LinkedHashMap<String, Double> values = new LinkedHashMap<>();
 
     /**
      * Constructor.

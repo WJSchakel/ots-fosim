@@ -19,15 +19,33 @@ import com.google.gson.GsonBuilder;
  */
 public class ParameterDefinitions
 {
+
+    /** Vehicle group id. */
+    public static final String VEHICLE_GROUP_ID = "Vehicle";
+
+    /** Driver group id. */
+    public static final String DRIVER_GROUP_ID = "Driver";
+
+    /** Car-following group id. */
+    public static final String FOLLOWING_GROUP_ID = "Car-following model";
+
+    /** Lane-change group id. */
+    public static final String LC_GROUP_ID = "Lane-change model";
+
+    /** Social interactions group id. */
+    public static final String SOCIAL_GROUP_ID = "Social interactions";
     
+    /** Perception group id. */
+    public static final String PERCEPTION_GROUP_ID = "Perception";
+
     /** Version. */
     @SuppressWarnings("unused") // used to parse to json
     private final String version;
-    
+
     /** Parameter groups. */
     @SuppressWarnings("unused") // used to parse to json
     private final List<ParameterGroup> parameterGroups = getParameterGroups();
-    
+
     /**
      * Constructor.
      * @param version String; version.
@@ -69,7 +87,7 @@ public class ParameterDefinitions
         ParameterGroup group;
 
         // Vehicle
-        group = new ParameterGroup("Voertuig", "Vehicle", DefaultState.ALWAYS).setDescriptionNl("Voertuig parameters.")
+        group = new ParameterGroup("Voertuig", VEHICLE_GROUP_ID, DefaultState.ALWAYS).setDescriptionNl("Voertuig parameters.")
                 .setDescriptionEn("Vehicle parameters.");
         group.addParameter(new Parameter("l", it("lengte"), it("length"), "m").setMin(3.0).setMax(26.0).setDefault(4.19, 12.0)
                 .setDescriptionNl("Voertuiglengte.").setDescriptionEn("Vehicle length."));
@@ -81,7 +99,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Driver
-        group = new ParameterGroup("Bestuurder", "Driver", DefaultState.ALWAYS)
+        group = new ParameterGroup("Bestuurder", DRIVER_GROUP_ID, DefaultState.ALWAYS)
                 .setDescriptionNl("Algemene bestuurder parameters.").setDescriptionEn("General driver parameters.");
         group.addParameter(new Parameter("Tmax", it("T_max"), "s").setMin("Tmin").setMax(10.0).setDefault(1.2, 1.2)
                 .setDescriptionNl("Normale volgtijd.").setDescriptionEn("Regular desired headway."));
@@ -93,9 +111,9 @@ public class ParameterDefinitions
                 .setDescriptionNl("Factor gewenste snelheid/maximum snelheid.")
                 .setDescriptionEn("Factor desired speed/legal speed limit."));
         list.add(group);
-        
+
         // Car-following model
-        group = new ParameterGroup("Voertuig-volg model", "Car-following model", DefaultState.ALWAYS)
+        group = new ParameterGroup("Voertuig-volg model", FOLLOWING_GROUP_ID, DefaultState.ALWAYS)
                 .setDescriptionNl("Parameters van het IDM+ voertuig-volg model. Dit wordt ook gebruikt voor het accepteren van "
                         + "gaten bij rijstrookwisselen en het remmen voor verkeerslichten.")
                 .setDescriptionEn("Parameters of the IDM+ car-following model. This is also used for gap-acceptance when "
@@ -118,7 +136,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Lane-change model
-        group = new ParameterGroup("Rijstrookwisselmodel", "Lane-change model", DefaultState.ALWAYS)
+        group = new ParameterGroup("Rijstrookwisselmodel", LC_GROUP_ID, DefaultState.ALWAYS)
                 .setDescriptionNl("Parameters van het 'Lane-change Model with Relaxation and Synchronization' (LMRS) gebaseerd "
                         + "op rijstrookwisselwens.")
                 .setDescriptionEn("Parameters of the Lane-change Model with Relaxation and Synchronization (LMRS) based on lane"
@@ -151,7 +169,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Social interactions
-        group = new ParameterGroup("Sociale interacties", "Social interactions", DefaultState.ON)
+        group = new ParameterGroup("Sociale interacties", SOCIAL_GROUP_ID, DefaultState.ON)
                 .setDescriptionNl("Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale "
                         + "druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. "
                         + "Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s"
@@ -169,7 +187,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Perception
-        group = new ParameterGroup("Perceptie", "Perception", DefaultState.OFF)
+        group = new ParameterGroup("Perceptie", PERCEPTION_GROUP_ID, DefaultState.OFF)
                 .setDescriptionNl("Endogene processen voor imperfecte perceptie, afhankelijk van mentale druk door rijtaken.")
                 .setDescriptionEn(
                         "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.");
