@@ -1,48 +1,35 @@
 package org.opentrafficsim.fosim.sim0mq;
 
-import java.awt.Dimension;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
-import java.rmi.RemoteException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.naming.NamingException;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
-import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.cli.CliUtil;
 import org.djutils.exceptions.Try;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.dsol.OtsAnimator;
-import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
-import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
-import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.draw.core.OtsDrawingException;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
-import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
+import org.opentrafficsim.fosim.parser.FosParser;
+import org.opentrafficsim.fosim.parser.ParserSetting;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.plan.operational.LaneChange;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LanePosition;
-import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
-import org.opentrafficsim.swing.gui.OtsSwingApplication;
 import org.sim0mq.Sim0MQException;
 import org.sim0mq.message.Sim0MQMessage;
 import org.zeromq.SocketType;
@@ -52,8 +39,6 @@ import org.zeromq.ZMQ;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import nl.tudelft.simulation.dsol.SimRuntimeException;
-import nl.tudelft.simulation.language.DSOLException;
 import picocli.CommandLine.Option;
 
 /**
@@ -65,7 +50,7 @@ import picocli.CommandLine.Option;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public abstract class OtsTransceiver
+public class OtsTransceiver
 {
 
     /** Parameter and distribution version so Fosim can check versions. */
@@ -116,61 +101,25 @@ public abstract class OtsTransceiver
     protected OtsTransceiver(final String... args) throws Exception
     {
         CliUtil.execute(this, args);
-        setupSimulator();
     }
 
     /**
-     * Starts a simulator/animator
-     * @throws SimRuntimeException timing exception
-     * @throws NamingException naming exception
-     * @throws RemoteException communication exception
-     * @throws DSOLException exception in DSOL
-     * @throws OtsDrawingException exception in GUI
+     * Main method.
+     * @param args String[]; command line arguments.
+     * @throws Exception on any exception during simulation.
      */
-    private void setupSimulator()
-            throws SimRuntimeException, NamingException, RemoteException, DSOLException, OtsDrawingException
+    public static void main(String[] args) throws Exception
     {
-        Duration simulationTime = Duration.instantiateSI(3600.0);
-        if (!this.showGUI)
-        {
-            this.simulator = new OtsSimulator("Ots-Fosim");
-            final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
-            this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
-            this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
-                    "Exception while setting up simulation.");
-            fosimModel.setNetwork(this.network);
-        }
-        else
-        {
-            OtsAnimator animator = new OtsAnimatorStep("Ots-Fosim");
-            this.simulator = animator;
-            final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
-            this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
-            this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
-                    "Exception while setting up simulation.");
-            fosimModel.setNetwork(this.network);
-            GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
-            OtsAnimationPanel animationPanel = new OtsAnimationPanel(fosimModel.getNetwork().getExtent(),
-                    new Dimension(800, 600), (OtsAnimator) this.simulator, fosimModel, colorer, fosimModel.getNetwork());
-            new OtsSimulationApplication<FosimModel>(fosimModel, animationPanel);
-            animator.setSpeedFactor(Double.MAX_VALUE, false);
-            // animationPanel.enableSimulationControlButtons();
-        }
+        new OtsTransceiver(args).start();
+    }
+
+    /**
+     * Starts worker thread.
+     */
+    private void start()
+    {
         new Worker().start();
     }
-
-    /**
-     * Builds the network and demand.
-     * @param sim OtsSimulatorInterface; simulator.
-     * @return OtsRoadNetwork; network.
-     * @throws NetworkException exception in network
-     * @throws OtsGeometryException exception in geometry
-     * @throws ParameterException wrong parameter value
-     * @throws SimRuntimeException timing exception
-     * @throws IOException when stream cannot be read
-     */
-    protected abstract RoadNetwork setupSimulation(final OtsSimulatorInterface sim)
-            throws NetworkException, OtsGeometryException, SimRuntimeException, ParameterException, IOException;
 
     /**
      * Run a simulation step, where a 'step' is defined as a fixed time step. Note that within Ots usually a step is defined as
@@ -391,6 +340,25 @@ public abstract class OtsTransceiver
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "PARAMETERS_REPLY", this.messageId++, parameters), 0);
+                    }
+                    else if ("SETUP".equals(message.getMessageTypeId()))
+                    {
+                        String fosString = (String) message.createObjectArray()[8];
+                        Map<ParserSetting, Boolean> settings = new LinkedHashMap<>();
+                        settings.put(ParserSetting.GUI, OtsTransceiver.this.showGUI);
+                        FosParser parser = new FosParser().setSettings(settings);
+                        Try.execute(() -> parser.parseFromString(fosString), "Unable to setup OTS simulation.");
+                        OtsTransceiver.this.network = parser.getNetwork();
+                        OtsTransceiver.this.simulator = OtsTransceiver.this.network.getSimulator();
+                        if (OtsTransceiver.this.showGUI)
+                        {
+                            OtsSimulationApplication<FosimModel> app = parser.getApplication();
+                            app.getAnimationPanel().disableSimulationControlButtons();
+                            ((OtsAnimator) OtsTransceiver.this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
+                        }
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "SETUP_REPLY", this.messageId++, new Object[0]), 0);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {

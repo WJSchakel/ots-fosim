@@ -68,7 +68,7 @@ public class ParserTestSingle
         Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();
         parserSettings.put(ParserSetting.STRIPED_AREAS, false);
 
-        String fileName = "Terbregseplein_6.5_aangepast.fos";
+        String fileName = "Terbregseplein_6.5_aangepast_param.fos";
         FosParser parser = new FosParser();
         parser.setSettings(parserSettings).parseFromStream(ParametersJsonTest.class.getResourceAsStream("/" + fileName));
         //OtsSimulationApplication<FosimModel> app = parser.getApplication();

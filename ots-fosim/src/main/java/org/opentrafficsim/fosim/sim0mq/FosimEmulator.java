@@ -2,6 +2,7 @@ package org.opentrafficsim.fosim.sim0mq;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
@@ -69,7 +70,7 @@ public class FosimEmulator
             {
                 Object[] payload = message.createObjectArray();
                 DistributionDefinitions distributions = loadString((String) payload[8], DistributionDefinitions.class);
-                //System.out.println(Sim0MQMessage.print(payload));
+                // System.out.println(Sim0MQMessage.print(payload));
             }
             else
             {
@@ -85,11 +86,31 @@ public class FosimEmulator
             {
                 Object[] payload = message.createObjectArray();
                 ParameterDefinitions parameters = loadString((String) payload[8], ParameterDefinitions.class);
-                //System.out.println(Sim0MQMessage.print(payload));
+                // System.out.println(Sim0MQMessage.print(payload));
             }
             else
             {
                 throw new RuntimeException("Did not receive a PARAMETERS_REPLY on a PARAMETERS message.");
+            }
+
+            if (true)
+            {
+                String fosString =
+                        new String(FosimEmulator.class.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos").readAllBytes(),
+                                StandardCharsets.UTF_8);
+                encodedMessage =
+                        Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++, new Object[] {fosString});
+                requester.send(encodedMessage, 0);
+                reply = requester.recv(0);
+                message = Sim0MQMessage.decode(reply);
+                if ("SETUP_REPLY".equals(message.getMessageTypeId()))
+                {
+                    //System.out.println("SETUP_REPLY received");
+                }
+                else
+                {
+                    throw new RuntimeException("Did not receive a SETUP_REPLY on a SETUP message.");
+                }
             }
 
             long step = (long) (500 / SPEED);

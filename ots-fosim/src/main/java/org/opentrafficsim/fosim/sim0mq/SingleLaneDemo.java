@@ -52,7 +52,7 @@ import nl.tudelft.simulation.jstats.streams.StreamInterface;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public class SingleLaneDemo extends OtsTransceiver
+public class SingleLaneDemo extends DemoTransceiver
 {
 
     /**
@@ -119,7 +119,7 @@ public class SingleLaneDemo extends OtsTransceiver
 
         OdOptions odOptions = new OdOptions();
 
-        StreamInterface stream = this.simulator.getModel().getStreams().get("generation");
+        StreamInterface stream = sim.getModel().getStreams().get("generation");
         LaneBasedStrategicalRoutePlannerFactory defaultLmrsFactory =
                 DefaultLaneBasedGtuCharacteristicsGeneratorOd.defaultLmrs(stream);
         Factory characteristicsGeneratorFactory = new Factory(defaultLmrsFactory);

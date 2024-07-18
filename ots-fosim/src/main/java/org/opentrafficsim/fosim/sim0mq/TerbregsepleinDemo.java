@@ -20,7 +20,7 @@ import nl.tudelft.simulation.dsol.SimRuntimeException;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public class TerbregsepleinDemo extends OtsTransceiver
+public class TerbregsepleinDemo extends DemoTransceiver
 {
 
     /**
@@ -49,7 +49,7 @@ public class TerbregsepleinDemo extends OtsTransceiver
             throws NetworkException, OtsGeometryException, SimRuntimeException, ParameterException, IOException
     {
         FosParser parser = new FosParser().setSimulator(sim);
-        parser.parseFromStream(Resource.getResourceAsStream("/Terbregseplein_6.5_aangepast.fos"));
+        parser.parseFromStream(Resource.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos"));
         return parser.getNetwork();
     }
 
