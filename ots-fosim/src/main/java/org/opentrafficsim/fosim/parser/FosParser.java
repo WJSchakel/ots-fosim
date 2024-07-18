@@ -33,35 +33,86 @@ import org.djunits.value.vdouble.vector.data.DoubleVectorData;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.base.parameters.ParameterSet;
 import org.opentrafficsim.base.parameters.ParameterTypes;
+import org.opentrafficsim.base.parameters.Parameters;
 import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.definitions.DefaultsNl;
-import org.opentrafficsim.core.distributions.Distribution;
-import org.opentrafficsim.core.distributions.Distribution.FrequencyAndObject;
 import org.opentrafficsim.core.distributions.Generator;
-import org.opentrafficsim.core.distributions.ProbabilityException;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine3d;
 import org.opentrafficsim.core.geometry.OtsPoint3d;
+import org.opentrafficsim.core.gtu.GtuCharacteristics;
 import org.opentrafficsim.core.gtu.GtuTemplate;
 import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
 import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.core.parameters.ParameterFactory;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
 import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.fosim.model.CarFollowingTask;
+import org.opentrafficsim.fosim.model.LaneChangeTask;
+import org.opentrafficsim.fosim.model.TaskManagerAr;
+import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
+import org.opentrafficsim.fosim.parameters.data.ParameterData;
+import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
+import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
+import org.opentrafficsim.fosim.parameters.data.ScalarData;
+import org.opentrafficsim.fosim.parameters.data.ValueAdapter;
+import org.opentrafficsim.fosim.parameters.data.ValueData;
 import org.opentrafficsim.fosim.sim0mq.FosimModel;
 import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
-import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
+import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
+import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
+import org.opentrafficsim.road.gtu.lane.VehicleModel;
+import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
+import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
+import org.opentrafficsim.road.gtu.lane.perception.PerceptionFactory;
+import org.opentrafficsim.road.gtu.lane.perception.categories.AnticipationTrafficPerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.DirectInfrastructurePerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.DirectIntersectionPerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Anticipation;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.DirectNeighborsPerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType.PerceivedHeadwayGtuType;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
+import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
+import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller.BehavioralAdaptation;
+import org.opentrafficsim.road.gtu.lane.perception.mental.Task;
+import org.opentrafficsim.road.gtu.lane.perception.mental.TaskManager;
+import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
+import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdmFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModelFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationIncentive;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationTrafficLights;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.DefaultLmrsPerceptionFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveCourtesy;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSocioSpeed;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveStayRight;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.SocioDesiredSpeed;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.GapAcceptance;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.MandatoryIncentive;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.VoluntaryIncentive;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
@@ -84,6 +135,10 @@ import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.opentrafficsim.swing.gui.OtsSwingApplication;
 import org.opentrafficsim.trafficcontrol.FixedTimeController;
 import org.opentrafficsim.trafficcontrol.FixedTimeController.SignalGroup;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.stream.JsonReader;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.jstats.distributions.DistNormal;
@@ -163,6 +218,9 @@ public class FosParser
 
     /** Specific parameters per vehicle type. */
     private FosList<FosList<FosParameter>> specificParameter = new FosList<>();
+
+    /** Parameter definitions. */
+    private ParameterDataDefinition otsParameters;
 
     /** List of flows, index same as source index. */
     private FosList<FosFlow> flow = new FosList<>();
@@ -437,7 +495,11 @@ public class FosParser
         }
         if (line.startsWith("ots param"))
         {
-            // place holder for now
+            GsonBuilder builder = new GsonBuilder();
+            builder.registerTypeAdapter(ValueData.class, new ValueAdapter());
+            Gson gson = builder.create();
+            JsonReader reader = new JsonReader(new StringReader(fieldValue(line)));
+            this.otsParameters = (ParameterDataDefinition) gson.fromJson(reader, ParameterDataDefinition.class);
             return;
         }
         if (line.startsWith("flow"))
@@ -1247,32 +1309,59 @@ public class FosParser
         StreamInterface stream = this.network.getSimulator().getModel().getStream("generation");
         OdOptions options = new OdOptions();
         options.set(OdOptions.INSTANT_LC, false);
+        options.set(OdOptions.NO_LC_DIST, Length.instantiateSI(50.0));
+
+        // templates and parameters
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
-
-        // TODO: use parameter supplier
-
-        parameterFactory.addParameter(ParameterTypes.FSPEED, new DistNormal(stream, 123.7 / 120.0, 0.1));
-        LmrsFactory lmrsFactory = new LmrsFactory(new IdmPlusFactory(stream), new DefaultLmrsPerceptionFactory());
-        LaneBasedStrategicalRoutePlannerFactory strategicalFactory =
-                new LaneBasedStrategicalRoutePlannerFactory(lmrsFactory, parameterFactory);
-        Set<GtuTemplate> templates = new LinkedHashSet<>();
-        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
+        this.parameterSupplier.setAllInParameterFactory(this.gtuTypes, parameterFactory);
+        Map<GtuType, GtuTemplate> templates = new LinkedHashMap<>();
+        
+        this.otsParameters = null; // TODO: remove this once the parameter information is complete and parseable
+        
+        if (this.otsParameters == null)
         {
-            Length length = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "length"));
-            Length width = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "vehicle width"));
-            Generator<Speed> speed;
-            if (this.isTruck.get(vehicleTypeNumber))
+            parameterFactory.addParameter(ParameterTypes.FSPEED, new DistNormal(stream, 123.7 / 120.0, 0.1));
+            for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
             {
-                speed = new ContinuousDistSpeed(new DistNormal(stream, 85.0, 2.5), SpeedUnit.KM_PER_HOUR);
+                Length length = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "length"));
+                Length width = Length.instantiateSI(getParameterValue(vehicleTypeNumber, "vehicle width"));
+                Generator<Speed> speed;
+                if (this.isTruck.get(vehicleTypeNumber))
+                {
+                    speed = new ContinuousDistSpeed(new DistNormal(stream, 85.0, 2.5), SpeedUnit.KM_PER_HOUR);
+                }
+                else
+                {
+                    Speed vMax = new Speed(180.0, SpeedUnit.KM_PER_HOUR);
+                    speed = () -> vMax;
+                }
+                GtuType gtuType = this.gtuTypes.get(vehicleTypeNumber);
+                templates.put(gtuType, new GtuTemplate(gtuType, () -> length, () -> width, speed));
             }
-            else
-            {
-                Speed vMax = new Speed(180.0, SpeedUnit.KM_PER_HOUR);
-                speed = () -> vMax;
-            }
-            templates.add(new GtuTemplate(this.gtuTypes.get(vehicleTypeNumber), () -> length, () -> width, speed));
+        }
+        else
+        {
+            OtsParametersParser.parse(this.gtuTypes, this.otsParameters, templates, parameterFactory, stream);
         }
 
+        // factories
+        List<LaneBasedStrategicalRoutePlannerFactory> factories = new ArrayList<>();
+        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
+        {
+            factories.add(getStrategicalPlannerFactory(parameterFactory, stream, vehicleTypeNumber));
+        }
+        LaneBasedGtuCharacteristicsGeneratorOd characteristicsGenerator = (origin, destination, category, randomStream) ->
+        {
+            GtuType gtuType = category.get(GtuType.class);
+            GtuCharacteristics gtuCharacteristics =
+                    Try.assign(() -> templates.get(gtuType).draw(), "Unable to draw GTU characteristics");
+            VehicleModel vehicleModel = VehicleModel.MINMAX;
+            return new LaneBasedGtuCharacteristics(gtuCharacteristics, factories.get(FosParser.this.gtuTypes.indexOf(gtuType)),
+                    null, origin, destination, vehicleModel);
+        };
+        options.set(OdOptions.GTU_TYPE, characteristicsGenerator);
+
+        // demand
         for (int sourceIndex = 0; sourceIndex < this.flow.size(); sourceIndex++)
         {
             FosFlow flow = this.flow.get(sourceIndex);
@@ -1295,29 +1384,9 @@ public class FosParser
                             flow.getTimeVector(), Interpolation.LINEAR, sinkFraction * vehicleFraction);
                 }
             }
-            Distribution<GtuType> gtuTypeGenerator;
-            try
-            {
-                gtuTypeGenerator = new Distribution<>(stream);
-                for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
-                {
-                    gtuTypeGenerator.add(
-                            new FrequencyAndObject<GtuType>(this.vehicleProbabilities.get(sourceIndex).get(vehicleTypeNumber),
-                                    this.gtuTypes.get(vehicleTypeNumber)));
-                }
-            }
-            catch (ProbabilityException pe)
-            {
-                throw new RuntimeException(pe);
-            }
-
-            // options per origin
-            LaneBasedGtuCharacteristicsGeneratorOd characteristicsGenerator =
-                    new DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory(strategicalFactory).setGtuTypeGenerator(null)
-                            .setTemplates(templates).create();
-            options.set(sourceNode, OdOptions.GTU_TYPE, characteristicsGenerator);
         }
 
+        // apply
         OdApplier.applyOd(this.network, od, options, DefaultsRoadNl.ROAD_USERS);
 
         // TODO: remove after update to later OTS version which fixes DestinationDetector/SinkDetector confusion
@@ -1339,7 +1408,135 @@ public class FosParser
     }
 
     /**
-     * Returns the parameter value for given vehicle type number, and parameter name.
+     * Creates a factory with all required model components, including optional social interactions and perception.
+     * @param parameterFactory ParameterFactory; parameter factory.
+     * @param stream StreamInterface; stream of random numbers.
+     * @param vehicleTypeNumber int; vehicle type number.
+     * @return LaneBasedStrategicalRoutePlannerFactory; factory.
+     */
+    private LaneBasedStrategicalRoutePlannerFactory getStrategicalPlannerFactory(final ParameterFactory parameterFactory,
+            final StreamInterface stream, final int vehicleTypeNumber)
+    {
+        // figure out which components to use
+        boolean social = false;
+        boolean courtesy = false;
+        boolean perception = false;
+        Estimation estimation = null;
+        Anticipation anticipation = null;
+        if (this.otsParameters != null)
+        {
+            for (ParameterDataGroup group : this.otsParameters.parameterGroups)
+            {
+                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID))
+                {
+                    social = true;
+                    for (ParameterData parameterData : group.parameters)
+                    {
+                        if (parameterData.id.equals("courtesy"))
+                        {
+                            courtesy = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value() > 0.0;
+                        }
+                    }
+                }
+                else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID))
+                {
+                    perception = true;
+                    for (ParameterData parameterData : group.parameters)
+                    {
+                        if (parameterData.id.equals("est"))
+                        {
+                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
+                            estimation = value < 0.0 ? Estimation.UNDERESTIMATION
+                                    : (value > 0.0 ? Estimation.OVERESTIMATION : Estimation.NONE);
+                        }
+                        else if (parameterData.id.equals("ant"))
+                        {
+                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
+                            anticipation = value > 1.5 ? Anticipation.CONSTANT_ACCELERATION
+                                    : (value > 0.5 ? Anticipation.CONSTANT_SPEED : Anticipation.NONE);
+                        }
+                    }
+                }
+            }
+        }
+        boolean isTruck = this.isTruck.get(vehicleTypeNumber);
+        Estimation estimation2 = estimation; // effectively final, for use in new PerceptionFactory() below
+        Anticipation anticipation2 = anticipation; // effectively final
+
+        // car-following
+        CarFollowingModelFactory<
+                IdmPlus> cfModelFactory = social
+                        ? new AbstractIdmFactory<>(
+                                new IdmPlus(AbstractIdm.HEADWAY, new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED)), stream)
+                        : new IdmPlusFactory(stream);
+
+        // perception
+        PerceptionFactory perceptionFactory = perception ? new PerceptionFactory()
+        {
+            /** {@inheritDoc} */
+            @Override
+            public Parameters getParameters() throws ParameterException
+            {
+                return new ParameterSet(); // all parameters are given by FOSIM and parsed in to the ParameterFactoryByType
+            }
+
+            /** {@inheritDoc} */
+            @Override
+            public LanePerception generatePerception(final LaneBasedGtu gtu)
+            {
+                Set<Task> tasks = new LinkedHashSet<>();
+                tasks.add(new CarFollowingTask());
+                tasks.add(new LaneChangeTask());
+                Set<BehavioralAdaptation> behavioralAdapatations = new LinkedHashSet<>();
+                behavioralAdapatations.add(new AdaptationSituationalAwareness()); // sets SA and reaction time
+                behavioralAdapatations.add(new AdaptationHeadway());
+                behavioralAdapatations.add(new AdaptationSpeed());
+                TaskManager taskManager = new TaskManagerAr("lane-changing");
+                CategoricalLanePerception perception =
+                        new CategoricalLanePerception(gtu, new Fuller(tasks, behavioralAdapatations, taskManager));
+                HeadwayGtuType headwayGtuType = new PerceivedHeadwayGtuType(estimation2, anticipation2);
+                perception.addPerceptionCategory(new DirectEgoPerception<>(perception));
+                perception.addPerceptionCategory(new DirectInfrastructurePerception(perception));
+                perception.addPerceptionCategory(new DirectNeighborsPerception(perception, headwayGtuType));
+                perception.addPerceptionCategory(new AnticipationTrafficPerception(perception));
+                perception.addPerceptionCategory(new DirectIntersectionPerception(perception, HeadwayGtuType.WRAP));
+                return perception;
+            }
+        } : new DefaultLmrsPerceptionFactory();
+
+        // tailgating
+        Tailgating tailgating = social ? Tailgating.PRESSURE : Tailgating.NONE;
+
+        // incentives: voluntary, mandatory, acceleration
+        Set<MandatoryIncentive> mandatoryIncentives = new LinkedHashSet<>();
+        mandatoryIncentives.add(new IncentiveRoute());
+        Set<VoluntaryIncentive> voluntaryIncentives = new LinkedHashSet<>();
+        voluntaryIncentives.add(new IncentiveSpeedWithCourtesy());
+        voluntaryIncentives.add(new IncentiveKeep());
+        if (social)
+        {
+            voluntaryIncentives.add(new IncentiveSocioSpeed());
+            if (courtesy)
+            {
+                voluntaryIncentives.add(new IncentiveCourtesy());
+            }
+        }
+        if (isTruck)
+        {
+            voluntaryIncentives.add(new IncentiveStayRight());
+        }
+        Set<AccelerationIncentive> accelerationIncentives = new LinkedHashSet<>();
+        accelerationIncentives.add(new AccelerationTrafficLights());
+
+        // create the factories
+        LmrsFactory lmrsFactory =
+                new LmrsFactory(cfModelFactory, perceptionFactory, Synchronization.PASSIVE, Cooperation.PASSIVE,
+                        GapAcceptance.INFORMED, tailgating, mandatoryIncentives, voluntaryIncentives, accelerationIncentives);
+        return new LaneBasedStrategicalRoutePlannerFactory(lmrsFactory, parameterFactory);
+    }
+
+    /**
+     * Returns the FOSIM parameter value for given vehicle type number, and parameter name.
      * @param vehicleTypeNumber int; vehicle type number.
      * @param parameterName String; parameter name as in FOSIM specification.
      * @return double; parameter value.
