@@ -4,25 +4,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import org.djunits.unit.Unit;
 import org.djunits.value.vdouble.scalar.base.AbstractDoubleScalarRel;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterType;
-import org.opentrafficsim.base.parameters.ParameterTypeInteger;
-import org.opentrafficsim.base.parameters.ParameterTypeLength;
 import org.opentrafficsim.base.parameters.ParameterTypeNumeric;
-import org.opentrafficsim.base.parameters.ParameterTypeSpeed;
-import org.opentrafficsim.base.parameters.constraint.Constraint;
-import org.opentrafficsim.base.parameters.constraint.NumericConstraint;
 import org.opentrafficsim.core.distributions.Generator;
 import org.opentrafficsim.core.distributions.ProbabilityException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistDoubleScalar;
-import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
-import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 
 import nl.tudelft.simulation.jstats.distributions.DistContinuous;
 import nl.tudelft.simulation.jstats.distributions.DistDiscrete;
@@ -37,38 +29,6 @@ import nl.tudelft.simulation.jstats.distributions.DistDiscrete;
  */
 public class ParameterSupplier
 {
-
-    /** Length parameter type. */
-    public static ParameterTypeLength L = new ParameterTypeLength("L", "Vehicle length", NumericConstraint.POSITIVE);
-
-    /** Width parameter type. */
-    public static ParameterTypeLength W = new ParameterTypeLength("W", "Vehicle width", NumericConstraint.POSITIVE);
-
-    /** Maximum vehicle speed parameter type. */
-    public static ParameterTypeSpeed V_MAX =
-            new ParameterTypeSpeed("V_MAX", "Maximum vehicle speed", NumericConstraint.POSITIVE);
-
-    /** Estimation parameter type. */
-    public static ParameterTypeInteger ESTIMATION =
-            new ParameterTypeInteger("Estimation", "Whether the driver under- or over-estimates.", new Constraint<Integer>()
-            {
-                /** {@inheritDoc} */
-                @Override
-                public boolean accept(final Integer value)
-                {
-                    return value == -1 || value == 1;
-                }
-
-                /** {@inheritDoc} */
-                @Override
-                public String failMessage()
-                {
-                    return "Value should be -1 or 1.";
-                }
-            });
-
-    /** Set of parameter types that do not belong in the behavioral parameters. */
-    public static Set<ParameterType<?>> NON_BEHAVIORAL_PARAMETERS = Set.of(L, W, V_MAX, ESTIMATION);
 
     /** Parameters. */
     private final Map<Integer, Map<ParameterType<?>, ParameterEntry<?, ?>>> map = new LinkedHashMap<>();
@@ -140,20 +100,6 @@ public class ParameterSupplier
     }
 
     /**
-     * Returns the parameter value (scalar or distributed) as a generator. This is for vehicle parameters that are set in GTU
-     * characteristics.
-     * @param <T> parameter type.
-     * @param vehicleType int; vehicle type.
-     * @param parameterType ParameterType&lt;T&gt;; parameter type.
-     * @return Generator&lt;T&gt;T; generator.
-     */
-    @SuppressWarnings("unchecked")
-    public <T> Generator<T> asGenerator(final int vehicleType, final ParameterType<T> parameterType)
-    {
-        return (Generator<T>) this.map.get(vehicleType).get(parameterType);
-    }
-
-    /**
      * Sets all behavioral parameters in the parameter factory. These exclude the vehicle parameters, or parameters that govern
      * what model to use (rather than with what value).
      * @param gtuTypes List&lt;GtuType&gt;; list of GTU types indexed at their vehicle type index.
@@ -166,30 +112,9 @@ public class ParameterSupplier
             GtuType gtuType = gtuTypes.get(entry.getKey());
             for (ParameterEntry<?, ?> parameterEntry : entry.getValue().values())
             {
-                if (!NON_BEHAVIORAL_PARAMETERS.contains(parameterEntry.getParameterType()))
-                {
-                    parameterEntry.setInParameterFactory(gtuType, parameterFactory);
-                }
+                parameterEntry.setInParameterFactory(gtuType, parameterFactory);
             }
         }
-    }
-
-    /**
-     * Whether the model parameters include social interactions.
-     * @return boolean; whether the model parameters include social interactions.
-     */
-    public boolean includesSocialInteractions()
-    {
-        return this.map.get(0).containsKey(LmrsParameters.SOCIO);
-    }
-
-    /**
-     * Whether the model parameters include perception.
-     * @return boolean; whether the model parameters include perception.
-     */
-    public boolean includesPerception()
-    {
-        return this.map.get(0).containsKey(Fuller.TC);
     }
 
     /** {@inheritDoc} */
