@@ -12,12 +12,33 @@ public enum DefaultState
 {
     
     /** Always on; mandatory parameters and model components. */
-    ALWAYS,
+    ALWAYS(true),
     
     /** Model component and parameters on by default. */
-    ON,
+    ON(true),
     
     /** Model component and parameters off by default. */
-    OFF;
+    OFF(false);
+    
+    /** Active status. */
+    private final boolean active;
+    
+    /**
+     * Constructor.
+     * @param active boolean; active status.
+     */
+    private DefaultState(final boolean active)
+    {
+        this.active = active;
+    }
+    
+    /**
+     * Returns whether the state is active, i.e. ALWAYS or ON.
+     * @return whether the state is active, i.e. ALWAYS or ON.
+     */
+    public boolean isActive()
+    {
+        return this.active;
+    }
     
 }

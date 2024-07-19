@@ -2,6 +2,8 @@ package org.opentrafficsim.fosim.parameters.data;
 
 import java.util.List;
 
+import org.opentrafficsim.fosim.parameters.DefaultState;
+
 /**
  * This class defines a parameter data group as received from FOSIM.
  * <p>
@@ -15,6 +17,9 @@ public class ParameterDataGroup
 
     /** Id. */
     public String id;
+    
+    /** Group state. */
+    public DefaultState state;
     
     /** List of parameters in the group. */
     public List<ParameterData> parameters;

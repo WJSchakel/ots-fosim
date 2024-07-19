@@ -1315,9 +1315,6 @@ public class FosParser
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
         this.parameterSupplier.setAllInParameterFactory(this.gtuTypes, parameterFactory);
         Map<GtuType, GtuTemplate> templates = new LinkedHashMap<>();
-        
-        this.otsParameters = null; // TODO: remove this once the parameter information is complete and parseable
-        
         if (this.otsParameters == null)
         {
             parameterFactory.addParameter(ParameterTypes.FSPEED, new DistNormal(stream, 123.7 / 120.0, 0.1));
@@ -1427,7 +1424,7 @@ public class FosParser
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
             {
-                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID))
+                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state.isActive())
                 {
                     social = true;
                     for (ParameterData parameterData : group.parameters)
@@ -1438,7 +1435,7 @@ public class FosParser
                         }
                     }
                 }
-                else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID))
+                else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state.isActive())
                 {
                     perception = true;
                     for (ParameterData parameterData : group.parameters)

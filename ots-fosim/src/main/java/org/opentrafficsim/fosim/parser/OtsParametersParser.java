@@ -133,11 +133,11 @@ public class OtsParametersParser
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
             {
-                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID))
+                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state.isActive())
                 {
                     social = true;
                 }
-                if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID))
+                if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state.isActive())
                 {
                     perception = true;
                 }
