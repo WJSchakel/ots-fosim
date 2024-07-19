@@ -6,6 +6,8 @@ import java.lang.reflect.Field;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.swing.WindowConstants;
+
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djutils.cli.CliUtil;
@@ -83,6 +85,9 @@ public class OtsTransceiver
     /** Show GUI. */
     @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "true")
     protected boolean showGUI;
+
+    /** App when GUI is used. */
+    protected OtsSimulationApplication<FosimModel> app;
 
     /** The simulator. */
     protected OtsSimulatorInterface simulator;
@@ -352,8 +357,9 @@ public class OtsTransceiver
                         OtsTransceiver.this.simulator = OtsTransceiver.this.network.getSimulator();
                         if (OtsTransceiver.this.showGUI)
                         {
-                            OtsSimulationApplication<FosimModel> app = parser.getApplication();
-                            app.getAnimationPanel().disableSimulationControlButtons();
+                            OtsTransceiver.this.app = parser.getApplication();
+                            OtsTransceiver.this.app.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                            OtsTransceiver.this.app.getAnimationPanel().disableSimulationControlButtons();
                             ((OtsAnimator) OtsTransceiver.this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
                         }
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
@@ -362,10 +368,24 @@ public class OtsTransceiver
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {
-                        System.out.println("Ots received STOP command at " + OtsTransceiver.this.simulator.getSimulatorTime());
+                        OtsTransceiver.this.simulator = null;
+                        OtsTransceiver.this.network = null;
+                        if (OtsTransceiver.this.app != null)
+                        {
+                            OtsTransceiver.this.app.setVisible(false);
+                            OtsTransceiver.this.app.dispose();
+                            OtsTransceiver.this.app = null;
+                        }
+                        OtsTransceiver.this.stepNumber = 1;
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "STOP_REPLY", this.messageId++, new Object[0]), 0);
+                    }
+                    else if ("TERMINATE".equals(message.getMessageTypeId()))
+                    {
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "TERMINATE_REPLY", this.messageId++, new Object[0]), 0);
                         break;
                     }
                     else if ("PING".equals(message.getMessageTypeId()))

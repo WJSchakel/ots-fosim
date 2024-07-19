@@ -167,9 +167,32 @@ public class FosimEmulator
                     // System.out.println(payload[8] + " vehicles");
                 }
             }
-
+            
             requester.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "STOP", messageId++, new Object[] {}),
                     0);
+            reply = requester.recv(0);
+            message = Sim0MQMessage.decode(reply);
+            if ("STOP_REPLY".equals(message.getMessageTypeId()))
+            {
+                
+            }
+            else
+            {
+                throw new RuntimeException("Did not receive a STOP_REPLY on a STOP message.");
+            }
+            
+            requester.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TERMINATE", messageId++, new Object[] {}),
+                    0);
+            reply = requester.recv(0);
+            message = Sim0MQMessage.decode(reply);
+            if ("TERMINATE_REPLY".equals(message.getMessageTypeId()))
+            {
+                
+            }
+            else
+            {
+                throw new RuntimeException("Did not receive a TERMINATE_REPLY on a TERMINATE message.");
+            }
 
             requester.close();
             context.destroy();
