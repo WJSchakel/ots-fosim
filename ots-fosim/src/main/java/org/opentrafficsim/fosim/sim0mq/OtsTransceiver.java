@@ -11,7 +11,6 @@ import javax.swing.WindowConstants;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djutils.cli.CliUtil;
-import org.djutils.exceptions.Try;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.dsol.OtsAnimator;
@@ -348,23 +347,31 @@ public class OtsTransceiver
                     }
                     else if ("SETUP".equals(message.getMessageTypeId()))
                     {
-                        String fosString = (String) message.createObjectArray()[8];
-                        Map<ParserSetting, Boolean> settings = new LinkedHashMap<>();
-                        settings.put(ParserSetting.GUI, OtsTransceiver.this.showGUI);
-                        FosParser parser = new FosParser().setSettings(settings);
-                        Try.execute(() -> parser.parseFromString(fosString), "Unable to setup OTS simulation.");
-                        OtsTransceiver.this.network = parser.getNetwork();
-                        OtsTransceiver.this.simulator = OtsTransceiver.this.network.getSimulator();
-                        if (OtsTransceiver.this.showGUI)
+                        String exceptionMessage = "";
+                        try
                         {
-                            OtsTransceiver.this.app = parser.getApplication();
-                            OtsTransceiver.this.app.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-                            OtsTransceiver.this.app.getAnimationPanel().disableSimulationControlButtons();
-                            ((OtsAnimator) OtsTransceiver.this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
+                            String fosString = (String) message.createObjectArray()[8];
+                            Map<ParserSetting, Boolean> settings = new LinkedHashMap<>();
+                            settings.put(ParserSetting.GUI, OtsTransceiver.this.showGUI);
+                            FosParser parser = new FosParser().setSettings(settings);
+                            parser.parseFromString(fosString);
+                            OtsTransceiver.this.network = parser.getNetwork();
+                            OtsTransceiver.this.simulator = OtsTransceiver.this.network.getSimulator();
+                            if (OtsTransceiver.this.showGUI)
+                            {
+                                OtsTransceiver.this.app = parser.getApplication();
+                                OtsTransceiver.this.app.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                                OtsTransceiver.this.app.getAnimationPanel().disableSimulationControlButtons();
+                                ((OtsAnimator) OtsTransceiver.this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            exceptionMessage = ex.getMessage() == null ? "Exception occured without message." : ex.getMessage();
                         }
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "SETUP_REPLY", this.messageId++, new Object[0]), 0);
+                                "SETUP_REPLY", this.messageId++, exceptionMessage), 0);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {
