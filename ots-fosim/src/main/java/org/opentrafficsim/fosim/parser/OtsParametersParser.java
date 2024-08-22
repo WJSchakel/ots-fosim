@@ -42,6 +42,7 @@ import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
 import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
 
 import nl.tudelft.simulation.jstats.distributions.DistContinuous;
 import nl.tudelft.simulation.jstats.distributions.DistExponential;
@@ -118,11 +119,11 @@ public class OtsParametersParser
                         : getDistribution((DistributionData) valueLength, stream, Length.class, LengthUnit.SI);
         ValueData valueWidth = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "w").value.get(vehicleTypeNumber);
         Generator<Length> width =
-                (valueLength instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueWidth).value())
+                (valueWidth instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueWidth).value())
                         : getDistribution((DistributionData) valueWidth, stream, Length.class, LengthUnit.SI);
         ValueData valueMaxV = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "vMax").value.get(vehicleTypeNumber);
         Generator<Speed> speed =
-                (valueMaxV instanceof ScalarData) ? () -> new Speed(((ScalarData) valueWidth).value(), SpeedUnit.KM_PER_HOUR)
+                (valueMaxV instanceof ScalarData) ? () -> new Speed(((ScalarData) valueMaxV).value(), SpeedUnit.KM_PER_HOUR)
                         : getDistribution((DistributionData) valueMaxV, stream, Speed.class, SpeedUnit.KM_PER_HOUR);
         templates.put(gtuType, new GtuTemplate(gtuType, length, width, speed));
 
@@ -147,6 +148,11 @@ public class OtsParametersParser
         // Driver: Tmax, Tmin, fSpeed
         addParameter(parameterFactory, ParameterTypes.TMAX, ParameterDefinitions.DRIVER_GROUP_ID, "Tmax", Duration.class,
                 DurationUnit.SI, stream, vehicleTypeNumber);
+        // T = Tmax
+        ValueData valueData = getParameterData(ParameterDefinitions.DRIVER_GROUP_ID, "Tmax").value.get(vehicleTypeNumber);
+        Duration t = Duration.instantiateSI(valueData instanceof ScalarData ? ((ScalarData) valueData).value()
+                : getTypicalValue((DistributionData) valueData));
+        parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), ParameterTypes.T, t);
         addParameter(parameterFactory, ParameterTypes.TMIN, ParameterDefinitions.DRIVER_GROUP_ID, "Tmin", Duration.class,
                 DurationUnit.SI, stream, vehicleTypeNumber);
         addParameter(parameterFactory, ParameterTypes.FSPEED, ParameterDefinitions.DRIVER_GROUP_ID, "fSpeed", stream,
@@ -191,6 +197,8 @@ public class OtsParametersParser
         {
             addParameter(parameterFactory, LmrsParameters.SOCIO, ParameterDefinitions.SOCIAL_GROUP_ID, "sigma", stream,
                     vehicleTypeNumber);
+            // Rho (init) = 0.0
+            parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), Tailgating.RHO, 0.0);
         }
 
         // Perception: TC, TScrit, TSmax, SAmin, SAmax, Trmax, hexp, betaT, betav0, (est), (ant), alpha, beta
@@ -418,6 +426,31 @@ public class OtsParametersParser
             case Uniform:
                 return new DistUniform(stream, distribution.distributionParameters.get("min"),
                         distribution.distributionParameters.get("max"));
+            default:
+                throw new ParameterException("Unknown distribution type " + distribution.type);
+        }
+    }
+
+    /**
+     * Get the typical value for a distribution, e.g. the mean or mode.
+     * @param distribution DistributionData; distribution from FOSIM.
+     * @return double distribution.
+     * @throws ParameterException if the distribution is not supported.
+     */
+    private final double getTypicalValue(final DistributionData distribution) throws ParameterException
+    {
+        switch (distribution.type)
+        {
+            case Exponential:
+                return 1.0 / distribution.distributionParameters.get("lambda");
+            case Triangular:
+                return distribution.distributionParameters.get("mode");
+            case Normal:
+                return distribution.distributionParameters.get("mu");
+            case LogNormal:
+                return distribution.distributionParameters.get("mean");
+            case Uniform:
+                return 0.5 * (distribution.distributionParameters.get("min") + distribution.distributionParameters.get("max"));
             default:
                 throw new ParameterException("Unknown distribution type " + distribution.type);
         }
