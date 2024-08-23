@@ -17,6 +17,7 @@ import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
+import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
@@ -93,6 +94,9 @@ public class OtsTransceiver
 
     /** The network. */
     protected RoadNetwork network;
+    
+    /** Detectors. */
+    protected Map<String, FosDetector> detectors = new LinkedHashMap<>();
 
     /** Step number. */
     private int stepNumber = 1;
@@ -353,6 +357,7 @@ public class OtsTransceiver
                             String fosString = (String) message.createObjectArray()[8];
                             Map<ParserSetting, Boolean> settings = new LinkedHashMap<>();
                             settings.put(ParserSetting.GUI, OtsTransceiver.this.showGUI);
+                            settings.put(ParserSetting.FOS_DETECTORS, true);
                             FosParser parser = new FosParser().setSettings(settings);
                             parser.parseFromString(fosString);
                             OtsTransceiver.this.network = parser.getNetwork();
@@ -363,6 +368,11 @@ public class OtsTransceiver
                                 OtsTransceiver.this.app.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
                                 OtsTransceiver.this.app.getAnimationPanel().disableSimulationControlButtons();
                                 ((OtsAnimator) OtsTransceiver.this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
+                            }
+                            // Map all detectors by their non-full id (i.e. ignoring link and lane)
+                            for (FosDetector detector : OtsTransceiver.this.network.getObjectMap(FosDetector.class).values())
+                            {
+                                OtsTransceiver.this.detectors.put(detector.getId(), detector);
                             }
                         }
                         catch (Exception ex)

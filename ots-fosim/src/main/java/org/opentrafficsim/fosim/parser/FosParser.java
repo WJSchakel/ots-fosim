@@ -56,6 +56,7 @@ import org.opentrafficsim.core.parameters.ParameterFactory;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
 import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.model.CarFollowingTask;
 import org.opentrafficsim.fosim.model.LaneChangeTask;
 import org.opentrafficsim.fosim.model.TaskManagerAr;
@@ -1276,7 +1277,7 @@ public class FosParser
     {
         for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
         {
-            this.gtuTypes.add(new GtuType(this.vehicleTypeNames.get(vehicleTypeNumber), DefaultsNl.ROAD_USER));
+            this.gtuTypes.add(new GtuType(this.vehicleTypeNames.get(vehicleTypeNumber), DefaultsNl.VEHICLE));
         }
     }
 
@@ -1557,10 +1558,11 @@ public class FosParser
      */
     private void buildDetecors() throws NetworkException
     {
-        // TODO: OTS does not support an irregular first interval (see git issue #6)
-        Time firstMeasurement = Time.instantiateSI(this.timeStep.si * this.detectorTimes.get(0));
-        Duration interval = this.timeStep.times(this.detectorTimes.get(1));
+        Time firstAggregation = Time.instantiateSI(this.timeStep.si * this.detectorTimes.get(0));
+        Duration aggregationTime = this.timeStep.times(this.detectorTimes.get(1));
 
+        Map<String, Time> prevTime = new LinkedHashMap<>();
+        Map<String, Time> thisTime = new LinkedHashMap<>();
         for (int detectorCrossSection = 0; detectorCrossSection < this.detectorPositions.size(); detectorCrossSection++)
         {
             Length position = this.detectorPositions.get(detectorCrossSection);
@@ -1592,15 +1594,26 @@ public class FosParser
                     {
                         Length longitudinalPosition = lane.getLength().times(fraction);
                         int underscore = lane.getId().indexOf("_");
-                        int laneNum = Integer.valueOf(lane.getId().substring(5, underscore)) + firstLane;
-                        // Id's are "1_2" where 1=detector cross-section, and 2=second lane (both start counting at 1)
-                        String id = (detectorCrossSection + 1) + "_" + laneNum;
-                        // TODO: add measurements if required
-                        new LoopDetector(id, lane, longitudinalPosition, Length.instantiateSI(1.5), DefaultsRoadNl.ROAD_USERS,
-                                this.network.getSimulator(), interval, LoopDetector.MEAN_SPEED);
+                        int laneNum = Integer.valueOf(lane.getId().substring(5, underscore)) + (firstLane - 1);
+                        // Id's are "1_2" where 1=detector cross-section, and 2=lane 2 (both start counting at 0)
+                        String id = detectorCrossSection + "_" + laneNum;
+                        if (getSetting(ParserSetting.FOS_DETECTORS))
+                        {
+                            new FosDetector(id, lane, longitudinalPosition, this.network.getSimulator(), prevTime, thisTime,
+                                    firstAggregation, aggregationTime);
+                        }
+                        else
+                        {
+                            // TODO: OTS does not support an irregular first interval (see git issue #6)
+                            new LoopDetector(id, lane, longitudinalPosition, Length.instantiateSI(1.5),
+                                    DefaultsRoadNl.ROAD_USERS, this.network.getSimulator(), aggregationTime,
+                                    LoopDetector.MEAN_SPEED);
+                        }
                     }
                 }
             }
+            prevTime = thisTime;
+            thisTime = new LinkedHashMap<>();
         }
     }
 

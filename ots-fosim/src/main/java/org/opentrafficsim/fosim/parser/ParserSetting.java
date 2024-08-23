@@ -21,6 +21,9 @@ public enum ParserSetting
 
     /** Parse detectors. */
     DETECTORS(true),
+    
+    /** Detector type. */
+    FOS_DETECTORS(false),
 
     /** Whether to include the striped area's as valid lane change area's. */
     STRIPED_AREAS(false),
