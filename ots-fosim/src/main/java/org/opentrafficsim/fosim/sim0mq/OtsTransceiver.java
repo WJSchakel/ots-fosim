@@ -94,7 +94,7 @@ public class OtsTransceiver
 
     /** The network. */
     protected RoadNetwork network;
-    
+
     /** Detectors. */
     protected Map<String, FosDetector> detectors = new LinkedHashMap<>();
 
@@ -334,6 +334,44 @@ public class OtsTransceiver
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "VEHICLES_REPLY", this.messageId++, payload), 0);
+                    }
+                    else if ("DETECTOR".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        int crossSection = (int) payload[8];
+                        int lane = (int) payload[9];
+                        int period = (int) payload[10];
+                        String measurement = (String) payload[11];
+                        String detectorId = crossSection + "_" + lane;
+                        FosDetector detector = OtsTransceiver.this.detectors.get(detectorId);
+                        float value;
+                        try
+                        {
+                            switch (measurement)
+                            {
+                                case "FLOW":
+                                    value = detector.getFlow(period);
+                                    break;
+                                case "RECIPROCAL_SPEED":
+                                    value = (float) detector.getReciprocalSpeed(period);
+                                    break;
+                                case "TRAVEL_FLOW":
+                                    value = detector.getTravelFlow(period);
+                                    break;
+                                case "TRAVELING_TIME":
+                                    value = (float) detector.getTravelingTime(period);
+                                    break;
+                                default:
+                                    value = -1;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            value = -1;
+                        }
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "DETECTOR_REPLY", this.messageId++, value), 0);
                     }
                     else if ("DISTRIBUTIONS".equals(message.getMessageTypeId()))
                     {

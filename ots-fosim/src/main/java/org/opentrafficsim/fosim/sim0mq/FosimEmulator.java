@@ -95,17 +95,17 @@ public class FosimEmulator
 
             if (true)
             {
-                String fosString =
-                        new String(FosimEmulator.class.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos").readAllBytes(),
-                                StandardCharsets.UTF_8);
-                encodedMessage =
-                        Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++, new Object[] {fosString});
+                String fosString = new String(
+                        FosimEmulator.class.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos").readAllBytes(),
+                        StandardCharsets.UTF_8);
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++,
+                        new Object[] {fosString});
                 requester.send(encodedMessage, 0);
                 reply = requester.recv(0);
                 message = Sim0MQMessage.decode(reply);
                 if ("SETUP_REPLY".equals(message.getMessageTypeId()))
                 {
-                    //System.out.println("SETUP_REPLY received");
+                    // System.out.println("SETUP_REPLY received");
                 }
                 else
                 {
@@ -166,28 +166,53 @@ public class FosimEmulator
                     // Object[] payload = message.createObjectArray();
                     // System.out.println(payload[8] + " vehicles");
                 }
+
+                if (i == 602)
+                {
+                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR", messageId++,
+                            new Object[] {2, 3, 1, "FLOW"});
+                    requester.send(encodedMessage, 0);
+                    reply = requester.recv(0);
+                    message = Sim0MQMessage.decode(reply);
+                    if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        System.out.println("Flow at cross-section 2, lane 3, period 1 is " + payload[8] + " vehicles");
+                    }
+
+                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR", messageId++,
+                            new Object[] {2, 3, 1, "RECIPROCAL_SPEED"});
+                    requester.send(encodedMessage, 0);
+                    reply = requester.recv(0);
+                    message = Sim0MQMessage.decode(reply);
+                    if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        System.out.println("Reciprocal speed at cross-section 2, lane 3, period 1 is " + payload[8] + " s/m");
+                    }
+                }
             }
-            
+
             requester.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "STOP", messageId++, new Object[] {}),
                     0);
             reply = requester.recv(0);
             message = Sim0MQMessage.decode(reply);
             if ("STOP_REPLY".equals(message.getMessageTypeId()))
             {
-                
+
             }
             else
             {
                 throw new RuntimeException("Did not receive a STOP_REPLY on a STOP message.");
             }
-            
-            requester.send(Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TERMINATE", messageId++, new Object[] {}),
-                    0);
+
+            requester.send(
+                    Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TERMINATE", messageId++, new Object[] {}), 0);
             reply = requester.recv(0);
             message = Sim0MQMessage.decode(reply);
             if ("TERMINATE_REPLY".equals(message.getMessageTypeId()))
             {
-                
+
             }
             else
             {
