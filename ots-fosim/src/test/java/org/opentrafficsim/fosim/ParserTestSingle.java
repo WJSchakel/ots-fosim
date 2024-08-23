@@ -17,9 +17,7 @@ import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.fosim.parameters.ParametersJsonTest;
 import org.opentrafficsim.fosim.parser.FosParser;
 import org.opentrafficsim.fosim.parser.ParserSetting;
-import org.opentrafficsim.fosim.sim0mq.FosimModel;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 
@@ -33,7 +31,7 @@ import nl.tudelft.simulation.dsol.SimRuntimeException;
  */
 public class ParserTestSingle
 {
-
+    
     /**
      * Test parsing of a file.
      * @throws SimRuntimeException simulation exception
@@ -68,10 +66,10 @@ public class ParserTestSingle
         Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();
         parserSettings.put(ParserSetting.STRIPED_AREAS, false);
 
-        String fileName = "Terbregseplein_6.5_aangepast_param.fos";
+        String fileName = "Terbregseplein_6.5_aangepast.fos";
         FosParser parser = new FosParser();
         parser.setSettings(parserSettings).parseFromStream(ParametersJsonTest.class.getResourceAsStream("/" + fileName));
-        //OtsSimulationApplication<FosimModel> app = parser.getApplication();
+        // OtsSimulationApplication<FosimModel> app = parser.getApplication();
     }
 
 }
