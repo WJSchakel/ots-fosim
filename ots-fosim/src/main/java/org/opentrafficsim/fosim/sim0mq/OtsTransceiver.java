@@ -349,17 +349,17 @@ public class OtsTransceiver
                         {
                             switch (measurement)
                             {
-                                case "FLOW":
-                                    value = detector.getFlow(period);
+                                case "COUNT":
+                                    value = detector.getCount(period);
                                     break;
-                                case "RECIPROCAL_SPEED":
-                                    value = (float) detector.getReciprocalSpeed(period);
+                                case "SUM_RECIPROCAL_SPEED":
+                                    value = (float) detector.getSumReciprocalSpeed(period);
                                     break;
-                                case "TRAVEL_FLOW":
-                                    value = detector.getTravelFlow(period);
+                                case "TRAVEL_TIME_COUNT":
+                                    value = detector.getTravelTimeCount(period);
                                     break;
-                                case "TRAVELING_TIME":
-                                    value = (float) detector.getTravelingTime(period);
+                                case "SUM_TRAVEL_TIME":
+                                    value = (float) detector.getSumTravelTime(period);
                                     break;
                                 default:
                                     value = -1;

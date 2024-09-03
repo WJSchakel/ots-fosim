@@ -36,17 +36,17 @@ public class FosDetector extends LaneDetector
     /** Registered passing times in this detector cross-section. */
     private final Map<String, Time> thisTime;
 
-    /** Flow measurements, i.e. vehicle count. */
-    private final List<Integer> flow = new ArrayList<>();
+    /** Vehicle count. */
+    private final List<Integer> count = new ArrayList<>();
 
     /** Sum of reciprocal speed. */
-    private final List<Double> reciprocalSpeed = new ArrayList<>();
+    private final List<Double> sumReciprocalSpeed = new ArrayList<>();
 
-    /** Flow measurements, i.e. vehicle count, for all vehicles that passed an earlier detector. */
-    private final List<Integer> travelFlow = new ArrayList<>();
+    /** Vehicle count, for all vehicles that passed an earlier detector. */
+    private final List<Integer> travelTimeCount = new ArrayList<>();
 
     /** Sum of travel time since last detector. */
-    private final List<Double> travelingTime = new ArrayList<>();
+    private final List<Double> sumTravelTime = new ArrayList<>();
 
     /** Current period index. */
     private int index = -1;
@@ -78,82 +78,81 @@ public class FosDetector extends LaneDetector
         this.thisTime = thisTime;
         this.firstAggregation = firstAggregation;
         this.aggregationTime = aggregationTime;
-        aggregate();
+        increasePeriod();
     }
 
     /**
-     * Aggregate data and schedule next aggregation.
+     * Initialize next measurements and schedule next period.
      */
-    private void aggregate()
+    private void increasePeriod()
     {
-        // Note: data is self-aggregating, we only need to move to the next period
         this.index++;
-        this.flow.add(0);
-        this.reciprocalSpeed.add(0.0);
-        this.travelFlow.add(0);
-        this.travelingTime.add(0.0);
+        this.count.add(0);
+        this.sumReciprocalSpeed.add(0.0);
+        this.travelTimeCount.add(0);
+        this.sumTravelTime.add(0.0);
         Duration time = Duration.instantiateSI(firstAggregation.si + this.index * this.aggregationTime.si);
-        getSimulator().scheduleEventAbs(time, this, "aggregate", null);
+        getSimulator().scheduleEventAbs(time, this, "increasePeriod", null);
     }
 
     /** {@inheritDoc} */
     @Override
     protected void triggerResponse(final LaneBasedGtu gtu)
     {
-        this.flow.set(this.index, this.flow.get(this.index) + 1);
-        this.reciprocalSpeed.set(this.index, this.reciprocalSpeed.get(this.index) + (1.0 / Math.max(gtu.getSpeed().si, 0.05)));
+        this.count.set(this.index, this.count.get(this.index) + 1);
+        this.sumReciprocalSpeed.set(this.index, this.sumReciprocalSpeed.get(this.index) + (1.0 / Math.max(gtu.getSpeed().si, 0.05)));
         Time now = getSimulator().getSimulatorAbsTime();
         Time prev = this.prevTime.remove(gtu.getId());
         if (prev != null)
         {
-            this.travelFlow.set(this.index, this.travelFlow.get(this.index) + 1);
-            this.travelingTime.set(this.index, this.travelingTime.get(this.index) + now.minus(prev).si);
+            this.travelTimeCount.set(this.index, this.travelTimeCount.get(this.index) + 1);
+            this.sumTravelTime.set(this.index, this.sumTravelTime.get(this.index) + now.minus(prev).si);
         }
         this.thisTime.put(gtu.getId(), now);
     }
 
     /**
-     * Return flow value.
+     * Return vehicle count.
      * @param period int; period index.
-     * @return flow value.
+     * @return vehicle count.
      */
-    public int getFlow(final int period)
+    public int getCount(final int period)
     {
         checkPeriod(period);
-        return this.flow.get(period);
+        return this.count.get(period);
     }
 
     /**
-     * Return reciprocal speed value.
+     * Return sum of reciprocal speed.
      * @param period int; period index.
-     * @return reciprocal speed value.
+     * @return sum of reciprocal speed.
      */
-    public double getReciprocalSpeed(final int period)
+    public double getSumReciprocalSpeed(final int period)
     {
         checkPeriod(period);
-        return this.reciprocalSpeed.get(period);
+        return this.sumReciprocalSpeed.get(period);
     }
 
     /**
-     * Return travel flow value.
+     * Return count of vehicles in travel time sum.
      * @param period int; period index.
-     * @return travel flow value.
+     * @return count of vehicles in travel time sum.
      */
-    public int getTravelFlow(final int period)
+    public int getTravelTimeCount(final int period)
     {
         checkPeriod(period);
-        return this.travelFlow.get(period);
+        return this.travelTimeCount.get(period);
     }
 
     /**
-     * Return traveling time value.
+     * Return sum of travel time.
      * @param period int; period index.
-     * @return traveling time value.
+     * @return sum of travel time.
      */
-    public double getTravelingTime(final int period)
+    public double getSumTravelTime(final int period)
     {
         checkPeriod(period);
-        return this.travelingTime.get(period);
+        return this.sumTravelTime.get(period);
     }
 
     /**
