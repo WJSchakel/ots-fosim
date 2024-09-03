@@ -964,6 +964,7 @@ public class FosParser
     /**
      * Prints debugging information.
      */
+    @SuppressWarnings("unused") // can be used for testing
     private void printMappings()
     {
         System.out.println("To-nodes:");
