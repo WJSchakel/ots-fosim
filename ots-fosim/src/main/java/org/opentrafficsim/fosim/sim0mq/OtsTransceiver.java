@@ -95,6 +95,12 @@ public class OtsTransceiver
     /** The network. */
     protected RoadNetwork network;
 
+    /** First detector period. */
+    private Duration firstPeriod;
+
+    /** Duration of detector periods after first. */
+    private Duration nextPeriods;
+
     /** Detectors. */
     protected Map<String, FosDetector> detectors = new LinkedHashMap<>();
 
@@ -341,33 +347,42 @@ public class OtsTransceiver
                         int crossSection = (int) payload[8];
                         int lane = (int) payload[9];
                         int period = (int) payload[10];
-                        String measurement = (String) payload[11];
-                        String detectorId = crossSection + "_" + lane;
-                        FosDetector detector = OtsTransceiver.this.detectors.get(detectorId);
                         float value;
-                        try
+                        double tEnd = OtsTransceiver.this.firstPeriod.si + OtsTransceiver.this.nextPeriods.si * period;
+                        double tNow = OtsTransceiver.this.simulator.getSimulatorAbsTime().si;
+                        if (tNow < tEnd)
                         {
-                            switch (measurement)
-                            {
-                                case "COUNT":
-                                    value = detector.getCount(period);
-                                    break;
-                                case "SUM_RECIPROCAL_SPEED":
-                                    value = (float) detector.getSumReciprocalSpeed(period);
-                                    break;
-                                case "TRAVEL_TIME_COUNT":
-                                    value = detector.getTravelTimeCount(period);
-                                    break;
-                                case "SUM_TRAVEL_TIME":
-                                    value = (float) detector.getSumTravelTime(period);
-                                    break;
-                                default:
-                                    value = -1;
-                            }
+                            value = -1.0f;
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            value = -1;
+                            String measurement = (String) payload[11];
+                            String detectorId = crossSection + "_" + lane;
+                            FosDetector detector = OtsTransceiver.this.detectors.get(detectorId);
+                            try
+                            {
+                                switch (measurement)
+                                {
+                                    case "COUNT":
+                                        value = detector.getCount(period);
+                                        break;
+                                    case "SUM_RECIPROCAL_SPEED":
+                                        value = (float) detector.getSumReciprocalSpeed(period);
+                                        break;
+                                    case "TRAVEL_TIME_COUNT":
+                                        value = detector.getTravelTimeCount(period);
+                                        break;
+                                    case "SUM_TRAVEL_TIME":
+                                        value = (float) detector.getSumTravelTime(period);
+                                        break;
+                                    default:
+                                        value = -1;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                value = -1;
+                            }
                         }
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
@@ -407,6 +422,8 @@ public class OtsTransceiver
                                 OtsTransceiver.this.app.getAnimationPanel().disableSimulationControlButtons();
                                 ((OtsAnimator) OtsTransceiver.this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
                             }
+                            OtsTransceiver.this.firstPeriod = parser.getFirstPeriod();
+                            OtsTransceiver.this.nextPeriods = parser.getNextPeriods();
                             // Map all detectors by their non-full id (i.e. ignoring link and lane)
                             for (FosDetector detector : OtsTransceiver.this.network.getObjectMap(FosDetector.class).values())
                             {

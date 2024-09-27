@@ -378,6 +378,24 @@ public class FosParser
         Throw.when(this.app == null, IllegalStateException.class, "No fos information was parsed.");
         return this.app;
     }
+    
+    /**
+     * Returns the duration of the first detector period.
+     * @return duration of first detector period.
+     */
+    public Duration getFirstPeriod()
+    {
+        return this.timeStep.times(this.detectorTimes.get(0));
+    }
+    
+    /**
+     * Returns the duration of detector periods after the first.
+     * @return duration of detector periods after the first.
+     */
+    public Duration getNextPeriods()
+    {
+        return this.timeStep.times(this.detectorTimes.get(1));
+    }
 
     /**
      * Parses a line. This method should treat all missing parser settings as true, by using
