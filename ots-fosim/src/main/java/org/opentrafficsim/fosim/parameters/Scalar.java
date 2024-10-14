@@ -16,7 +16,7 @@ public class Scalar implements DefaultValue
 
     /**
      * Constructor.
-     * @param value double; value.
+     * @param value value.
      */
     public Scalar(final double value)
     {
@@ -25,7 +25,7 @@ public class Scalar implements DefaultValue
 
     /**
      * Returns the value.
-     * @return double; value.
+     * @return value.
      */
     public double value()
     {

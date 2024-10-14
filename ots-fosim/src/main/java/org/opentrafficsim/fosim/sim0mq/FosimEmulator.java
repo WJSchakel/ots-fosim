@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 
+import org.djunits.unit.SpeedUnit;
+import org.djunits.value.vdouble.scalar.Duration;
+import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
@@ -48,9 +51,12 @@ public class FosimEmulator
     /** Simulation speed. */
     private static final double SPEED = 20;
 
+    /** Batch test (or normal). */
+    private static final boolean BATCH = true;
+
     /**
      * Main method.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws SerializationException serialization exception
      * @throws Sim0MQException sim0mq exception
      * @throws IOException if received JSON could not be loaded as object
@@ -97,24 +103,42 @@ public class FosimEmulator
                 throw new RuntimeException("Did not receive a PARAMETERS_REPLY on a PARAMETERS message.");
             }
 
-            if (true)
+            String fosString = new String(
+                    FosimEmulator.class.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos").readAllBytes(),
+                    StandardCharsets.UTF_8);
+            encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++,
+                    new Object[] {fosString});
+            requester.send(encodedMessage, 0);
+            reply = requester.recv(0);
+            message = Sim0MQMessage.decode(reply);
+            if ("SETUP_REPLY".equals(message.getMessageTypeId()))
             {
-                String fosString = new String(
-                        FosimEmulator.class.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos").readAllBytes(),
-                        StandardCharsets.UTF_8);
-                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++,
-                        new Object[] {fosString});
+                // System.out.println("SETUP_REPLY received");
+            }
+            else
+            {
+                throw new RuntimeException("Did not receive a SETUP_REPLY on a SETUP message.");
+            }
+
+            if (BATCH)
+            {
+                int fromLane = 0;
+                int toLane = 1;
+                Duration additionalTime = Duration.instantiateSI(600.0);
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "BATCH", messageId++,
+                        new Object[] {"PLM", new Speed(50.0, SpeedUnit.KM_PER_HOUR), fromLane, toLane, additionalTime});
                 requester.send(encodedMessage, 0);
                 reply = requester.recv(0);
                 message = Sim0MQMessage.decode(reply);
-                if ("SETUP_REPLY".equals(message.getMessageTypeId()))
+                if ("BATCH_REPLY".equals(message.getMessageTypeId()))
                 {
-                    // System.out.println("SETUP_REPLY received");
+                    System.out.println("BATCH_REPLY received");
                 }
                 else
                 {
                     throw new RuntimeException("Did not receive a SETUP_REPLY on a SETUP message.");
                 }
+                return;
             }
 
             long step = (long) (500 / SPEED);
@@ -194,7 +218,7 @@ public class FosimEmulator
                         Object[] payload = message.createObjectArray();
                         System.out.println("Reciprocal speed at cross-section 2, lane 3, period 1 is " + payload[8] + " s/m");
                     }
-                    
+
                     encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR", messageId++,
                             new Object[] {2, 3, 1, "SUM_TRAVEL_TIME"});
                     requester.send(encodedMessage, 0);
@@ -245,9 +269,9 @@ public class FosimEmulator
     /**
      * Read string in to object.
      * @param <T> type of object.
-     * @param json String; JSON string.
-     * @param clazz Class&lt;T&gt;; class of type to read.
-     * @return T; object read from JSON string.
+     * @param json JSON string.
+     * @param clazz class of type to read.
+     * @return object read from JSON string.
      * @throws IOException when unable to read from string.
      */
     @SuppressWarnings("unchecked")

@@ -33,9 +33,9 @@ public class Parameter extends MinMax<Parameter>
 
     /**
      * Constructor using same name for Dutch and English.
-     * @param id String; parameter id.
-     * @param name String; parameter name.
-     * @param unit String; unit.
+     * @param id parameter id.
+     * @param name parameter name.
+     * @param unit unit.
      */
     public Parameter(final String id, final String name, final String unit)
     {
@@ -46,10 +46,10 @@ public class Parameter extends MinMax<Parameter>
 
     /**
      * Constructor with different names between Dutch and English.
-     * @param id String; parameter id.
-     * @param nameNl String; Dutch parameter name.
-     * @param nameEn String; English parameter name.
-     * @param unit String; unit.
+     * @param id parameter id.
+     * @param nameNl Dutch parameter name.
+     * @param nameEn English parameter name.
+     * @param unit unit.
      */
     public Parameter(final String id, final String nameNl, final String nameEn, final String unit)
     {
@@ -60,8 +60,8 @@ public class Parameter extends MinMax<Parameter>
 
     /**
      * Set Dutch description.
-     * @param descriptionNl String; Dutch description.
-     * @return Parameter; for method chaining.
+     * @param descriptionNl Dutch description.
+     * @return for method chaining.
      */
     public Parameter setDescriptionNl(final String descriptionNl)
     {
@@ -71,8 +71,8 @@ public class Parameter extends MinMax<Parameter>
 
     /**
      * Set English description.
-     * @param descriptionEn String; English description.
-     * @return Parameter; for method chaining.
+     * @param descriptionEn English description.
+     * @return for method chaining.
      */
     public Parameter setDescriptionEn(final String descriptionEn)
     {
@@ -83,8 +83,8 @@ public class Parameter extends MinMax<Parameter>
     /**
      * Sets default values. Values may be given as {@code Number}, in which case the call to {@code doubleValue()} is wrapped in
      * a {@code Scalar}.
-     * @param defaultValues Object...; values of type {@code Number}, {@code Scalar} or {@code Distribution}, in any mixture.
-     * @return Parameter; for method chaining.
+     * @param defaultValues values of type {@code Number}, {@code Scalar} or {@code Distribution}, in any mixture.
+     * @return for method chaining.
      * @throws IllegalArgumentException if any of the values is not {@code Number}, {@code Scalar} or {@code Distribution}.
      */
     public Parameter setDefault(final Object... defaultValues)

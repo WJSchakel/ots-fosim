@@ -10,11 +10,11 @@ import javax.swing.WindowConstants;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
+import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.cli.CliUtil;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.dsol.OtsAnimator;
-import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.fosim.FosDetector;
@@ -24,6 +24,8 @@ import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
 import org.opentrafficsim.fosim.parser.FosParser;
 import org.opentrafficsim.fosim.parser.ParserSetting;
+import org.opentrafficsim.fosim.sim0mq.StopCriterion.DetectionType;
+import org.opentrafficsim.fosim.simulator.OtsSimulatorInterfaceStep;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.plan.operational.LaneChange;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
@@ -90,7 +92,7 @@ public class OtsTransceiver
     protected OtsSimulationApplication<FosimModel> app;
 
     /** The simulator. */
-    protected OtsSimulatorInterface simulator;
+    protected OtsSimulatorInterfaceStep simulator;
 
     /** The network. */
     protected RoadNetwork network;
@@ -109,7 +111,7 @@ public class OtsTransceiver
 
     /**
      * Constructor.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws Exception on any exception during simulation.
      */
     protected OtsTransceiver(final String... args) throws Exception
@@ -119,7 +121,7 @@ public class OtsTransceiver
 
     /**
      * Main method.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws Exception on any exception during simulation.
      */
     public static void main(String[] args) throws Exception
@@ -159,14 +161,9 @@ public class OtsTransceiver
             this.simulator.runUpToAndIncluding(until);
             while (this.simulator.isStartingOrRunning())
             {
-                try
+                synchronized (this.simulator.getWorkerThread())
                 {
-                    // In order to allow resources to go to other processes, we sleep before
-                    // checking again
-                    Thread.sleep(3);
-                }
-                catch (InterruptedException e)
-                {
+                    //
                 }
             }
         }
@@ -243,6 +240,8 @@ public class OtsTransceiver
 
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
+                        // TODO: shouldn't we step in a separate thread, and then wait until this is done before processing any
+                        // other message?
                         OtsTransceiver.this.step();
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
@@ -388,6 +387,24 @@ public class OtsTransceiver
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "DETECTOR_REPLY", this.messageId++, value), 0);
                     }
+                    else if ("BATCH".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        DetectionType detectionType = DetectionType.valueOf((String) payload[8]);
+                        Speed threshold = (Speed) payload[9];
+                        int fromLane = (int) payload[10];
+                        int toLane = (int) payload[11];
+                        Duration additionalTime = detectionType.equals(DetectionType.QDC) ? (Duration) payload[12] : null;
+                        StopCriterion stopCriterium = new StopCriterion(OtsTransceiver.this.network, detectionType, threshold,
+                                fromLane, toLane, additionalTime);
+                        while (!stopCriterium.canStop())
+                        {
+                            step();
+                        }
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "BATCH_REPLY", this.messageId++, new Object[0]), 0);
+                    }
                     else if ("DISTRIBUTIONS".equals(message.getMessageTypeId()))
                     {
                         String distributions = asJsonString(new DistributionDefinitions(OtsTransceiver.VERSION));
@@ -414,7 +431,8 @@ public class OtsTransceiver
                             FosParser parser = new FosParser().setSettings(settings);
                             parser.parseFromString(fosString);
                             OtsTransceiver.this.network = parser.getNetwork();
-                            OtsTransceiver.this.simulator = OtsTransceiver.this.network.getSimulator();
+                            OtsTransceiver.this.simulator =
+                                    (OtsSimulatorInterfaceStep) OtsTransceiver.this.network.getSimulator();
                             if (OtsTransceiver.this.showGUI)
                             {
                                 OtsTransceiver.this.app = parser.getApplication();
@@ -481,8 +499,8 @@ public class OtsTransceiver
 
         /**
          * Transforms an object in to a JSON string.
-         * @param object Object; object.
-         * @return String; JSON string representation of object.
+         * @param object object.
+         * @return JSON string representation of object.
          * @throws IOException if string writer could not be closed.
          */
         private String asJsonString(final Object object) throws IOException

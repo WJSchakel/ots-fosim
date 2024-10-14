@@ -35,9 +35,9 @@ public class ParameterSupplier
 
     /**
      * Add a scalar parameter.
-     * @param vehicleType int; the vehicle type
-     * @param parameterType ParameterType&lt;T&gt;; the parameter type
-     * @param value T; the value of the parameter
+     * @param vehicleType the vehicle type
+     * @param parameterType the parameter type
+     * @param value the value of the parameter
      * @param <T> parameter value type
      */
     public <T> void addParameter(final int vehicleType, final ParameterType<T> parameterType, final T value)
@@ -48,8 +48,8 @@ public class ParameterSupplier
 
     /**
      * Add a distributed parameter (djunits).
-     * @param vehicleType int; the vehicle type
-     * @param parameterType ParameterTypeNumeric&lt;T&gt;; the parameter type
+     * @param vehicleType the vehicle type
+     * @param parameterType the parameter type
      * @param distribution ContinuousDistDoubleScalar.Rel&lt;T,U&gt;; the distribution of the parameter
      * @param <U> unit type
      * @param <T> parameter value type
@@ -63,9 +63,9 @@ public class ParameterSupplier
 
     /**
      * Add a distributed parameter (integer).
-     * @param vehicleType Integer; the vehicle type
-     * @param parameterType ParameterTypeInteger; the parameter type
-     * @param distribution DistDiscrete; the distribution of the parameter
+     * @param vehicleType the vehicle type
+     * @param parameterType the parameter type
+     * @param distribution the distribution of the parameter
      */
     public void addParameter(final Integer vehicleType, final ParameterType<Integer> parameterType,
             final DistDiscrete distribution)
@@ -76,9 +76,9 @@ public class ParameterSupplier
 
     /**
      * Add a distributed parameter (double).
-     * @param vehicleType int; the vehicle type
-     * @param parameterType ParameterTypeDouble; the parameter type
-     * @param distribution DistContinuous; the distribution of the parameter
+     * @param vehicleType the vehicle type
+     * @param parameterType the parameter type
+     * @param distribution the distribution of the parameter
      */
     public void addParameter(final int vehicleType, final ParameterType<Double> parameterType,
             final DistContinuous distribution)
@@ -89,7 +89,7 @@ public class ParameterSupplier
 
     /**
      * Assures the vehicle type is in the map.
-     * @param vehicleType int; the vehicle type
+     * @param vehicleType the vehicle type
      */
     private void assureTypeInMap(final int vehicleType)
     {
@@ -102,8 +102,8 @@ public class ParameterSupplier
     /**
      * Sets all behavioral parameters in the parameter factory. These exclude the vehicle parameters, or parameters that govern
      * what model to use (rather than with what value).
-     * @param gtuTypes List&lt;GtuType&gt;; list of GTU types indexed at their vehicle type index.
-     * @param parameterFactory ParameterFactoryByType; parameter factory to set the parameter values in, scalar or distributed.
+     * @param gtuTypes list of GTU types indexed at their vehicle type index.
+     * @param parameterFactory parameter factory to set the parameter values in, scalar or distributed.
      */
     public void setAllInParameterFactory(final List<GtuType> gtuTypes, final ParameterFactoryByType parameterFactory)
     {
@@ -142,7 +142,7 @@ public class ParameterSupplier
 
         /**
          * Constructor.
-         * @param parameterType P; the parameter type
+         * @param parameterType the parameter type
          */
         public ParameterEntry(final P parameterType)
         {
@@ -151,7 +151,7 @@ public class ParameterSupplier
 
         /**
          * Returns the parameter type.
-         * @return P; parameter type.
+         * @return parameter type.
          */
         P getParameterType()
         {
@@ -160,8 +160,8 @@ public class ParameterSupplier
 
         /**
          * Sets this parameter value, as scalar or distributed value, in the parameter factory.
-         * @param gtuType GtuType; GTU type.
-         * @param factory ParameterFactoryByType; factory to set the value in.
+         * @param gtuType GTU type.
+         * @param factory factory to set the value in.
          */
         abstract void setInParameterFactory(GtuType gtuType, ParameterFactoryByType factory);
     }
@@ -182,8 +182,8 @@ public class ParameterSupplier
         private final T value;
 
         /**
-         * @param parameterType ParameterType&lt;T&gt;; the parameter type
-         * @param value T; the fixed value
+         * @param parameterType the parameter type
+         * @param value the fixed value
          */
         ScalarEntry(final ParameterType<T> parameterType, final T value)
         {
@@ -231,7 +231,7 @@ public class ParameterSupplier
         private final ContinuousDistDoubleScalar.Rel<T, U> distribution;
 
         /**
-         * @param parameterType ParameterTypeNumeric&lt;T&gt;; the parameter type
+         * @param parameterType the parameter type
          * @param distribution ContinuousDistDoubleScalar.Rel&lt;T,U&gt;; the distribution of the parameter
          */
         DistributedEntry(final ParameterTypeNumeric<T> parameterType, final ContinuousDistDoubleScalar.Rel<T, U> distribution)
@@ -279,8 +279,8 @@ public class ParameterSupplier
         private final DistContinuous distribution;
 
         /**
-         * @param parameterType ParameterTypeDouble; the parameter type
-         * @param distribution DistContinuous; parameter distribution
+         * @param parameterType the parameter type
+         * @param distribution parameter distribution
          */
         DistributedEntryDouble(final ParameterType<Double> parameterType, final DistContinuous distribution)
         {
@@ -325,8 +325,8 @@ public class ParameterSupplier
         private final DistDiscrete distribution;
 
         /**
-         * @param parameterType ParameterTypeInteger; the parameter type
-         * @param distribution DistDiscrete; parameter distribution
+         * @param parameterType the parameter type
+         * @param distribution parameter distribution
          */
         DistributedEntryInteger(final ParameterType<Integer> parameterType, final DistDiscrete distribution)
         {

@@ -36,7 +36,7 @@ public enum ParserSetting
 
     /**
      * Constructor.
-     * @param defaultValue boolean; default value.
+     * @param defaultValue default value.
      */
     ParserSetting(final boolean defaultValue)
     {
@@ -45,7 +45,7 @@ public enum ParserSetting
 
     /**
      * Returns the default value.
-     * @return boolean; the default value.
+     * @return the default value.
      */
     public boolean getDefaultValue()
     {

@@ -25,7 +25,7 @@ public enum DefaultState
     
     /**
      * Constructor.
-     * @param active boolean; active status.
+     * @param active active status.
      */
     private DefaultState(final boolean active)
     {

@@ -44,7 +44,7 @@ class FosSwitchedArea
 
     /**
      * Parses a single switch area.
-     * @param string String; value of a switch area line.
+     * @param string value of a switch area line.
      */
     public FosSwitchedArea(final String string)
     {

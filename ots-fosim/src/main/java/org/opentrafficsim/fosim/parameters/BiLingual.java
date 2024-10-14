@@ -19,7 +19,7 @@ public class BiLingual
 
     /**
      * Constructor using same name for Dutch and English.
-     * @param name String; parameter name.
+     * @param name parameter name.
      */
     public BiLingual(final String name)
     {
@@ -29,8 +29,8 @@ public class BiLingual
     
     /**
      * Constructor with different names between Dutch and English.
-     * @param nameNl String; Dutch parameter name.
-     * @param nameEn String; English parameter name.
+     * @param nameNl Dutch parameter name.
+     * @param nameEn English parameter name.
      */
     public BiLingual(final String nameNl, final String nameEn)
     {

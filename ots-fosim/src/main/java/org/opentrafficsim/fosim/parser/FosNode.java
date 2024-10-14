@@ -30,7 +30,7 @@ class FosNode extends FosElement
 
     /**
      * Constructor.
-     * @param nodeNumber int; unique node number.
+     * @param nodeNumber unique node number.
      */
     public FosNode(final int nodeNumber)
     {
@@ -41,7 +41,7 @@ class FosNode extends FosElement
     /**
      * Returns a name for the node. If no name is given, the number is translated as 1&gt;A, 2&gt;B, ..., 27&gt;AA,
      * 28&gt;AB, etc.
-     * @return String; name of the node.
+     * @return name of the node.
      */
     public String getName()
     {

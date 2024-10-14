@@ -37,9 +37,9 @@ public class ParameterGroup
     
     /**
      * Constructor.
-     * @param groupNl String; Dutch group name.
-     * @param groupEn String; English group name (doubles as id).
-     * @param defaultState DefaultState; default state of the group.
+     * @param groupNl Dutch group name.
+     * @param groupEn English group name (doubles as id).
+     * @param defaultState default state of the group.
      */
     public ParameterGroup(final String groupNl, final String groupEn, final DefaultState defaultState)
     {
@@ -51,8 +51,8 @@ public class ParameterGroup
     
     /**
      * Set Dutch description.
-     * @param descriptionNl String; Dutch description.
-     * @return ParameterGroup; for method chaining.
+     * @param descriptionNl Dutch description.
+     * @return for method chaining.
      */
     public ParameterGroup setDescriptionNl(final String descriptionNl)
     {
@@ -62,8 +62,8 @@ public class ParameterGroup
     
     /**
      * Set English description.
-     * @param descriptionEn String; English description.
-     * @return ParameterGroup; for method chaining.
+     * @param descriptionEn English description.
+     * @return for method chaining.
      */
     public ParameterGroup setDescriptionEn(final String descriptionEn)
     {
@@ -73,8 +73,8 @@ public class ParameterGroup
     
     /**
      * Add parameter to the parameter group.
-     * @param parameter Parameter; parameter.
-     * @return ParameterGroup; for method chaining.
+     * @param parameter parameter.
+     * @return for method chaining.
      */
     public ParameterGroup addParameter(final Parameter parameter)
     {

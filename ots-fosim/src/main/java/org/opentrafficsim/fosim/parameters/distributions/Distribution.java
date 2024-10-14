@@ -27,8 +27,8 @@ public class Distribution extends BiLingual
 
     /**
      * Constructor using same name for Dutch and English.
-     * @param type DistributionType; distribution type.
-     * @param name String; distribution name.
+     * @param type distribution type.
+     * @param name distribution name.
      */
     public Distribution(final DistributionType type, final String name)
     {
@@ -38,9 +38,9 @@ public class Distribution extends BiLingual
 
     /**
      * Constructor with different names between Dutch and English.
-     * @param type DistributionType; distribution type.
-     * @param nameNl String; Dutch distribution name.
-     * @param nameEn String; English distribution name.
+     * @param type distribution type.
+     * @param nameNl Dutch distribution name.
+     * @param nameEn English distribution name.
      */
     public Distribution(final DistributionType type, final String nameNl, final String nameEn)
     {
@@ -50,8 +50,8 @@ public class Distribution extends BiLingual
 
     /**
      * Sets the valid range. By default this is {@code ValidRange.all}.
-     * @param validRange ValidRange; valid range.
-     * @return Distribution; for method chaining.
+     * @param validRange valid range.
+     * @return for method chaining.
      */
     public Distribution setValidRange(final ValidRange validRange)
     {
@@ -61,7 +61,7 @@ public class Distribution extends BiLingual
 
     /**
      * Adds a parameter to the distribution.
-     * @param parameter DistributionParameter; distribution parameter.
+     * @param parameter distribution parameter.
      */
     public void addParameter(final DistributionParameter parameter)
     {

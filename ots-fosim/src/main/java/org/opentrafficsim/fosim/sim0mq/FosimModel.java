@@ -32,8 +32,8 @@ public class FosimModel extends AbstractOtsModel
     
     /**
      * Constructor.
-     * @param simulator OtsSimulatorInterface; simulator.
-     * @param seed long; seed.
+     * @param simulator simulator.
+     * @param seed seed.
      */
     public FosimModel(final OtsSimulatorInterface simulator, final long seed)
     {
@@ -55,7 +55,7 @@ public class FosimModel extends AbstractOtsModel
     
     /**
      * Set network.
-     * @param network RoadNetwork; network.
+     * @param network network.
      */
     public void setNetwork(final RoadNetwork network)
     {

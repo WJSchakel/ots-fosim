@@ -22,8 +22,8 @@ public class DistributionParameter extends MinMax<DistributionParameter>
     
     /**
      * Constructor using same name for Dutch and English.
-     * @param id String; parameter id.
-     * @param name String; parameter name.
+     * @param id parameter id.
+     * @param name parameter name.
      */
     public DistributionParameter(final String id, final String name)
     {
@@ -33,9 +33,9 @@ public class DistributionParameter extends MinMax<DistributionParameter>
     
     /**
      * Constructor with different names between Dutch and English.
-     * @param id String; parameter id.
-     * @param nameNl String; Dutch parameter name.
-     * @param nameEn String; English parameter name.
+     * @param id parameter id.
+     * @param nameNl Dutch parameter name.
+     * @param nameEn English parameter name.
      */
     public DistributionParameter(final String id, final String nameNl, final String nameEn)
     {
@@ -45,8 +45,8 @@ public class DistributionParameter extends MinMax<DistributionParameter>
     
     /**
      * Set parameter as default value.
-     * @param parameter String; parameter.
-     * @return T; for method chaining.
+     * @param parameter parameter.
+     * @return for method chaining.
      */
     public DistributionParameter setDefault(final String parameter)
     {
@@ -57,8 +57,8 @@ public class DistributionParameter extends MinMax<DistributionParameter>
 
     /**
      * Set value as default value.
-     * @param value double; value.
-     * @return T; for method chaining.
+     * @param value value.
+     * @return for method chaining.
      */
     public DistributionParameter setDefault(final double value)
     {
@@ -69,9 +69,9 @@ public class DistributionParameter extends MinMax<DistributionParameter>
 
     /**
      * Set default value as factor on parameter.
-     * @param parameter String; parameter.
-     * @param factor double; factor.
-     * @return T; for method chaining.
+     * @param parameter parameter.
+     * @param factor factor.
+     * @return for method chaining.
      */
     public DistributionParameter setDefault(final String parameter, final double factor)
     {

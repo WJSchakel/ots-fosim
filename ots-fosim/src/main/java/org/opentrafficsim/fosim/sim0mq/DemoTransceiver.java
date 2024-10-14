@@ -12,12 +12,12 @@ import org.djutils.exceptions.Try;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.dsol.OtsAnimator;
-import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.draw.core.OtsDrawingException;
 import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
+import org.opentrafficsim.fosim.simulator.OtsSimulatorStep;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.swing.gui.OtsAnimationPanel;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
@@ -39,7 +39,7 @@ public abstract class DemoTransceiver extends OtsTransceiver
 
     /**
      * Constructor.
-     * @param args String[]; arguments.
+     * @param args arguments.
      * @throws Exception
      */
     protected DemoTransceiver(final String[] args) throws Exception
@@ -63,7 +63,7 @@ public abstract class DemoTransceiver extends OtsTransceiver
         Duration simulationTime = Duration.instantiateSI(3600.0);
         if (!this.showGUI)
         {
-            this.simulator = new OtsSimulator("Ots-Fosim");
+            this.simulator = new OtsSimulatorStep("Ots-Fosim");
             final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
             this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
@@ -72,7 +72,7 @@ public abstract class DemoTransceiver extends OtsTransceiver
         }
         else
         {
-            OtsAnimator animator = new OtsAnimatorStep("Ots-Fosim");
+            OtsAnimatorStep animator = new OtsAnimatorStep("Ots-Fosim");
             this.simulator = animator;
             final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
             this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
@@ -90,8 +90,8 @@ public abstract class DemoTransceiver extends OtsTransceiver
 
     /**
      * Builds the network and demand.
-     * @param sim OtsSimulatorInterface; simulator, may be {@code null} in which case a simulator should be created.
-     * @return OtsRoadNetwork; network.
+     * @param sim simulator, may be {@code null} in which case a simulator should be created.
+     * @return network.
      * @throws NetworkException exception in network
      * @throws OtsGeometryException exception in geometry
      * @throws ParameterException wrong parameter value

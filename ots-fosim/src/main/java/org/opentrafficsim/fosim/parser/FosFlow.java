@@ -30,7 +30,7 @@ class FosFlow
 
     /**
      * Parses a single flow source.
-     * @param string String; value of a flow line.
+     * @param string value of a flow line.
      */
     public FosFlow(final String string)
     {
@@ -52,7 +52,7 @@ class FosFlow
 
     /**
      * Returns time as time vector.
-     * @return TimeVector; time vector.
+     * @return time vector.
      */
     public TimeVector getTimeVector()
     {
@@ -63,7 +63,7 @@ class FosFlow
 
     /**
      * Returns demand as frequency vector.
-     * @return FrequencyVector; frequency vector.
+     * @return frequency vector.
      */
     public FrequencyVector getFrequencyVector()
     {

@@ -48,7 +48,7 @@ public class ParameterDefinitions
 
     /**
      * Constructor.
-     * @param version String; version.
+     * @param version version.
      */
     public ParameterDefinitions(final String version)
     {
@@ -57,9 +57,9 @@ public class ParameterDefinitions
 
     /**
      * Return JSON string parameter definitions.
-     * @param prettyString boolean; whether to use new lines and indentation.
-     * @param htmlEscaping boolean; whether to escape html characters.
-     * @return String; JSON string of parameter definitions.
+     * @param prettyString whether to use new lines and indentation.
+     * @param htmlEscaping whether to escape html characters.
+     * @return JSON string of parameter definitions.
      */
     public static String getParametersJson(final boolean prettyString, final boolean htmlEscaping)
     {
@@ -79,7 +79,7 @@ public class ParameterDefinitions
 
     /**
      * This method defines the parameters, their groups, descriptions, etc.
-     * @return List&lt;ParameterGroup&gt;; list of parameter groups, in order.
+     * @return list of parameter groups, in order.
      */
     public static List<ParameterGroup> getParameterGroups()
     {
@@ -238,8 +238,8 @@ public class ParameterDefinitions
      * Helper method to add html tags for italics, subscript and superscript. This method essentially makes everything italic,
      * except subscripts that are a single character "0". The format of the input string is "base_sub^sup", where "_sub" and
      * "^sup" are optional.
-     * @param string String; string to add html tags to.
-     * @return String; string with html tags.
+     * @param string string to add html tags to.
+     * @return string with html tags.
      */
     public static String it(final String string)
     {
@@ -268,8 +268,8 @@ public class ParameterDefinitions
     /**
      * Helper method to add html tags for subscript and superscript. The format of the input string is "base_sub^sup", where
      * "_sub" and "^sup" are optional.
-     * @param string String; string to add html tags to.
-     * @return String; string with html tags.
+     * @param string string to add html tags to.
+     * @return string with html tags.
      */
     protected static String sc(final String string)
     {

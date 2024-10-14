@@ -19,7 +19,7 @@ public class ParserDemo
 
     /**
      * Runs the demo.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws NetworkException; network exception
      * @throws IOException; file reading exception
      */

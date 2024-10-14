@@ -36,7 +36,7 @@ public class ParametersJsonTest
     /**
      * Runs to write parameters file. Note this file is not required for OTS to communicate to FOSIM as the JSON string is sent
      * directly to FOSIM over Sim0mq.
-     * @param args String[]; arguments.
+     * @param args arguments.
      * @throws IOException when the file cannot be written.
      */
     public static void main(final String[] args) throws IOException
@@ -89,10 +89,10 @@ public class ParametersJsonTest
 
     /**
      * This method writes the 'parameters.json' file.
-     * @param data Object; data to write.
-     * @param fileName String; file name.
-     * @param prettyString boolean; whether to use new lines and indentation.
-     * @param htmlEscaping boolean; whether to escape html characters.
+     * @param data data to write.
+     * @param fileName file name.
+     * @param prettyString whether to use new lines and indentation.
+     * @param htmlEscaping whether to escape html characters.
      * @throws IOException when the file cannot be written.
      */
     private static void writeParametersFile(final Object data, final String fileName, final boolean prettyString,
@@ -126,9 +126,9 @@ public class ParametersJsonTest
     /**
      * Returns parameter groups as loaded from file.
      * @param <T> type of the output.
-     * @param fileName String; file name.
-     * @param typeToken TypeToken&lt;T&gt;; type token.
-     * @return T; list of parameter groups.
+     * @param fileName file name.
+     * @param typeToken type token.
+     * @return list of parameter groups.
      * @throws IOException when the file cannot be loaded.
      */
     @SuppressWarnings("unchecked")

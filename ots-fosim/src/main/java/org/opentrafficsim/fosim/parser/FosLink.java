@@ -33,11 +33,11 @@ class FosLink extends FosElement
 
     /**
      * Constructor.
-     * @param linkNumber int; unique link number.
-     * @param sectionIndex int; section index.
-     * @param fromLane int; from-lane index.
-     * @param toLane int; to-lane index.
-     * @param parser FosParser; parser to supply the lanes of this link.
+     * @param linkNumber unique link number.
+     * @param sectionIndex section index.
+     * @param fromLane from-lane index.
+     * @param toLane to-lane index.
+     * @param parser parser to supply the lanes of this link.
      */
     public FosLink(final int linkNumber, final int sectionIndex, final int fromLane, final int toLane, final FosParser parser)
     {

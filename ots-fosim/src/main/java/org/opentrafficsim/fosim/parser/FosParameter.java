@@ -18,7 +18,7 @@ class FosParameter
 
     /**
      * Parses a single parameter.
-     * @param string String; value of a parameter line.
+     * @param string value of a parameter line.
      */
     public FosParameter(final String string)
     {

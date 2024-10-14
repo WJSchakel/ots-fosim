@@ -25,7 +25,7 @@ public class TerbregsepleinDemo extends DemoTransceiver
 
     /**
      * Constructor.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws Exception on any exception during simulation.
      */
     protected TerbregsepleinDemo(final String[] args) throws Exception
@@ -35,7 +35,7 @@ public class TerbregsepleinDemo extends DemoTransceiver
 
     /**
      * Main method.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws Exception on any exception during simulation.
      */
     public static void main(final String... args) throws Exception

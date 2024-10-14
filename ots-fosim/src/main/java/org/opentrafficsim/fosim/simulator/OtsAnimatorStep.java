@@ -20,7 +20,7 @@ import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public class OtsAnimatorStep extends OtsAnimator
+public class OtsAnimatorStep extends OtsAnimator implements OtsSimulatorInterfaceStep
 {
 
     /** */
@@ -31,11 +31,20 @@ public class OtsAnimatorStep extends OtsAnimator
 
     /**
      * Constructor.
-     * @param simulatorId Serializable; simulator id.
+     * @param simulatorId simulator id.
      */
     public OtsAnimatorStep(final Serializable simulatorId)
     {
         super(simulatorId);
+    }
+    
+    /**
+     * Returns the worker thread.
+     * @return worker thread
+     */
+    public Thread getWorkerThread()
+    {
+        return this.worker;
     }
 
     /** {@inheritDoc} */

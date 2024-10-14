@@ -59,14 +59,14 @@ public class FosDetector extends LaneDetector
 
     /**
      * Constructor.
-     * @param id String; id.
-     * @param lane Lane; lane.
-     * @param longitudinalPosition Length; position on lane.
-     * @param simulator OtsSimulatorInterface; simulator.
-     * @param prevTime Map&lt;String, Time&gt;; registered passing times in previous detector cross-section.
-     * @param thisTime Map&lt;String, Time&gt;; registered passing times in this detector cross-section.
-     * @param firstAggregation Time; time of first aggregation.
-     * @param aggregationTime Duration; aggregation period.
+     * @param id id.
+     * @param lane lane.
+     * @param longitudinalPosition position on lane.
+     * @param simulator simulator.
+     * @param prevTime registered passing times in previous detector cross-section.
+     * @param thisTime registered passing times in this detector cross-section.
+     * @param firstAggregation time of first aggregation.
+     * @param aggregationTime aggregation period.
      * @throws NetworkException when the position on the lane is out of bounds
      */
     public FosDetector(final String id, final Lane lane, final Length longitudinalPosition,
@@ -91,7 +91,7 @@ public class FosDetector extends LaneDetector
         this.sumReciprocalSpeed.add(0.0);
         this.travelTimeCount.add(0);
         this.sumTravelTime.add(0.0);
-        Duration time = Duration.instantiateSI(firstAggregation.si + this.index * this.aggregationTime.si);
+        Duration time = Duration.instantiateSI(this.firstAggregation.si + this.index * this.aggregationTime.si);
         getSimulator().scheduleEventAbs(time, this, "increasePeriod", null);
     }
 
@@ -113,7 +113,7 @@ public class FosDetector extends LaneDetector
 
     /**
      * Return vehicle count.
-     * @param period int; period index.
+     * @param period period index.
      * @return vehicle count.
      */
     public int getCount(final int period)
@@ -124,7 +124,7 @@ public class FosDetector extends LaneDetector
 
     /**
      * Return sum of reciprocal speed.
-     * @param period int; period index.
+     * @param period period index.
      * @return sum of reciprocal speed.
      */
     public double getSumReciprocalSpeed(final int period)
@@ -135,7 +135,7 @@ public class FosDetector extends LaneDetector
 
     /**
      * Return count of vehicles in travel time sum.
-     * @param period int; period index.
+     * @param period period index.
      * @return count of vehicles in travel time sum.
      */
     public int getTravelTimeCount(final int period)
@@ -146,7 +146,7 @@ public class FosDetector extends LaneDetector
 
     /**
      * Return sum of travel time.
-     * @param period int; period index.
+     * @param period period index.
      * @return sum of travel time.
      */
     public double getSumTravelTime(final int period)
@@ -154,10 +154,19 @@ public class FosDetector extends LaneDetector
         checkPeriod(period);
         return this.sumTravelTime.get(period);
     }
+    
+    /**
+     * Returns the current period index.
+     * @return current period index.
+     */
+    public int getCurrentPeriod()
+    {
+        return this.index;
+    }
 
     /**
      * Checks that the given period index is a valid index.
-     * @param period int; period index.
+     * @param period period index.
      */
     private void checkPeriod(final int period)
     {

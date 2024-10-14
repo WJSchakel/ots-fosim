@@ -39,7 +39,7 @@ class FosTrafficLight
 
     /**
      * Parses a single traffic light.
-     * @param string String; value of a traffic light line.
+     * @param string value of a traffic light line.
      */
     public FosTrafficLight(final String string)
     {

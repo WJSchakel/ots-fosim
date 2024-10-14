@@ -40,7 +40,6 @@ import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.distributions.Generator;
 import org.opentrafficsim.core.dsol.OtsAnimator;
-import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.geometry.OtsLine3d;
@@ -69,6 +68,7 @@ import org.opentrafficsim.fosim.parameters.data.ValueAdapter;
 import org.opentrafficsim.fosim.parameters.data.ValueData;
 import org.opentrafficsim.fosim.sim0mq.FosimModel;
 import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
+import org.opentrafficsim.fosim.simulator.OtsSimulatorStep;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
@@ -279,8 +279,8 @@ public class FosParser
 
     /**
      * Sets the settings.
-     * @param parserSettings Map&lt;ParserSettings, Boolean&gt;; parse settings. Missing settings are assumed default.
-     * @return FosParser; this parser for method chaining.
+     * @param parserSettings parse settings. Missing settings are assumed default.
+     * @return this parser for method chaining.
      */
     public FosParser setSettings(final Map<ParserSetting, Boolean> parserSettings)
     {
@@ -290,8 +290,8 @@ public class FosParser
 
     /**
      * Sets the parameter supplier.
-     * @param parameterSupplier ParameterSupplier; parameter supplier.
-     * @return FosParser; this parser for method chaining.
+     * @param parameterSupplier parameter supplier.
+     * @return this parser for method chaining.
      */
     public FosParser setParameterSupplier(final ParameterSupplier parameterSupplier)
     {
@@ -301,8 +301,8 @@ public class FosParser
 
     /**
      * Sets the simulator. If none is set, one will be created.
-     * @param simulator OtsSimulatorInterface; simulator.
-     * @return FosParser; this parser for method chaining.
+     * @param simulator simulator.
+     * @return this parser for method chaining.
      */
     public FosParser setSimulator(final OtsSimulatorInterface simulator)
     {
@@ -312,7 +312,7 @@ public class FosParser
 
     /**
      * Parses a .fos file.
-     * @param file String; location of a .pos file.
+     * @param file location of a .pos file.
      * @throws InvalidPathException if the path is invalid.
      * @throws IOException if the file could not be read.
      * @throws NetworkException if anything fails critically during parsing.
@@ -324,7 +324,7 @@ public class FosParser
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param stream InputStream; stream of the contents typically in a .fos file.
+     * @param stream stream of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      * @throws IOException if the stream cannot be read
      */
@@ -335,7 +335,7 @@ public class FosParser
 
     /**
      * Parses a string of the contents typically in a .fos file.
-     * @param fosString String; string of the contents typically in a .fos file.
+     * @param fosString string of the contents typically in a .fos file.
      * @throws NetworkException if anything fails critically during parsing.
      */
     public void parseFromString(final String fosString) throws NetworkException
@@ -348,7 +348,7 @@ public class FosParser
 
     /**
      * Returns the network after parsing.
-     * @return RoadNetwork; network.
+     * @return network.
      * @throws IllegalStateException when no parsing was yet performed.
      */
     public RoadNetwork getNetwork()
@@ -359,7 +359,7 @@ public class FosParser
 
     /**
      * Returns the model after parsing.
-     * @return FosimModel; model.
+     * @return model.
      * @throws IllegalStateException when no parsing was yet performed.
      */
     public FosimModel getModel()
@@ -370,7 +370,7 @@ public class FosParser
 
     /**
      * Returns the application after parsing.
-     * @return OtsSimulationApplication&lt;FosimModel&gt;; application.
+     * @return application.
      * @throws IllegalStateException when no parsing was yet performed.
      */
     public OtsSimulationApplication<FosimModel> getApplication()
@@ -378,7 +378,7 @@ public class FosParser
         Throw.when(this.app == null, IllegalStateException.class, "No fos information was parsed.");
         return this.app;
     }
-    
+
     /**
      * Returns the duration of the first detector period.
      * @return duration of first detector period.
@@ -387,7 +387,7 @@ public class FosParser
     {
         return this.timeStep.times(this.detectorTimes.get(0));
     }
-    
+
     /**
      * Returns the duration of detector periods after the first.
      * @return duration of detector periods after the first.
@@ -400,7 +400,7 @@ public class FosParser
     /**
      * Parses a line. This method should treat all missing parser settings as true, by using
      * {@code Map.getOrDefault(ParserSettings, true)}.
-     * @param line String; line to parse.
+     * @param line line to parse.
      */
     private void parseLine(final String line)
     {
@@ -607,9 +607,9 @@ public class FosParser
 
     /**
      * Returns a sub-list from a list. The list is created if required.
-     * @param list FosList&lt;FosList&lt;T&gt;&gt;; list to take the sub-list from, or to put a create one in.
-     * @param index int; index of the list to obtain.
-     * @return FosList&lt;FosList&lt;T&gt;&gt;; list to take a list from.
+     * @param list list to take the sub-list from, or to put a create one in.
+     * @param index index of the list to obtain.
+     * @return list to take a list from.
      * @param <T> type in the returned list.
      */
     private synchronized <T> FosList<T> getSubList(final FosList<FosList<T>> list, final int index)
@@ -625,8 +625,8 @@ public class FosParser
 
     /**
      * Returns the value for the setting. It will be the default value of the setting if the setting was not set.
-     * @param setting ParserSetting; parser setting.
-     * @return boolean; value for the setting.
+     * @param setting parser setting.
+     * @return value for the setting.
      */
     private boolean getSetting(final ParserSetting setting)
     {
@@ -659,7 +659,7 @@ public class FosParser
             if (this.simulator == null)
             {
                 gui = getSetting(ParserSetting.GUI);
-                this.simulator = gui ? new OtsAnimatorStep("Ots-Fosim") : new OtsSimulator("Ots-Fosim");
+                this.simulator = gui ? new OtsAnimatorStep("Ots-Fosim") : new OtsSimulatorStep("Ots-Fosim");
             }
             else
             {
@@ -795,9 +795,9 @@ public class FosParser
      * happens for as long as lane changes are possible to the next lane, or from the next lane to the current lane. No link is
      * mapped if the specified section and lane are not a valid traffic lane. In either case the returned index is where the
      * next link may be found, and should be used for the next call to this method (if it is in the overall lane bounds).
-     * @param sectionIndex int; section index.
-     * @param fromLane int; from lane index (i.e. the left-most lane of the potential link).
-     * @return int; lane index at which the next left-most lane of the next link on the same section may be found.
+     * @param sectionIndex section index.
+     * @param fromLane from lane index (i.e. the left-most lane of the potential link).
+     * @return lane index at which the next left-most lane of the next link on the same section may be found.
      */
     private int mapOutLink(final int sectionIndex, final int fromLane)
     {
@@ -836,9 +836,9 @@ public class FosParser
 
     /**
      * Returns a lane.
-     * @param sectionIndex int; section index.
-     * @param laneIndex int; lane index.
-     * @return FosLane; lane at given section and lane index.
+     * @param sectionIndex section index.
+     * @param laneIndex lane index.
+     * @return lane at given section and lane index.
      */
     FosLane getLane(final int sectionIndex, final int laneIndex)
     {
@@ -913,8 +913,8 @@ public class FosParser
 
     /**
      * Returns the link connected to the source or sink.
-     * @param sourceSink FosSourceSink; source or sink.
-     * @return FosLink; link connected to the source or sink.
+     * @param sourceSink source or sink.
+     * @return link connected to the source or sink.
      */
     private FosLink getSourceSinkLink(final FosSourceSink sourceSink)
     {
@@ -939,9 +939,9 @@ public class FosParser
     /**
      * Tries to find a node as it either flows towards {@code toLink} or from {@code fromLink}. In such cases links must share a
      * node due to a merge or diverge. If no such node exists, a new node is created.
-     * @param fromLink int; from link, flowing in to the node.
-     * @param toLink int; to link, flowing out of the node.
-     * @return FosNode; node to connect both links.
+     * @param fromLink from link, flowing in to the node.
+     * @param toLink to link, flowing out of the node.
+     * @return node to connect both links.
      */
     private FosNode getOrCreateNode(final int fromLink, final int toLink)
     {
@@ -965,8 +965,8 @@ public class FosParser
     /**
      * Returns whether this node has a forbidden name, i.e. equal to desired name of a source or sink. In that case, a new node
      * should be generated in that case.
-     * @param node FosNode; node.
-     * @return boolean; whether this node has a forbidden name.
+     * @param node node.
+     * @return whether this node has a forbidden name.
      */
     private boolean hasForbiddenName(final FosNode node)
     {
@@ -1013,7 +1013,7 @@ public class FosParser
 
     /**
      * Builds the nodes.
-     * @param node FosNode; node.
+     * @param node node.
      * @throws NetworkException; on exception when creating a node
      */
     private void buildNode(final FosNode node) throws NetworkException
@@ -1072,7 +1072,7 @@ public class FosParser
 
     /**
      * Builds a link, including the lanes on it.
-     * @param link FosLink; parsed link information.
+     * @param link parsed link information.
      * @throws NetworkException on exceptions creating the link or lane objects.
      * @throws OtsGeometryException when lane or stripe geometry is not correct
      */
@@ -1228,10 +1228,10 @@ public class FosParser
     /**
      * Returns the lateral coordinate of the left edge. The section is centered by its actual width, in the space assuming a
      * grid of maximum lane widths.
-     * @param sectionIndex int; section index.
-     * @param fromLane int; from lane.
-     * @param toLane int; to lane.
-     * @return Length; lateral coordinate of the left edge for a link.
+     * @param sectionIndex section index.
+     * @param fromLane from lane.
+     * @param toLane to lane.
+     * @return lateral coordinate of the left edge for a link.
      */
     private Length getLeftLinkEdge(final int sectionIndex, final int fromLane, final int toLane)
     {
@@ -1276,8 +1276,8 @@ public class FosParser
 
     /**
      * Returns the left-edge coordinate of a lane, assuming maximum width of all lanes to the left.
-     * @param lane int; lane index.
-     * @return Length; left-edge coordinate of a lane, assuming maximum width of all lanes to the left.
+     * @param lane lane index.
+     * @return left-edge coordinate of a lane, assuming maximum width of all lanes to the left.
      */
     private Length getLeftEdgeMax(final int lane)
     {
@@ -1426,10 +1426,10 @@ public class FosParser
 
     /**
      * Creates a factory with all required model components, including optional social interactions and perception.
-     * @param parameterFactory ParameterFactory; parameter factory.
-     * @param stream StreamInterface; stream of random numbers.
-     * @param vehicleTypeNumber int; vehicle type number.
-     * @return LaneBasedStrategicalRoutePlannerFactory; factory.
+     * @param parameterFactory parameter factory.
+     * @param stream stream of random numbers.
+     * @param vehicleTypeNumber vehicle type number.
+     * @return factory.
      */
     private LaneBasedStrategicalRoutePlannerFactory getStrategicalPlannerFactory(final ParameterFactory parameterFactory,
             final StreamInterface stream, final int vehicleTypeNumber)
@@ -1554,9 +1554,9 @@ public class FosParser
 
     /**
      * Returns the FOSIM parameter value for given vehicle type number, and parameter name.
-     * @param vehicleTypeNumber int; vehicle type number.
-     * @param parameterName String; parameter name as in FOSIM specification.
-     * @return double; parameter value.
+     * @param vehicleTypeNumber vehicle type number.
+     * @param parameterName parameter name as in FOSIM specification.
+     * @return parameter value.
      * @throws ParameterException if the parameter is not found for the vehicle type.
      */
     private double getParameterValue(final int vehicleTypeNumber, final String parameterName) throws ParameterException
@@ -1676,8 +1676,8 @@ public class FosParser
 
     /**
      * Returns the part of a line after the ":", with leading and trailing white spaces trimmed.
-     * @param line String; line.
-     * @return String; part of a line after the ":", with leading and trailing white spaces trimmed.
+     * @param line line.
+     * @return part of a line after the ":", with leading and trailing white spaces trimmed.
      */
     private static String fieldValue(final String line)
     {
@@ -1686,8 +1686,8 @@ public class FosParser
 
     /**
      * Returns the index of the field described in the line. This is "0" in the line "lane 0: ...".
-     * @param line String; line.
-     * @return int; index of the field described in the line.
+     * @param line line.
+     * @return index of the field described in the line.
      */
     private static int fieldIndex(final String line)
     {
@@ -1699,8 +1699,8 @@ public class FosParser
 
     /**
      * Returns two indices of the field described in the line. This is "[1 0]" for the line "source to sink 1 0: ...".
-     * @param line String; line.
-     * @return int[]; indices of the field described in the line.
+     * @param line line.
+     * @return indices of the field described in the line.
      */
     private static int[] fieldIndices(final String line)
     {
@@ -1719,11 +1719,11 @@ public class FosParser
 
     /**
      * Reads a list of values from a blank-separated string. This method can deal with consecutive blanks.
-     * @param list List&lt;T&gt;; list to place the parsed values in.
-     * @param string String; blank-separated list of integers.
-     * @param converter DoubleFunction&lt;? extends T&gt;; value converter.
+     * @param list list to place the parsed values in.
+     * @param string blank-separated list of integers.
+     * @param converter value converter.
      * @param <T> type to convert the integers in to.
-     * @return List&lt;T&gt;; the input list.
+     * @return the input list.
      */
     private static <T> List<T> parseValueList(final List<T> list, final String string,
             final Function<String, ? extends T> converter)
@@ -1737,9 +1737,9 @@ public class FosParser
 
     /**
      * Returns the next part of a line that describes a single section of a lane.
-     * @param line String; line.
-     * @param from int; index to start, should be incremented with the length of each returned lane string.
-     * @return String; next part of a line that describes a single section of a lane.
+     * @param line line.
+     * @param from index to start, should be incremented with the length of each returned lane string.
+     * @return next part of a line that describes a single section of a lane.
      */
     private static String nextLaneString(final String line, final int from)
     {
@@ -1755,9 +1755,9 @@ public class FosParser
 
     /**
      * Splits a string, and trims the resulting fields.
-     * @param string String; string to split.
-     * @param delimiter String; delimiter.
-     * @return String[]; trimmed fields.
+     * @param string string to split.
+     * @param delimiter delimiter.
+     * @return trimmed fields.
      */
     static String[] splitAndTrimString(final String string, final String delimiter)
     {
@@ -1773,9 +1773,9 @@ public class FosParser
      * Splits a string by blanks. Consecutive blanks are considered as one blank. If a number of fields is specified, the last
      * field may contain an overflow of blanks in the line. For example when 4 fields are requested, the string "0 5 3 The
      * Hague" results in a 4th field "The Hague".
-     * @param string String; string.
+     * @param string string.
      * @param numFields Number of fields to return. Use 0 for as many as required.
-     * @return String[]; split strings.
+     * @return split strings.
      */
     static String[] splitStringByBlank(final String string, final int numFields)
     {

@@ -34,7 +34,7 @@ public class DistributionDefinitions
     
     /**
      * Constructor.
-     * @param version String; version.
+     * @param version version.
      */
     public DistributionDefinitions(final String version)
     {
@@ -43,9 +43,9 @@ public class DistributionDefinitions
     
     /**
      * Return JSON string distribution definitions.
-     * @param prettyString boolean; whether to use new lines and indentation.
-     * @param htmlEscaping boolean; whether to escape html characters.
-     * @return String; JSON string of distribution definitions.
+     * @param prettyString whether to use new lines and indentation.
+     * @param htmlEscaping whether to escape html characters.
+     * @return JSON string of distribution definitions.
      */
     public static String getParametersJson(final boolean prettyString, final boolean htmlEscaping)
     {
@@ -65,7 +65,7 @@ public class DistributionDefinitions
 
     /**
      * This method defines the distributions, their parameters, etc.
-     * @return List&lt;Distribution&gt;; list of distributions, in order.
+     * @return list of distributions, in order.
      */
     public static List<Distribution> getDistributions()
     {

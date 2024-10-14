@@ -88,7 +88,7 @@ class FosLane
 
     /**
      * Parses the information of a single lane in a single section.
-     * @param string String; string describing a single lane in a single section.
+     * @param string string describing a single lane in a single section.
      */
     public FosLane(final String string)
     {
@@ -111,8 +111,8 @@ class FosLane
 
     /**
      * Whether vehicles may change left.
-     * @param stripedAreas boolean; striped areas setting.
-     * @return boolean; whether vehicles may change left.
+     * @param stripedAreas striped areas setting.
+     * @return whether vehicles may change left.
      */
     public boolean canChangeLeft(final boolean stripedAreas)
     {
@@ -121,8 +121,8 @@ class FosLane
 
     /**
      * Whether vehicles may change right.
-     * @param stripedAreas boolean; striped areas setting.
-     * @return boolean; whether vehicles may change right.
+     * @param stripedAreas striped areas setting.
+     * @return whether vehicles may change right.
      */
     public boolean canChangeRight(final boolean stripedAreas)
     {
@@ -131,7 +131,7 @@ class FosLane
 
     /**
      * Whether this lane is switched (rush-hour lane or plus lane).
-     * @return boolean; whether this lane is switched (rush-hour lane or plus lane).
+     * @return whether this lane is switched (rush-hour lane or plus lane).
      */
     public boolean isSwitched()
     {
@@ -140,7 +140,7 @@ class FosLane
 
     /**
      * Returns the number of the switched are times for this lane, if it is switched.
-     * @return int; number of the switched are times for this lane.
+     * @return number of the switched are times for this lane.
      */
     public int switchedAreaTimesNumber()
     {
@@ -150,7 +150,7 @@ class FosLane
     
     /**
      * Get the lane.
-     * @return Lane; lane.
+     * @return lane.
      */
     public Lane getLane()
     {
@@ -159,7 +159,7 @@ class FosLane
 
     /**
      * Set the lane.
-     * @param lane Lane; lane.
+     * @param lane lane.
      */
     public void setLane(final Lane lane)
     {

@@ -29,7 +29,7 @@ class FosSourceSink
 
     /**
      * Parses a single source or sink.
-     * @param string String; value of a source or sink line.
+     * @param string value of a source or sink line.
      */
     public FosSourceSink(final String string)
     {

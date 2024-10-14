@@ -31,8 +31,8 @@ public class DistributionValue implements DefaultValue
 
     /**
      * Constructor.
-     * @param type Type; distribution type.
-     * @param defaultValue double; value of the default mean/mode/median value in another distribution should the user select it.
+     * @param type distribution type.
+     * @param defaultValue value of the default mean/mode/median value in another distribution should the user select it.
      */
     private DistributionValue(final DistributionType type, final double defaultValue)
     {
@@ -42,8 +42,8 @@ public class DistributionValue implements DefaultValue
 
     /**
      * Creates an exponential distribution.
-     * @param lambda double; mean value.
-     * @return DistributionValue; created distribution.
+     * @param lambda mean value.
+     * @return created distribution.
      */
     public static DistributionValue exponential(final double lambda)
     {
@@ -54,10 +54,10 @@ public class DistributionValue implements DefaultValue
 
     /**
      * Creates a triangular distribution.
-     * @param min double; minimum value.
-     * @param mode double; mode value.
-     * @param max double; maximum value.
-     * @return DistributionValue; created distribution.
+     * @param min minimum value.
+     * @param mode mode value.
+     * @param max maximum value.
+     * @return created distribution.
      */
     public static DistributionValue triangular(final double min, final double mode, final double max)
     {
@@ -70,11 +70,11 @@ public class DistributionValue implements DefaultValue
 
     /**
      * Creates a truncated normal distribution.
-     * @param mu double; mean value.
-     * @param sigma double; standard deviation.
-     * @param min double; minimum value.
-     * @param max double; maximum value.
-     * @return DistributionValue; created distribution.
+     * @param mu mean value.
+     * @param sigma standard deviation.
+     * @param min minimum value.
+     * @param max maximum value.
+     * @return created distribution.
      */
     public static DistributionValue normal(final double mu, final double sigma, final double min, final double max)
     {
@@ -88,11 +88,11 @@ public class DistributionValue implements DefaultValue
 
     /**
      * Creates a truncated log-normal distribution.
-     * @param mean double; mean value of underlying normal distribution.
-     * @param std double; standard deviation of underlying normal distribution.
-     * @param min double; minimum value.
-     * @param max double; maximum value.
-     * @return DistributionValue; created distribution.
+     * @param mean mean value of underlying normal distribution.
+     * @param std standard deviation of underlying normal distribution.
+     * @param min minimum value.
+     * @param max maximum value.
+     * @return created distribution.
      */
     public static DistributionValue logNormal(final double mean, final double std, final double min, final double max)
     {
@@ -106,9 +106,9 @@ public class DistributionValue implements DefaultValue
 
     /**
      * Creates a uniform distribution.
-     * @param min double; minimum value.
-     * @param max double; maximum value.
-     * @return DistributionValue; created distribution.
+     * @param min minimum value.
+     * @param max maximum value.
+     * @return created distribution.
      */
     public static DistributionValue uniform(final double min, final double max)
     {

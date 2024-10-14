@@ -57,7 +57,7 @@ public class SingleLaneDemo extends DemoTransceiver
 
     /**
      * Constructor.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws Exception on any exception during simulation.
      */
     protected SingleLaneDemo(final String[] args) throws Exception
@@ -67,7 +67,7 @@ public class SingleLaneDemo extends DemoTransceiver
 
     /**
      * Main method.
-     * @param args String[]; command line arguments.
+     * @param args command line arguments.
      * @throws Exception on any exception during simulation.
      */
     public static void main(final String... args) throws Exception
@@ -77,8 +77,8 @@ public class SingleLaneDemo extends DemoTransceiver
 
     /**
      * Builds the network and demand.
-     * @param sim OtsSimulatorInterface; simulator.
-     * @return OtsRoadNetwork; network.
+     * @param sim simulator.
+     * @return network.
      * @throws NetworkException exception in network
      * @throws OtsGeometryException exception in geometry
      * @throws ParameterException wrong parameter value

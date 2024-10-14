@@ -23,9 +23,9 @@ class FosList<T> implements Iterable<T>
     /**
      * Set the element at the specified index. Increase size of array if required. This will fill the array with
      * {@code null}.
-     * @param index int; index to set the element.
-     * @param t T; element to set.
-     * @return T; the element previously at the specified position.
+     * @param index index to set the element.
+     * @param t element to set.
+     * @return the element previously at the specified position.
      */
     public synchronized T set(final int index, final T t)
     {
@@ -38,7 +38,7 @@ class FosList<T> implements Iterable<T>
 
     /**
      * Returns the size;
-     * @return int; size.
+     * @return size.
      */
     public int size()
     {
@@ -47,8 +47,8 @@ class FosList<T> implements Iterable<T>
 
     /**
      * Returns the value at index.
-     * @param index int; index.
-     * @return T; value at index.
+     * @param index index.
+     * @return value at index.
      */
     public T get(final int index)
     {
@@ -64,7 +64,7 @@ class FosList<T> implements Iterable<T>
 
     /**
      * Returns whether the list is fully defined, i.e. contains no {@code null}.
-     * @return boolean; whether the list is fully defined.
+     * @return whether the list is fully defined.
      */
     public boolean isDefined()
     {

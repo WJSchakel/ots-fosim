@@ -30,7 +30,7 @@ class FosTemporaryBlockage
 
     /**
      * Parses a single switch area.
-     * @param string String; value of a switch area line.
+     * @param string value of a switch area line.
      */
     public FosTemporaryBlockage(final String string)
     {

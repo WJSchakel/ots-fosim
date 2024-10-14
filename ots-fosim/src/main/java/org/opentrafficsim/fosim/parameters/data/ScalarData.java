@@ -16,7 +16,7 @@ public class ScalarData implements ValueData
 
     /**
      * Constructor.
-     * @param value double; value.
+     * @param value value.
      */
     public ScalarData(final double value)
     {
@@ -25,7 +25,7 @@ public class ScalarData implements ValueData
 
     /**
      * Returns the value.
-     * @return double; value.
+     * @return value.
      */
     public double value()
     {

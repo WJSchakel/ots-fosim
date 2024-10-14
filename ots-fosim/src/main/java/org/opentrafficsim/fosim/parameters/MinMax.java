@@ -20,7 +20,7 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
     
     /**
      * Constructor using same name for Dutch and English.
-     * @param name String; parameter name.
+     * @param name parameter name.
      */
     public MinMax(final String name)
     {
@@ -29,8 +29,8 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
     
     /**
      * Constructor with different names between Dutch and English.
-     * @param nameNl String; Dutch parameter name.
-     * @param nameEn String; English parameter name.
+     * @param nameNl Dutch parameter name.
+     * @param nameEn English parameter name.
      */
     public MinMax(final String nameNl, final String nameEn)
     {
@@ -39,8 +39,8 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
     
     /**
      * Set parameter as minimum limit.
-     * @param parameter String; parameter.
-     * @return T; for method chaining.
+     * @param parameter parameter.
+     * @return for method chaining.
      */
     @SuppressWarnings("unchecked")
     public T setMin(final String parameter)
@@ -52,8 +52,8 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
 
     /**
      * Set value as minimum limit.
-     * @param value double; value.
-     * @return T; for method chaining.
+     * @param value value.
+     * @return for method chaining.
      */
     @SuppressWarnings("unchecked")
     public T setMin(final double value)
@@ -65,9 +65,9 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
 
     /**
      * Set minimum limit as factor on parameter.
-     * @param parameter String; parameter.
-     * @param factor double; factor.
-     * @return T; for method chaining.
+     * @param parameter parameter.
+     * @param factor factor.
+     * @return for method chaining.
      */
     @SuppressWarnings("unchecked")
     public T setMin(final String parameter, final double factor)
@@ -80,8 +80,8 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
 
     /**
      * Set parameter as maximum limit.
-     * @param parameter String; parameter.
-     * @return Parameter; for method chaining.
+     * @param parameter parameter.
+     * @return for method chaining.
      */
     @SuppressWarnings("unchecked")
     public T setMax(final String parameter)
@@ -93,8 +93,8 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
 
     /**
      * Set value as maximum limit.
-     * @param value double; value.
-     * @return T; for method chaining.
+     * @param value value.
+     * @return for method chaining.
      */
     @SuppressWarnings("unchecked")
     public T setMax(final double value)
@@ -106,9 +106,9 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
 
     /**
      * Set maximum limit as factor on parameter.
-     * @param parameter String; parameter.
-     * @param factor double; factor.
-     * @return T; for method chaining.
+     * @param parameter parameter.
+     * @param factor factor.
+     * @return for method chaining.
      */
     @SuppressWarnings("unchecked")
     public T setMax(final String parameter, final double factor)

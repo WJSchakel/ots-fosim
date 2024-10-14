@@ -119,8 +119,8 @@ public class ParserTestBatch
 
     /**
      * Obtain list of files in folder.
-     * @param path String; folder path.
-     * @return List&lt;String&gt;; list of file names.
+     * @param path folder path.
+     * @return list of file names.
      * @throws IOException IO exception
      */
     private List<String> getResourceFiles(final String path) throws IOException

@@ -71,8 +71,8 @@ public class OtsParametersParser
 
     /**
      * Constructor.
-     * @param gtuTypes List&lt;GtuType&gt;; GTU types.
-     * @param otsParameters ParameterDataDefinition; OTS parameter definitions.
+     * @param gtuTypes GTU types.
+     * @param otsParameters OTS parameter definitions.
      */
     private OtsParametersParser(final List<GtuType> gtuTypes, final ParameterDataDefinition otsParameters)
     {
@@ -82,11 +82,11 @@ public class OtsParametersParser
 
     /**
      * Parse OTS parameters in to templates and parameter factory using parsed GTU types.
-     * @param gtuTypes List&lt;GtuType&gt;; GTU types.
-     * @param otsParameters ParameterDataDefinition; OTS parameter definitions.
-     * @param templates Map&lt;GtuType, GtuTemplate&gt;; templates.
-     * @param parameterFactory ParameterFactoryByType; parameter factory.
-     * @param stream StreamInterface; stream of random numbers.
+     * @param gtuTypes GTU types.
+     * @param otsParameters OTS parameter definitions.
+     * @param templates templates.
+     * @param parameterFactory parameter factory.
+     * @param stream stream of random numbers.
      * @throws ParameterException if a parameter is not found for the vehicle type.
      */
     public static void parse(final List<GtuType> gtuTypes, final ParameterDataDefinition otsParameters,
@@ -102,10 +102,10 @@ public class OtsParametersParser
 
     /**
      * Applies all parameter values and distributions, both in the GTU template and parameter factory.
-     * @param templates Ma&lt;GtuType, GtuTemplate&gt;; templates.
-     * @param parameterFactory ParameterFactoryByType; parameter factory.
-     * @param stream StreamInterface; stream of random numbers.
-     * @param vehicleTypeNumber int; vehicle type number.
+     * @param templates templates.
+     * @param parameterFactory parameter factory.
+     * @param stream stream of random numbers.
+     * @param vehicleTypeNumber vehicle type number.
      * @throws ParameterException if a parameter is not found for the vehicle type.
      */
     private void applyParameters(final Map<GtuType, GtuTemplate> templates, final ParameterFactoryByType parameterFactory,
@@ -232,8 +232,8 @@ public class OtsParametersParser
 
     /**
      * Returns the parameter data under given group and parameter id.
-     * @param parameterGroup String; parameter group id.
-     * @param parameterId String; parameter id.
+     * @param parameterGroup parameter group id.
+     * @param parameterId parameter id.
      * @return parameter data under given group and parameter id.
      * @throws ParameterException if the parameter does not exist in the group, or the group does not exist.
      */
@@ -257,12 +257,12 @@ public class OtsParametersParser
 
     /**
      * Add double parameter to parameter factory, scalar or distributed.
-     * @param parameterFactory ParameterFactoryByType; parameter factory.
-     * @param parameterType ParameterTypeDouble; parameter type.
-     * @param parameterGroup String; parameter group id.
-     * @param parameterId String; parameter id.
-     * @param stream StreamInterface; random number stream.
-     * @param vehicleTypeNumber int; vehicle type number.
+     * @param parameterFactory parameter factory.
+     * @param parameterType parameter type.
+     * @param parameterGroup parameter group id.
+     * @param parameterId parameter id.
+     * @param stream random number stream.
+     * @param vehicleTypeNumber vehicle type number.
      * @throws ParameterException if the parameter does not exist in the group, or the group does not exist.
      */
     private final void addParameter(final ParameterFactoryByType parameterFactory, final ParameterTypeDouble parameterType,
@@ -287,14 +287,14 @@ public class OtsParametersParser
      * Add DJUNITS parameter to parameter factory, scalar or distributed.
      * @param <U> unit type.
      * @param <T> scalar type.
-     * @param parameterFactory ParameterFactoryByType; parameter factory.
-     * @param parameterType ParameterTypeNumeric&lt;T&gt;; parameter type.
-     * @param parameterGroup String; parameter group id.
-     * @param parameterId String; parameter id.
-     * @param clazz Class&lt;T&gt;; class of scalar type.
-     * @param unit U; unit.
-     * @param stream StreamInterface; random number stream.
-     * @param vehicleTypeNumber int; vehicle type number.
+     * @param parameterFactory parameter factory.
+     * @param parameterType parameter type.
+     * @param parameterGroup parameter group id.
+     * @param parameterId parameter id.
+     * @param clazz class of scalar type.
+     * @param unit unit.
+     * @param stream random number stream.
+     * @param vehicleTypeNumber vehicle type number.
      * @throws ParameterException if the parameter does not exist in the group, or the group does not exist.
      */
     @SuppressWarnings("unchecked")
@@ -366,10 +366,10 @@ public class OtsParametersParser
      * Get DJUNITS distribution.
      * @param <U> unit type.
      * @param <T> scalar type.
-     * @param distribution DistributionData; distribution from FOSIM.
-     * @param stream StreamInterface; random number stream.
-     * @param clazz Class&lt;T&gt;; class of scalar type.
-     * @param unit U; unit.
+     * @param distribution distribution from FOSIM.
+     * @param stream random number stream.
+     * @param clazz class of scalar type.
+     * @param unit unit.
      * @return DJUNITS distribution.
      * @throws ParameterException if the unit is not supported.
      */
@@ -400,8 +400,8 @@ public class OtsParametersParser
 
     /**
      * Get double distribution.
-     * @param distribution DistributionData; distribution from FOSIM.
-     * @param stream StreamInterface; random number stream.
+     * @param distribution distribution from FOSIM.
+     * @param stream random number stream.
      * @return double distribution.
      * @throws ParameterException if the distribution is not supported.
      */
@@ -433,7 +433,7 @@ public class OtsParametersParser
 
     /**
      * Get the typical value for a distribution, e.g. the mean or mode.
-     * @param distribution DistributionData; distribution from FOSIM.
+     * @param distribution distribution from FOSIM.
      * @return double distribution.
      * @throws ParameterException if the distribution is not supported.
      */

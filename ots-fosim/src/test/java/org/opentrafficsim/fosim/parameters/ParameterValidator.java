@@ -203,8 +203,8 @@ public class ParameterValidator
 
     /**
      * Return the ordinal of given distribution parameter name.
-     * @param parameter String; distribution parameter name.
-     * @return int; ordinal of given distribution parameter name.
+     * @param parameter distribution parameter name.
+     * @return ordinal of given distribution parameter name.
      */
     private static int getOrdinal(final String parameter)
     {

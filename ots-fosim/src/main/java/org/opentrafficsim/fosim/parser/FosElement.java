@@ -17,7 +17,7 @@ abstract class FosElement
 
     /**
      * Constructor.
-     * @param number int; unique number.
+     * @param number unique number.
      */
     public FosElement(final int number)
     {
