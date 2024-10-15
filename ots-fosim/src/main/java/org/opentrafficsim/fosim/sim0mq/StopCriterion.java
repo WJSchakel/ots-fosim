@@ -44,27 +44,29 @@ public class StopCriterion
      * Constructor.
      * @param network network.
      * @param detectionType FOSIM, PLM or QDC.
-     * @param threshold threshold speed below which congestion is recognized.
      * @param fromLane from lane to check detectors.
      * @param toLane to lane to check detectors.
+     * @param detector detector cross section number
+     * @param threshold threshold speed below which congestion is recognized.
      * @param additionalTime additional time in QDC method.
      */
-    public StopCriterion(final RoadNetwork network, final DetectionType detectionType, final Speed threshold, final int fromLane,
-            final int toLane, final Duration additionalTime)
+    public StopCriterion(final RoadNetwork network, final DetectionType detectionType, final int fromLane, final int toLane,
+            int detector, final Speed threshold, final Duration additionalTime)
     {
         this.network = network;
         this.stopType = detectionType;
         this.threshold = threshold;
         this.additionalTime = additionalTime;
         // Find detectors
-        for (FosDetector detector : network.getObjectMap(FosDetector.class).values())
+        for (FosDetector det : network.getObjectMap(FosDetector.class).values())
         {
-            String id = detector.getId();
+            String id = det.getId();
             String[] crossSeciontAndLane = id.split("_");
+            int detNum = Integer.valueOf(crossSeciontAndLane[0]);
             int lane = Integer.valueOf(crossSeciontAndLane[1]);
-            if (fromLane <= lane && lane <= toLane)
+            if (fromLane <= lane && lane <= toLane && (detector < 0 || detector == detNum))
             {
-                this.detectors.add(detector);
+                this.detectors.add(det);
             }
         }
     }
@@ -97,10 +99,6 @@ public class StopCriterion
      */
     public boolean canStop()
     {
-        if (this.network.getSimulator().getSimulatorAbsTime().si > this.network.getSimulator().getReplication().getEndTime().si)
-        {
-            return true; // end of simulation reached
-        }
         if (this.detectors.isEmpty())
         {
             return true; // there are no detectors...

@@ -1676,7 +1676,7 @@ public class FosParser
                         int underscore = lane.getId().indexOf("_");
                         int laneNum = Integer.valueOf(lane.getId().substring(5, underscore)) + (firstLane - 1);
                         // Id's are "1_2" where 1=detector cross-section, and 2=lane 2 (both start counting at 0)
-                        String id = detectorCrossSection + "_" + laneNum;
+                        String id = (this.detectorPositions.size() - detectorCrossSection - 1) + "_" + laneNum;
                         if (getSetting(ParserSetting.FOS_DETECTORS))
                         {
                             new FosDetector(id, lane, longitudinalPosition, this.network.getSimulator(), prevTime, thisTime,

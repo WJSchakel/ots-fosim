@@ -391,19 +391,23 @@ public class OtsTransceiver
                     {
                         Object[] payload = message.createObjectArray();
                         DetectionType detectionType = DetectionType.valueOf((String) payload[8]);
-                        Speed threshold = (Speed) payload[9];
-                        int fromLane = (int) payload[10];
-                        int toLane = (int) payload[11];
-                        Duration additionalTime = detectionType.equals(DetectionType.QDC) ? (Duration) payload[12] : null;
-                        StopCriterion stopCriterium = new StopCriterion(OtsTransceiver.this.network, detectionType, threshold,
-                                fromLane, toLane, additionalTime);
-                        while (!stopCriterium.canStop())
+                        int fromLane = (int) payload[9];
+                        int toLane = (int) payload[10];
+                        int detector = (int) payload[11];
+                        Speed threshold = (Speed) payload[12];
+                        Duration additionalTime = detectionType.equals(DetectionType.QDC) ? (Duration) payload[13] : null;
+                        StopCriterion stopCriterium = new StopCriterion(OtsTransceiver.this.network, detectionType, fromLane,
+                                toLane, detector, threshold, additionalTime);
+                        boolean triggered;
+                        while (!(triggered = stopCriterium.canStop()) && OtsTransceiver.this.network.getSimulator()
+                                .getSimulatorAbsTime().si < OtsTransceiver.this.network.getSimulator().getReplication()
+                                        .getEndTime().si)
                         {
                             step();
                         }
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "BATCH_REPLY", this.messageId++, new Object[0]), 0);
+                                "BATCH_REPLY", this.messageId++, new Object[] {triggered}), 0);
                     }
                     else if ("DISTRIBUTIONS".equals(message.getMessageTypeId()))
                     {

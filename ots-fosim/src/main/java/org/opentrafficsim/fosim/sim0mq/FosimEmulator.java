@@ -123,10 +123,12 @@ public class FosimEmulator
             if (BATCH)
             {
                 int fromLane = 0;
-                int toLane = 1;
+                int toLane = 12;
+                int detector = -1;
                 Duration additionalTime = Duration.instantiateSI(600.0);
-                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "BATCH", messageId++,
-                        new Object[] {"PLM", new Speed(50.0, SpeedUnit.KM_PER_HOUR), fromLane, toLane, additionalTime});
+                encodedMessage =
+                        Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "BATCH", messageId++, new Object[] {"PLM",
+                                fromLane, toLane, detector, new Speed(50.0, SpeedUnit.KM_PER_HOUR), additionalTime});
                 requester.send(encodedMessage, 0);
                 reply = requester.recv(0);
                 message = Sim0MQMessage.decode(reply);
