@@ -22,7 +22,7 @@ class FosLane
      * <li>l: can only change left</li>
      * <li>r: can only change right</li>
      * <li>c: can change in both directions</li>
-     * <li>s: single lane (no lane change in either direction</li>
+     * <li>s: single lane (no lane change in either direction)</li>
      * <li>L: must go left (striped area)</li>
      * <li>R: must go right (striped area)</li>
      * <li>X: should not be here (beyond striped area)</li>
@@ -129,6 +129,16 @@ class FosLane
         return (this.type.equals("r") || this.type.equals("c") || (this.type.equals("R") && stripedAreas));
     }
 
+    /**
+     * Whether this should be considered a shoulder.
+     * @param stripedAreas striped areas setting.
+     * @return whether this should be considered a shoulder.
+     */
+    public boolean isShoulder(final boolean stripedAreas)
+    {
+        return (this.type.equals("L") && !stripedAreas) || (this.type.equals("R") && !stripedAreas) || this.type.equals("X");
+    }
+    
     /**
      * Whether this lane is switched (rush-hour lane or plus lane).
      * @return whether this lane is switched (rush-hour lane or plus lane).

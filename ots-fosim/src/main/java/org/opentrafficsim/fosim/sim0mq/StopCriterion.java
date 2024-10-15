@@ -64,7 +64,7 @@ public class StopCriterion
             int lane = Integer.valueOf(crossSeciontAndLane[1]);
             if (fromLane <= lane && lane <= toLane)
             {
-                detectors.add(detector);
+                this.detectors.add(detector);
             }
         }
     }

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import org.djunits.unit.Unit;
-import org.djunits.value.vdouble.scalar.base.AbstractDoubleScalarRel;
+import org.djunits.value.vdouble.scalar.base.DoubleScalarRel;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterType;
 import org.opentrafficsim.base.parameters.ParameterTypeNumeric;
@@ -54,7 +54,7 @@ public class ParameterSupplier
      * @param <U> unit type
      * @param <T> parameter value type
      */
-    public <U extends Unit<U>, T extends AbstractDoubleScalarRel<U, T>> void addParameter(final int vehicleType,
+    public <U extends Unit<U>, T extends DoubleScalarRel<U, T>> void addParameter(final int vehicleType,
             final ParameterTypeNumeric<T> parameterType, final ContinuousDistDoubleScalar.Rel<T, U> distribution)
     {
         assureTypeInMap(vehicleType);
@@ -224,7 +224,7 @@ public class ParameterSupplier
      * @param <U> unit type
      * @param <T> value type
      */
-    public final class DistributedEntry<U extends Unit<U>, T extends AbstractDoubleScalarRel<U, T>>
+    public final class DistributedEntry<U extends Unit<U>, T extends DoubleScalarRel<U, T>>
             extends ParameterEntry<ParameterTypeNumeric<T>, T>
     {
         /** Distribution of the parameter. */

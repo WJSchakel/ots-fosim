@@ -15,13 +15,15 @@ import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.vector.FrequencyVector;
 import org.djunits.value.vdouble.vector.TimeVector;
 import org.djunits.value.vdouble.vector.data.DoubleVectorData;
+import org.djutils.draw.line.Polygon2d;
+import org.djutils.draw.point.Point2d;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
+import org.opentrafficsim.core.geometry.FractionalLengthData;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
-import org.opentrafficsim.core.geometry.OtsLine3d;
-import org.opentrafficsim.core.geometry.OtsPoint3d;
+import org.opentrafficsim.core.geometry.OtsLine2d;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
@@ -31,7 +33,9 @@ import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtu
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
+import org.opentrafficsim.road.network.lane.CrossSectionSlice;
 import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.LaneGeometryUtil;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
 import org.opentrafficsim.road.od.Categorization;
@@ -91,17 +95,20 @@ public class SingleLaneDemo extends DemoTransceiver
     {
         RoadNetwork network = new RoadNetwork("Ots-Fosim", sim);
 
-        OtsPoint3d pointFrom = new OtsPoint3d(0.0, -1.75, 0.0);
-        OtsPoint3d pointTo = new OtsPoint3d(2000.0, -1.75, 0.0);
+        Point2d pointFrom = new Point2d(0.0, -1.75);
+        Point2d pointTo = new Point2d(2000.0, -1.75);
 
         Node nodeFrom = new Node(network, "From", pointFrom, Direction.ZERO);
         Node nodeTo = new Node(network, "To", pointTo, Direction.ZERO);
 
-        OtsLine3d designLine = new OtsLine3d(pointFrom, pointTo);
+        OtsLine2d designLine = new OtsLine2d(pointFrom, pointTo);
         CrossSectionLink link = new CrossSectionLink(network, "Link", nodeFrom, nodeTo, DefaultsNl.FREEWAY, designLine,
-                LaneKeepingPolicy.KEEPRIGHT);
+                FractionalLengthData.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
 
-        Lane lane = new Lane(link, "1", Length.ZERO, Length.instantiateSI(3.5), DefaultsRoadNl.FREEWAY,
+        Polygon2d contour =
+                LaneGeometryUtil.getContour(designLine.offsetLine(1.75).getLine2d(), designLine.offsetLine(-1.75).getLine2d());
+        Lane lane = new Lane(link, "1", designLine, contour,
+                List.of(new CrossSectionSlice(Length.ZERO, Length.ZERO, Length.instantiateSI(3.5))), DefaultsRoadNl.FREEWAY,
                 Map.of(DefaultsNl.ROAD_USER, new Speed(100.0, SpeedUnit.KM_PER_HOUR)));
 
         DoubleVectorData timeData =

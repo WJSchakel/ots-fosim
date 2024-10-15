@@ -1,5 +1,8 @@
 package org.opentrafficsim.fosim.parser;
 
+import static org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization.gentleUrgency;
+import static org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization.getMergeDistance;
+
 import java.awt.Dimension;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,6 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.Function;
 
 import javax.naming.NamingException;
@@ -23,6 +27,7 @@ import javax.naming.NamingException;
 import org.djunits.unit.SpeedUnit;
 import org.djunits.unit.TimeUnit;
 import org.djunits.value.storage.StorageType;
+import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Direction;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
@@ -30,31 +35,36 @@ import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djunits.value.vdouble.vector.TimeVector;
 import org.djunits.value.vdouble.vector.data.DoubleVectorData;
+import org.djutils.draw.line.Polygon2d;
+import org.djutils.draw.point.Point2d;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
+import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterSet;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.Parameters;
-import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.distributions.Generator;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
+import org.opentrafficsim.core.geometry.FractionalLengthData;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
-import org.opentrafficsim.core.geometry.OtsLine3d;
-import org.opentrafficsim.core.geometry.OtsPoint3d;
+import org.opentrafficsim.core.geometry.OtsLine2d;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
 import org.opentrafficsim.core.gtu.GtuTemplate;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.perception.DirectEgoPerception;
+import org.opentrafficsim.core.gtu.perception.EgoPerception;
+import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
+import org.opentrafficsim.core.network.LateralDirectionality;
 import org.opentrafficsim.core.network.Link;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactory;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
-import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.model.CarFollowingTask;
 import org.opentrafficsim.fosim.model.LaneChangeTask;
@@ -70,21 +80,29 @@ import org.opentrafficsim.fosim.sim0mq.FosimModel;
 import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorStep;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
+import org.opentrafficsim.road.gtu.generator.GeneratorPositions.LaneBias;
+import org.opentrafficsim.road.gtu.generator.GeneratorPositions.LaneBiases;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristics;
 import org.opentrafficsim.road.gtu.generator.characteristics.LaneBasedGtuCharacteristicsGeneratorOd;
+import org.opentrafficsim.road.gtu.lane.Break;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.VehicleModel;
 import org.opentrafficsim.road.gtu.lane.perception.CategoricalLanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
+import org.opentrafficsim.road.gtu.lane.perception.PerceptionCollectable;
 import org.opentrafficsim.road.gtu.lane.perception.PerceptionFactory;
+import org.opentrafficsim.road.gtu.lane.perception.RelativeLane;
 import org.opentrafficsim.road.gtu.lane.perception.categories.AnticipationTrafficPerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.DirectInfrastructurePerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.DirectIntersectionPerception;
+import org.opentrafficsim.road.gtu.lane.perception.categories.InfrastructurePerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Anticipation;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.DirectNeighborsPerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.HeadwayGtuType.PerceivedHeadwayGtuType;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.NeighborsPerception;
+import org.opentrafficsim.road.gtu.lane.perception.headway.HeadwayGtu;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
@@ -92,8 +110,10 @@ import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller.BehavioralAdaptation;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Task;
 import org.opentrafficsim.road.gtu.lane.perception.mental.TaskManager;
+import org.opentrafficsim.road.gtu.lane.plan.operational.LaneChange;
 import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
 import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdmFactory;
+import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModel;
 import org.opentrafficsim.road.gtu.lane.tactical.following.CarFollowingModelFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusFactory;
@@ -105,26 +125,34 @@ import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSocioSpeed;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveStayRight;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.SocioDesiredSpeed;
+import org.opentrafficsim.road.gtu.lane.tactical.util.CarFollowingUtil;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Cooperation;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Desire;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.GapAcceptance;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsData;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsUtil;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.MandatoryIncentive;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Synchronization;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.VoluntaryIncentive;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
+import org.opentrafficsim.road.network.LaneChangeInfo;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.CrossSectionSlice;
 import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.LaneGeometryUtil;
+import org.opentrafficsim.road.network.lane.LaneType;
+import org.opentrafficsim.road.network.lane.Shoulder;
 import org.opentrafficsim.road.network.lane.Stripe;
 import org.opentrafficsim.road.network.lane.Stripe.Type;
 import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.lane.object.detector.LoopDetector;
-import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
 import org.opentrafficsim.road.network.lane.object.trafficlight.TrafficLight;
+import org.opentrafficsim.road.network.speed.SpeedLimitInfo;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
 import org.opentrafficsim.road.od.Interpolation;
@@ -144,7 +172,7 @@ import com.google.gson.stream.JsonReader;
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.jstats.distributions.DistNormal;
 import nl.tudelft.simulation.jstats.streams.StreamInterface;
-import nl.tudelft.simulation.language.DSOLException;
+import nl.tudelft.simulation.language.DsolException;
 
 /**
  * Parser of .fos files from FOSIM.
@@ -158,10 +186,13 @@ public class FosParser
 {
 
     /** Offset for stripes that are at the left or right edge. This separates them between links. */
-    private static Length EDGE_STRIPE_GAP = Length.instantiateSI(0.2);
+    private static final Length EDGE_STRIPE_GAP = Length.instantiateSI(0.2);
 
     /** Length above which vehicles types are considered a truck (deprecated versions). */
-    private static Length TRUCK_THRESHOLD = Length.instantiateSI(7.0);
+    private static final Length TRUCK_THRESHOLD = Length.instantiateSI(7.0);
+
+    /** Shoulder lane type without any compatibility. */
+    private static final LaneType SHOULDER = new LaneType("Shoulder");
 
     /** Simulator. */
     private OtsSimulatorInterface simulator = null;
@@ -715,7 +746,7 @@ public class FosParser
                 this.app = new OtsSimulationApplication<FosimModel>(this.model, animationPanel);
             }
         }
-        catch (SimRuntimeException | NamingException | RemoteException | DSOLException | OtsDrawingException
+        catch (SimRuntimeException | NamingException | RemoteException | DsolException | OtsDrawingException
                 | OtsGeometryException | ParameterException e)
         {
             throw new RuntimeException(e);
@@ -802,10 +833,7 @@ public class FosParser
     private int mapOutLink(final int sectionIndex, final int fromLane)
     {
         // lane is grass, striped area to ignore, or beyond striped area; skip
-        if (this.lane.get(fromLane).get(sectionIndex).type.equals("u")
-                || (this.lane.get(fromLane).get(sectionIndex).type.equals("R") && !getSetting(ParserSetting.STRIPED_AREAS))
-                || (this.lane.get(fromLane).get(sectionIndex).type.equals("L") && !getSetting(ParserSetting.STRIPED_AREAS))
-                || this.lane.get(fromLane).get(sectionIndex).type.equals("X"))
+        if (this.lane.get(fromLane).get(sectionIndex).type.equals("u"))
         {
             return fromLane + 1;
         }
@@ -819,9 +847,11 @@ public class FosParser
         // find until what lane we are on the same link
         int toLane = fromLane;
         this.mappedLinks[toLane][sectionIndex] = this.lastMappedLink;
-        while (toLane < this.lane.size() - 1
-                && (this.lane.get(toLane).get(sectionIndex).canChangeRight(getSetting(ParserSetting.STRIPED_AREAS))
-                        || this.lane.get(toLane + 1).get(sectionIndex).canChangeLeft(getSetting(ParserSetting.STRIPED_AREAS))))
+        boolean stripedAreas = getSetting(ParserSetting.STRIPED_AREAS);
+        while (toLane < this.lane.size() - 1 && (this.lane.get(toLane).get(sectionIndex).canChangeRight(stripedAreas)
+                || (this.lane.get(toLane).get(sectionIndex).isShoulder(stripedAreas) && toLane == fromLane)
+                || this.lane.get(toLane + 1).get(sectionIndex).canChangeLeft(stripedAreas)
+                || this.lane.get(toLane + 1).get(sectionIndex).isShoulder(stripedAreas)))
         {
             toLane++;
             this.mappedLinks[toLane][sectionIndex] = this.lastMappedLink;
@@ -1058,7 +1088,7 @@ public class FosParser
             }
             y = Length.min(y, getLeftLinkEdge(link.sectionIndex, from, to));
         }
-        Node n = new Node(this.network, node.getName(), new OtsPoint3d(x.si, y.si, 0.0), Direction.ZERO);
+        Node n = new Node(this.network, node.getName(), new Point2d(x.si, y.si), Direction.ZERO);
         // store node in sink and/or source object
         if (node.source != null)
         {
@@ -1082,13 +1112,13 @@ public class FosParser
         String name = String.format("Link %d", link.number);
         Node startNode = (Node) this.network.getNode(link.fromNode.getName());
         Node endNode = (Node) this.network.getNode(link.toNode.getName());
-        OtsPoint3d startPoint = startNode.getPoint();
-        OtsPoint3d endPoint = endNode.getPoint();
-        OtsLine3d designLine = Try.assign(() -> new OtsLine3d(startPoint, new OtsPoint3d(endPoint.x, startPoint.y, 0.0)),
+        Point2d startPoint = startNode.getPoint();
+        Point2d endPoint = endNode.getPoint();
+        OtsLine2d designLine = Try.assign(() -> new OtsLine2d(startPoint, new Point2d(endPoint.x, startPoint.y)),
                 NetworkException.class, "Design line could not be generated for link at lane %s, section %s.", link.fromLane,
                 link.sectionIndex);
         CrossSectionLink otsLink = new CrossSectionLink(this.network, name, startNode, endNode, DefaultsNl.FREEWAY, designLine,
-                LaneKeepingPolicy.KEEPRIGHT);
+                FractionalLengthData.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
 
         // calculate offsets
         List<Length> lateralOffsetAtStarts = new ArrayList<>();
@@ -1096,7 +1126,7 @@ public class FosParser
         // initialize relative to nodes
         Length leftLinkEdge = getLeftLinkEdge(link.sectionIndex, link.fromLane, link.toLane);
         Length leftEdgeOffsetStart = leftLinkEdge.minus(Length.instantiateSI(startNode.getPoint().y));
-        Length leftEdgeOffsetEnd = leftLinkEdge.minus(Length.instantiateSI(endNode.getPoint().y));
+        Length leftEdgeOffsetEnd = leftLinkEdge.minus(Length.instantiateSI(startNode.getPoint().y));
         double offsetEnd = 0; // to detect change in the number of lanes a lane shifts, relative to left-hand lanes
         for (int i = 0; i < link.lanes.size(); i++)
         {
@@ -1166,20 +1196,40 @@ public class FosParser
             Length lateralOffsetAtEnd = lateralOffsetAtEnds.get(laneNum);
             Length startWidth = lane.taper.equals("<") ? Length.ZERO : lane.laneWidth;
             Length endWidth = lane.taper.equals(">") ? Length.ZERO : lane.laneWidth;
-            Lane otsLane = new Lane(otsLink, id, lateralOffsetAtStart, lateralOffsetAtEnd, startWidth, endWidth,
-                    DefaultsRoadNl.HIGHWAY, Map.of(DefaultsNl.ROAD_USER, lane.speedLimit), false);
-            lane.setLane(otsLane);
-            if (laneNum == 0)
+
+            OtsLine2d centerLine = designLine.offsetLine(lateralOffsetAtStart.si, lateralOffsetAtEnd.si);
+            Polygon2d contour =
+                    LaneGeometryUtil.getContour(centerLine.offsetLine(startWidth.si * .5, endWidth.si * .5).getLine2d(),
+                            centerLine.offsetLine(-startWidth.si * .5, -endWidth.si * .5).getLine2d());
+            List<CrossSectionSlice> crossSectionSlices =
+                    List.of(new CrossSectionSlice(Length.ZERO, lateralOffsetAtStart, startWidth),
+                            new CrossSectionSlice(centerLine.getLength(), lateralOffsetAtEnd, endWidth));
+
+            Lane otsLane;
+            if (!lane.isShoulder(stripedAreas))
             {
-                CrossSectionSlice start = new CrossSectionSlice(Length.ZERO,
-                        lateralOffsetAtStart.minus(EDGE_STRIPE_GAP).plus(startWidth.times(0.5)), Length.instantiateSI(0.2));
-                CrossSectionSlice end = new CrossSectionSlice(otsLink.getLength(),
-                        lateralOffsetAtEnd.minus(EDGE_STRIPE_GAP).plus(endWidth.times(0.5)), Length.instantiateSI(0.2));
-                new Stripe(Type.SOLID, otsLink, List.of(start, end));
+                otsLane = new Lane(otsLink, id, centerLine, contour, crossSectionSlices, DefaultsRoadNl.HIGHWAY,
+                        Map.of(DefaultsNl.ROAD_USER, lane.speedLimit));
             }
             else
             {
-                Type type = null;
+                otsLane = new Shoulder(otsLink, id, centerLine, contour, crossSectionSlices, SHOULDER);
+            }
+            lane.setLane(otsLane);
+
+            Type type = null;
+            CrossSectionSlice start;
+            CrossSectionSlice end;
+            if (laneNum == 0)
+            {
+                start = new CrossSectionSlice(Length.ZERO,
+                        lateralOffsetAtStart.minus(EDGE_STRIPE_GAP).plus(startWidth.times(0.5)), Length.instantiateSI(0.2));
+                end = new CrossSectionSlice(otsLink.getLength(),
+                        lateralOffsetAtEnd.minus(EDGE_STRIPE_GAP).plus(endWidth.times(0.5)), Length.instantiateSI(0.2));
+                type = Type.SOLID;
+            }
+            else
+            {
                 Length width = null;
                 if (lane.taper.equals(">"))
                 {
@@ -1190,6 +1240,11 @@ public class FosParser
                 {
                     type = Type.RIGHT;
                     width = Length.instantiateSI(0.6);
+                }
+                else if (prevLane.isShoulder(stripedAreas) || lane.isShoulder(stripedAreas))
+                {
+                    type = Type.SOLID;
+                    width = Length.instantiateSI(0.2);
                 }
                 else if (lane.canChangeLeft(stripedAreas) && prevLane.canChangeRight(stripedAreas))
                 {
@@ -1206,21 +1261,29 @@ public class FosParser
                     type = Type.RIGHT;
                     width = Length.instantiateSI(0.6);
                 }
-                CrossSectionSlice start =
-                        new CrossSectionSlice(Length.ZERO, lateralOffsetAtStart.plus(startWidth.times(0.5)), width);
-                CrossSectionSlice end =
-                        new CrossSectionSlice(otsLink.getLength(), lateralOffsetAtEnd.plus(endWidth.times(0.5)), width);
-                new Stripe(type, otsLink, List.of(start, end));
+                start = new CrossSectionSlice(Length.ZERO, lateralOffsetAtStart.plus(startWidth.times(0.5)), width);
+                end = new CrossSectionSlice(otsLink.getLength(), lateralOffsetAtEnd.plus(endWidth.times(0.5)), width);
             }
+            centerLine = designLine.offsetLine(start.getOffset().si, end.getOffset().si);
+            contour = LaneGeometryUtil.getContour(
+                    centerLine.offsetLine(start.getWidth().si * .5, end.getWidth().si * .5).getLine2d(),
+                    centerLine.offsetLine(-start.getWidth().si * .5, -end.getWidth().si * .5).getLine2d());
+            new Stripe(type, otsLink, centerLine, contour, List.of(start, end));
 
             if (laneNum == link.lanes.size() - 1)
             {
-                CrossSectionSlice start = new CrossSectionSlice(Length.ZERO,
+                start = new CrossSectionSlice(Length.ZERO,
                         lateralOffsetAtStart.plus(EDGE_STRIPE_GAP).minus(startWidth.times(0.5)), Length.instantiateSI(0.2));
-                CrossSectionSlice end = new CrossSectionSlice(otsLink.getLength(),
+                end = new CrossSectionSlice(otsLink.getLength(),
                         lateralOffsetAtEnd.plus(EDGE_STRIPE_GAP).minus(endWidth.times(0.5)), Length.instantiateSI(0.2));
-                new Stripe(Stripe.Type.SOLID, otsLink, List.of(start, end));
+                type = Type.SOLID;
+                centerLine = designLine.offsetLine(start.getOffset().si, end.getOffset().si);
+                contour = LaneGeometryUtil.getContour(
+                        centerLine.offsetLine(start.getWidth().si * .5, end.getWidth().si * .5).getLine2d(),
+                        centerLine.offsetLine(-start.getWidth().si * .5, -end.getWidth().si * .5).getLine2d());
+                new Stripe(type, otsLink, centerLine, contour, List.of(start, end));
             }
+
             prevLane = lane;
         }
     }
@@ -1331,6 +1394,21 @@ public class FosParser
         options.set(OdOptions.INSTANT_LC, false);
         options.set(OdOptions.NO_LC_DIST, Length.instantiateSI(50.0));
 
+        // lane biases
+        LaneBiases laneBiases = new LaneBiases();
+        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
+        {
+            if (this.isTruck.get(vehicleTypeNumber))
+            {
+                laneBiases.addBias(this.gtuTypes.get(vehicleTypeNumber), LaneBias.TRUCK_RIGHT);
+            }
+            else
+            {
+                laneBiases.addBias(this.gtuTypes.get(vehicleTypeNumber), LaneBias.WEAK_LEFT);
+            }
+        }
+        options.set(OdOptions.LANE_BIAS, laneBiases);
+
         // templates and parameters
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
         this.parameterSupplier.setAllInParameterFactory(this.gtuTypes, parameterFactory);
@@ -1405,23 +1483,6 @@ public class FosParser
 
         // apply
         OdApplier.applyOd(this.network, od, options, DefaultsRoadNl.ROAD_USERS);
-
-        // TODO: remove after update to later OTS version which fixes DestinationDetector/SinkDetector confusion
-        for (FosSourceSink sink : this.sink)
-        {
-            for (Link link : sink.node.getLinks())
-            {
-                if (link.getEndNode().equals(sink.node))
-                {
-                    for (Lane lane : ((CrossSectionLink) link).getLanes())
-                    {
-                        Length pos = lane.getLength().minus(Length.instantiateSI(50.0));
-                        Try.execute(() -> new SinkDetector(lane, pos, this.network.getSimulator(), DefaultsRoadNl.ROAD_USERS),
-                                "Exception while creating sink detector.");
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -1463,8 +1524,8 @@ public class FosParser
                         if (parameterData.id.equals("est"))
                         {
                             double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
-                            estimation = value < 0.0 ? Estimation.UNDERESTIMATION
-                                    : (value > 0.0 ? Estimation.OVERESTIMATION : Estimation.NONE);
+                            estimation = value < 0.0 ? Estimation.FACTOR_ESTIMATION
+                                    : (value > 0.0 ? Estimation.FACTOR_ESTIMATION : Estimation.NONE);
                         }
                         else if (parameterData.id.equals("ant"))
                         {
@@ -1623,9 +1684,8 @@ public class FosParser
                         }
                         else
                         {
-                            // TODO: OTS does not support an irregular first interval (see git issue #6)
                             new LoopDetector(id, lane, longitudinalPosition, Length.instantiateSI(1.5),
-                                    DefaultsRoadNl.ROAD_USERS, this.network.getSimulator(), aggregationTime,
+                                    DefaultsRoadNl.ROAD_USERS, this.network.getSimulator(), firstAggregation, aggregationTime,
                                     LoopDetector.MEAN_SPEED);
                         }
                     }
@@ -1807,4 +1867,146 @@ public class FosParser
             from = to + 1;
         }
     }
+
+    // TODO: remove this after new OTS version; we get lanes from the root cross section, and those are available in
+    // getLegalLaneChangeInfo
+    private static class IncentiveStayRight implements VoluntaryIncentive
+    {
+        /** {@inheritDoc} */
+        @Override
+        public Desire determineDesire(final Parameters parameters, final LanePerception perception,
+                final CarFollowingModel carFollowingModel, final Desire mandatoryDesire, final Desire voluntaryDesire)
+                throws ParameterException, OperationalPlanException
+        {
+            InfrastructurePerception infra = perception.getPerceptionCategory(InfrastructurePerception.class);
+            // start at left-most lane
+            SortedSet<RelativeLane> rootCrossSection = perception.getLaneStructure().getRootCrossSection();
+            RelativeLane lane = rootCrossSection.first();
+            // move right until we find 'the right-hand lane', which is defined by the last lane where the urgency does not
+            // increase
+            Speed speed = perception.getPerceptionCategory(EgoPerception.class).getSpeed();
+            double curUrgency = !perception.getLaneStructure().exists(lane) ? Double.MAX_VALUE
+                    : urgency(infra.getLegalLaneChangeInfo(lane), parameters, speed);
+            double rightUrgency;
+            RelativeLane right;
+            while (rootCrossSection.contains(right = lane.getRight())
+                    && (rightUrgency = !perception.getLaneStructure().exists(right) ? Double.MAX_VALUE
+                            : urgency(infra.getLegalLaneChangeInfo(right), parameters, speed)) <= curUrgency)
+            {
+                curUrgency = rightUrgency;
+                lane = right;
+            }
+            boolean legalLeft = infra.getLegalLaneChangePossibility(RelativeLane.CURRENT, LateralDirectionality.LEFT).ge0();
+            if (lane.getLateralDirectionality().isRight() && lane.getNumLanes() > 1)
+            {
+                // must change right
+                return new Desire(legalLeft ? -1.0 : 0.0, parameters.getParameter(LmrsParameters.DSYNC));
+            }
+            if (lane.isRight())
+            {
+                // must not change left
+                return new Desire(legalLeft ? -1.0 : 0.0, 0.0);
+            }
+            return new Desire(0.0, 0.0);
+        }
+
+        /**
+         * Returns the urgency to leave a lane.
+         * @param laneChangeInfo SortedSet&lt;InfrastructureLaneChangeInfo&gt;; lane change info on the lane
+         * @param parameters Parameters; parameters
+         * @param speed Speed; current speed
+         * @return double; urgency to leave the lane
+         * @throws ParameterException if parameter is not given
+         */
+        private double urgency(final SortedSet<LaneChangeInfo> laneChangeInfo, final Parameters parameters, final Speed speed)
+                throws ParameterException
+        {
+            double urgency = 0.0;
+            for (LaneChangeInfo info : laneChangeInfo)
+            {
+                double nextUrgency = IncentiveRoute.getDesireToLeave(parameters, info.remainingDistance(),
+                        info.numberOfLaneChanges(), speed);
+                urgency = urgency > nextUrgency ? urgency : nextUrgency;
+            }
+            return urgency;
+        }
+    }
+
+    private static Synchronization ALIGN_GAP = new Synchronization()
+    {
+        /** {@inheritDoc} */
+        @Override
+        public Acceleration synchronize(final LanePerception perception, final Parameters params, final SpeedLimitInfo sli,
+                final CarFollowingModel cfm, final double desire, final LateralDirectionality lat, final LmrsData lmrsData,
+                final LaneChange laneChange, final LateralDirectionality initiatedLaneChange)
+                throws ParameterException, OperationalPlanException
+        {
+            Break.on(perception, "320", 5 * 60 + 15, true);
+
+            Acceleration a = Acceleration.POSITIVE_INFINITY;
+            EgoPerception<?, ?> ego = perception.getPerceptionCategory(EgoPerception.class);
+            Speed ownSpeed = ego.getSpeed();
+
+            // skip synchronization at low speed if follower will not provide cooperation
+            Speed threshold = params.getParameter(ParameterTypes.LOOKAHEAD).divide(params.getParameter(ParameterTypes.T0));
+            if (desire < params.getParameter(LmrsParameters.DCOOP) && ownSpeed.lt(threshold))
+            {
+                return a;
+            }
+
+            RelativeLane relativeLane = new RelativeLane(lat, 1);
+            PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders =
+                    perception.getPerceptionCategory(NeighborsPerception.class).getLeaders(relativeLane);
+            if (!leaders.isEmpty())
+            {
+                HeadwayGtu leader = leaders.first();
+                Length gap = leader.getDistance();
+                setDesiredHeadway(params, desire);
+                PerceptionCollectable<HeadwayGtu, LaneBasedGtu> followers =
+                        perception.getPerceptionCategory(NeighborsPerception.class).getFollowers(relativeLane);
+                if (!followers.isEmpty())
+                {
+                    HeadwayGtu follower = followers.first();
+                    Length netGap = leader.getDistance().plus(follower.getDistance()).times(0.5);
+                    gap = Length.max(gap, leader.getDistance().minus(netGap).plus(cfm.desiredHeadway(params, ownSpeed)));
+                }
+                a = CarFollowingUtil.followSingleLeader(cfm, params, ownSpeed, sli, gap, leader.getSpeed());
+                params.resetParameter(ParameterTypes.T);
+                // limit deceleration based on desire
+                a = gentleUrgency(a, desire, params);
+            }
+            a = Acceleration.min(a,
+                    DEADEND.synchronize(perception, params, sli, cfm, desire, lat, lmrsData, laneChange, initiatedLaneChange));
+            // never stop before we can actually merge
+            Length xMerge = getMergeDistance(perception, lat);
+            if (xMerge.gt0())
+            {
+                Acceleration aMerge = LmrsUtil.singleAcceleration(xMerge, ownSpeed, Speed.ZERO, desire, params, sli, cfm);
+                a = Acceleration.max(a, aMerge);
+            }
+            return a;
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        public String toString()
+        {
+            return "ALIGN_GAP";
+        }
+
+        /**
+         * Sets value for T depending on level of lane change desire.
+         * @param params Parameters; parameters
+         * @param desire double; lane change desire
+         * @throws ParameterException if T, TMIN or TMAX is not in the parameters
+         */
+        static void setDesiredHeadway(final Parameters params, final double desire) throws ParameterException
+        {
+            double limitedDesire = desire < 0 ? 0 : desire > 1 ? 1 : desire;
+            double tDes = limitedDesire * params.getParameter(ParameterTypes.TMIN).si
+                    + (1 - limitedDesire) * params.getParameter(ParameterTypes.TMAX).si;
+            double t = params.getParameter(ParameterTypes.T).si;
+            params.setParameterResettable(ParameterTypes.T, Duration.instantiateSI(tDes < t ? tDes : t));
+        }
+    };
 }

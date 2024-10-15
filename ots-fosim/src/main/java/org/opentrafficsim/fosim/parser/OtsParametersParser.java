@@ -12,7 +12,7 @@ import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
-import org.djunits.value.vdouble.scalar.base.AbstractDoubleScalarRel;
+import org.djunits.value.vdouble.scalar.base.DoubleScalarRel;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeNumeric;
@@ -298,7 +298,7 @@ public class OtsParametersParser
      * @throws ParameterException if the parameter does not exist in the group, or the group does not exist.
      */
     @SuppressWarnings("unchecked")
-    private final <U extends Unit<U>, T extends AbstractDoubleScalarRel<U, T>> void addParameter(
+    private final <U extends Unit<U>, T extends DoubleScalarRel<U, T>> void addParameter(
             final ParameterFactoryByType parameterFactory, final ParameterTypeNumeric<T> parameterType,
             final String parameterGroup, final String parameterId, final Class<T> clazz, final U unit,
             final StreamInterface stream, final int vehicleTypeNumber) throws ParameterException
@@ -374,7 +374,7 @@ public class OtsParametersParser
      * @throws ParameterException if the unit is not supported.
      */
     @SuppressWarnings("unchecked")
-    private <U extends Unit<U>, T extends AbstractDoubleScalarRel<U, T>> ContinuousDistDoubleScalar.Rel<T, U> getDistribution(
+    private <U extends Unit<U>, T extends DoubleScalarRel<U, T>> ContinuousDistDoubleScalar.Rel<T, U> getDistribution(
             final DistributionData distribution, final StreamInterface stream, final Class<T> clazz, final U unit)
             throws ParameterException
     {

@@ -9,13 +9,13 @@ import javax.naming.NamingException;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Try;
+import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.core.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.geometry.OtsGeometryException;
 import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.draw.core.OtsDrawingException;
+import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorStep;
 import org.opentrafficsim.road.network.RoadNetwork;
@@ -24,7 +24,7 @@ import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.opentrafficsim.swing.gui.OtsSwingApplication;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
-import nl.tudelft.simulation.language.DSOLException;
+import nl.tudelft.simulation.language.DsolException;
 
 /**
  * Transceiver which sets up a 1-hour simulator for demos.
@@ -58,7 +58,7 @@ public abstract class DemoTransceiver extends OtsTransceiver
      * @throws OtsDrawingException exception in GUI
      */
     protected void setupSimulator()
-            throws SimRuntimeException, NamingException, RemoteException, DSOLException, OtsDrawingException
+            throws SimRuntimeException, NamingException, RemoteException, DsolException, OtsDrawingException
     {
         Duration simulationTime = Duration.instantiateSI(3600.0);
         if (!this.showGUI)

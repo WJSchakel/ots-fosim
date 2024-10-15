@@ -282,10 +282,10 @@ public class OtsTransceiver
                         for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
                         {
                             LanePosition pos = ((LaneBasedGtu) gtu).getReferencePosition();
-                            double front = gtu.getFront().getDx().si;
-                            double laneStart = pos.getLane().getParentLink().getStartNode().getPoint().x;
-                            Length position = Length.instantiateSI(pos.getPosition().si + front + laneStart);
-                            String laneId = pos.getLane().getId();
+                            double front = gtu.getFront().dx().si;
+                            double laneStart = pos.lane().getLink().getStartNode().getPoint().x;
+                            Length position = Length.instantiateSI(pos.position().si + front + laneStart);
+                            String laneId = pos.lane().getId();
                             int underscore = laneId.indexOf("_");
                             int lane = Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
                             LaneChange lc = lcInfo.get(gtu);

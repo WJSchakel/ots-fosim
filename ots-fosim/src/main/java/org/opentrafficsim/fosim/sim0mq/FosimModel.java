@@ -1,15 +1,11 @@
 package org.opentrafficsim.fosim.sim0mq;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 import org.opentrafficsim.core.dsol.AbstractOtsModel;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.road.network.RoadNetwork;
 
 import nl.tudelft.simulation.dsol.SimRuntimeException;
 import nl.tudelft.simulation.jstats.streams.MersenneTwister;
-import nl.tudelft.simulation.jstats.streams.StreamInterface;
 
 /**
  * Model for FOSIM simulations.
@@ -26,10 +22,10 @@ public class FosimModel extends AbstractOtsModel
 
     /** Network. */
     private RoadNetwork network;
-    
+
     /** Seed. */
     private final long seed;
-    
+
     /**
      * Constructor.
      * @param simulator simulator.
@@ -45,14 +41,10 @@ public class FosimModel extends AbstractOtsModel
     @Override
     public void constructModel() throws SimRuntimeException
     {
-        Map<String, StreamInterface> streams = new LinkedHashMap<>();
-        StreamInterface stream = new MersenneTwister(this.seed);
-        streams.put("generation", stream);
-        stream = new MersenneTwister(this.seed + 1);
-        streams.put("default", stream);
-        getSimulator().getModel().getStreams().putAll(streams);
+        getStreams().put("generation", new MersenneTwister(this.seed));
+        getStreams().put("default", new MersenneTwister(this.seed + 1));
     }
-    
+
     /**
      * Set network.
      * @param network network.
