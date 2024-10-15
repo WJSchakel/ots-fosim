@@ -395,9 +395,8 @@ public class OtsTransceiver
                         int toLane = (int) payload[10];
                         int detector = (int) payload[11];
                         Speed threshold = (Speed) payload[12];
-                        Duration additionalTime = detectionType.equals(DetectionType.QDC) ? (Duration) payload[13] : null;
                         StopCriterion stopCriterium = new StopCriterion(OtsTransceiver.this.network, detectionType, fromLane,
-                                toLane, detector, threshold, additionalTime);
+                                toLane, detector, threshold);
                         boolean triggered;
                         while (!(triggered = stopCriterium.canStop()) && OtsTransceiver.this.network.getSimulator()
                                 .getSimulatorAbsTime().si < OtsTransceiver.this.network.getSimulator().getReplication()

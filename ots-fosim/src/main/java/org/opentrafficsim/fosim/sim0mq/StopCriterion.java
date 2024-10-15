@@ -16,6 +16,9 @@ import org.opentrafficsim.road.network.RoadNetwork;
 public class StopCriterion
 {
 
+    /** Additional time in QDC method. */
+    private static final Duration QDC_TIME = Duration.instantiateSI(600.0);
+    
     /** Network. */
     private final RoadNetwork network;
 
@@ -24,9 +27,6 @@ public class StopCriterion
 
     /** Threshold speed below which congestion is recognized. */
     private final Speed threshold;
-
-    /** Additional time in QDC method. */
-    private final Duration additionalTime;
 
     /** Detectors to check. */
     private final Set<FosDetector> detectors = new LinkedHashSet<>();
@@ -48,15 +48,13 @@ public class StopCriterion
      * @param toLane to lane to check detectors.
      * @param detector detector cross section number
      * @param threshold threshold speed below which congestion is recognized.
-     * @param additionalTime additional time in QDC method.
      */
     public StopCriterion(final RoadNetwork network, final DetectionType detectionType, final int fromLane, final int toLane,
-            int detector, final Speed threshold, final Duration additionalTime)
+            int detector, final Speed threshold)
     {
         this.network = network;
         this.stopType = detectionType;
         this.threshold = threshold;
-        this.additionalTime = additionalTime;
         // Find detectors
         for (FosDetector det : network.getObjectMap(FosDetector.class).values())
         {
@@ -136,11 +134,9 @@ public class StopCriterion
                     if (this.initialTriggerTime == null)
                     {
                         // need more time and an additional period to check whether congestion is robust
-                        this.initialTriggerPeriod = period;
                         this.initialTriggerTime = this.network.getSimulator().getSimulatorAbsTime();
                     }
-                    else if (this.network.getSimulator().getSimulatorAbsTime().si
-                            - this.initialTriggerTime.si >= this.additionalTime.si && this.initialTriggerPeriod < period)
+                    else if (this.network.getSimulator().getSimulatorAbsTime().si - this.initialTriggerTime.si >= QDC_TIME.si)
                     {
                         return true;
                     }
@@ -152,13 +148,12 @@ public class StopCriterion
         // for method QDC, reset if in any period no congestion was found
         if (this.stopType.equals(DetectionType.QDC))
         {
-            this.initialTriggerPeriod = Integer.MAX_VALUE;
             this.initialTriggerTime = null;
         }
 
         return false;
     }
-    
+
     /**
      * Congestion detection type.
      * @author wjschakel
@@ -167,10 +162,10 @@ public class StopCriterion
     {
         /** Congestion triggers directly. */
         PLM,
-        
+
         /** Congestion during at least 1 additional period. */
         FOSIM,
-        
+
         /** Congestion during at least 1 additional period and additional time. */
         QDC;
     }
