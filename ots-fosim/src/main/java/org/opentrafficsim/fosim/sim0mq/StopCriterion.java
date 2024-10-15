@@ -118,7 +118,6 @@ public class StopCriterion
             return true;
         }
 
-        boolean congestionFound = false;
         for (FosDetector detector : this.detectors)
         {
             if (1.0 / (detector.getSumReciprocalSpeed(period) / detector.getCount(period)) < this.threshold.si)
@@ -134,26 +133,24 @@ public class StopCriterion
                 }
                 else if (this.stopType.equals(DetectionType.QDC))
                 {
-                    congestionFound = true;
                     if (this.initialTriggerTime == null)
                     {
                         // need more time and an additional period to check whether congestion is robust
                         this.initialTriggerPeriod = period;
                         this.initialTriggerTime = this.network.getSimulator().getSimulatorAbsTime();
-                        return false;
                     }
                     else if (this.network.getSimulator().getSimulatorAbsTime().si
                             - this.initialTriggerTime.si >= this.additionalTime.si && this.initialTriggerPeriod < period)
                     {
                         return true;
                     }
-                    break;
+                    return false;
                 }
             }
         }
 
         // for method QDC, reset if in any period no congestion was found
-        if (this.stopType.equals(DetectionType.QDC) && !congestionFound)
+        if (this.stopType.equals(DetectionType.QDC))
         {
             this.initialTriggerPeriod = Integer.MAX_VALUE;
             this.initialTriggerTime = null;
