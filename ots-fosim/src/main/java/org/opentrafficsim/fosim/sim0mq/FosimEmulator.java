@@ -52,7 +52,7 @@ public class FosimEmulator
     private static final double SPEED = 20;
 
     /** Batch test (or normal). */
-    private static final boolean BATCH = true;
+    private static final boolean BATCH = false;
 
     /**
      * Main method.
@@ -103,9 +103,9 @@ public class FosimEmulator
                 throw new RuntimeException("Did not receive a PARAMETERS_REPLY on a PARAMETERS message.");
             }
 
-            String fosString = new String(
-                    FosimEmulator.class.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos").readAllBytes(),
-                    StandardCharsets.UTF_8);
+            String fosString =
+                    new String(FosimEmulator.class.getResourceAsStream("/Afvallende rijstrook lang.fos").readAllBytes(),
+                            StandardCharsets.UTF_8);
             encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++,
                     new Object[] {fosString});
             requester.send(encodedMessage, 0);
@@ -197,39 +197,51 @@ public class FosimEmulator
                     // System.out.println(payload[8] + " vehicles");
                 }
 
-                if (i == 602)
+                if (i == 1201)
                 {
-                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR", messageId++,
-                            new Object[] {2, 3, 1, "COUNT"});
-                    requester.send(encodedMessage, 0);
-                    reply = requester.recv(0);
-                    message = Sim0MQMessage.decode(reply);
-                    if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
+                    for (int crossSection = 0; crossSection < 20; crossSection++)
                     {
-                        Object[] payload = message.createObjectArray();
-                        System.out.println("Count at cross-section 2, lane 3, period 1 is " + payload[8] + " vehicles");
-                    }
+                        for (int lane = 0; lane < 4; lane++)
+                        {
+                            for (int period = 0; period < 2; period++)
+                            {
+                                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR",
+                                        messageId++, new Object[] {crossSection, lane, period, "COUNT"});
+                                requester.send(encodedMessage, 0);
+                                reply = requester.recv(0);
+                                message = Sim0MQMessage.decode(reply);
+                                if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
+                                {
+                                    Object[] payload = message.createObjectArray();
+                                    System.out.println("Count at cross-section " + crossSection + ", lane " + lane + ", period "
+                                            + period + " is " + payload[8] + " vehicles");
+                                }
 
-                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR", messageId++,
-                            new Object[] {2, 3, 1, "SUM_RECIPROCAL_SPEED"});
-                    requester.send(encodedMessage, 0);
-                    reply = requester.recv(0);
-                    message = Sim0MQMessage.decode(reply);
-                    if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
-                    {
-                        Object[] payload = message.createObjectArray();
-                        System.out.println("Reciprocal speed at cross-section 2, lane 3, period 1 is " + payload[8] + " s/m");
-                    }
+                                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR",
+                                        messageId++, new Object[] {crossSection, lane, period, "SUM_RECIPROCAL_SPEED"});
+                                requester.send(encodedMessage, 0);
+                                reply = requester.recv(0);
+                                message = Sim0MQMessage.decode(reply);
+                                if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
+                                {
+                                    Object[] payload = message.createObjectArray();
+                                    System.out.println("Reciprocal speed at cross-section " + crossSection + ", lane " + lane
+                                            + ", period " + period + " is " + payload[8] + " s/m");
+                                }
 
-                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR", messageId++,
-                            new Object[] {2, 3, 1, "SUM_TRAVEL_TIME"});
-                    requester.send(encodedMessage, 0);
-                    reply = requester.recv(0);
-                    message = Sim0MQMessage.decode(reply);
-                    if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
-                    {
-                        Object[] payload = message.createObjectArray();
-                        System.out.println("Sum of travel time at cross-section 2, lane 3, period 1 is " + payload[8] + " s");
+                                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "DETECTOR",
+                                        messageId++, new Object[] {crossSection, lane, period, "SUM_TRAVEL_TIME"});
+                                requester.send(encodedMessage, 0);
+                                reply = requester.recv(0);
+                                message = Sim0MQMessage.decode(reply);
+                                if ("DETECTOR_REPLY".equals(message.getMessageTypeId()))
+                                {
+                                    Object[] payload = message.createObjectArray();
+                                    System.out.println("Sum of travel time at cross-section " + crossSection + ", lane " + lane
+                                            + ", period " + period + " is " + payload[8] + " s");
+                                }
+                            }
+                        }
                     }
                 }
             }
