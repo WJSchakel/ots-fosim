@@ -3,36 +3,61 @@ package org.opentrafficsim.fosim.sim0mq;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.swing.WindowConstants;
 
+import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.scalar.Time;
+import org.djunits.value.vfloat.matrix.FloatSpeedMatrix;
 import org.djutils.cli.CliUtil;
+import org.djutils.draw.line.PolyLine2d;
+import org.djutils.draw.line.Polygon2d;
+import org.djutils.draw.point.Point2d;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsAnimator;
+import org.opentrafficsim.core.geometry.FractionalLengthData;
+import org.opentrafficsim.core.geometry.OtsLine2d;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
+import org.opentrafficsim.core.network.NetworkException;
+import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.draw.graphs.GraphPath;
+import org.opentrafficsim.draw.graphs.GraphPath.Section;
 import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
+import org.opentrafficsim.fosim.parser.FosLane;
+import org.opentrafficsim.fosim.parser.FosLink;
 import org.opentrafficsim.fosim.parser.FosParser;
+import org.opentrafficsim.fosim.parser.FosIncentiveRoute;
 import org.opentrafficsim.fosim.parser.ParserSetting;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.DetectionType;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorInterfaceStep;
+import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
+import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.plan.operational.LaneChange;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.network.RoadNetwork;
+import org.opentrafficsim.road.network.lane.CrossSectionLink;
+import org.opentrafficsim.road.network.lane.CrossSectionSlice;
+import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LanePosition;
+import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
+import org.opentrafficsim.road.network.sampling.LaneDataRoad;
+import org.opentrafficsim.road.network.sampling.RoadSampler;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
 import org.sim0mq.Sim0MQException;
 import org.sim0mq.message.Sim0MQMessage;
@@ -88,26 +113,11 @@ public class OtsTransceiver
     @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "true")
     protected boolean showGUI;
 
-    /** App when GUI is used. */
-    protected OtsSimulationApplication<FosimModel> app;
-
     /** The simulator. */
     protected OtsSimulatorInterfaceStep simulator;
 
     /** The network. */
     protected RoadNetwork network;
-
-    /** First detector period. */
-    private Duration firstPeriod;
-
-    /** Duration of detector periods after first. */
-    private Duration nextPeriods;
-
-    /** Detectors. */
-    protected Map<String, FosDetector> detectors = new LinkedHashMap<>();
-
-    /** Step number. */
-    private int stepNumber = 1;
 
     /**
      * Constructor.
@@ -138,48 +148,6 @@ public class OtsTransceiver
     }
 
     /**
-     * Run a simulation step, where a 'step' is defined as a fixed time step. Note that within Ots usually a step is defined as
-     * a single event in DSOL.
-     */
-    private synchronized void step()
-    {
-        Duration until = this.step.times(this.stepNumber++);
-        if (!this.showGUI)
-        {
-            this.simulator.scheduleEventAbs(until, this, "showTime", null);
-            while (this.simulator.getSimulatorTime().lt(until))
-            {
-                this.simulator.step();
-            }
-        }
-        else
-        {
-            if (this.simulator.isStartingOrRunning())
-            {
-                this.simulator.stop();
-            }
-            this.simulator.runUpToAndIncluding(until);
-            while (this.simulator.isStartingOrRunning())
-            {
-                synchronized (this.simulator.getWorkerThread())
-                {
-                    //
-                }
-            }
-        }
-    }
-
-    /**
-     * Shows the time. This is mostly a dummy method scheduled at the 'run until' time such that the simulator stops at this
-     * time.
-     */
-    @SuppressWarnings("unused") // used through scheduling
-    private void showTime()
-    {
-        System.out.println(this.simulator.getSimulatorTime());
-    }
-
-    /**
      * Worker thread to listen to messages and respond.
      * <p>
      * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
@@ -200,6 +168,30 @@ public class OtsTransceiver
         /** Next message id. */
         private int messageId = 0;
 
+        /** App when GUI is used. */
+        private OtsSimulationApplication<FosimModel> app;
+
+        /** First detector period. */
+        private Duration firstPeriod;
+
+        /** Duration of detector periods after first. */
+        private Duration nextPeriods;
+
+        /** Detectors. */
+        protected Map<String, FosDetector> detectors = new LinkedHashMap<>();
+
+        /** Step number. */
+        private int stepNumber = 1;
+
+        /** Trajectory sampler. */
+        private RoadSampler sampler;
+
+        /** ID of dummy objects. */
+        private int dummyId;
+
+        /** Graph paths. */
+        private List<GraphPath<LaneDataRoad>> graphPaths;
+
         /**
          * Constructor.
          */
@@ -213,7 +205,7 @@ public class OtsTransceiver
         {
             this.context = new ZContext(1);
             this.responder = this.context.createSocket(SocketType.REP);
-            this.responder.bind("tcp://*:" + OtsTransceiver.this.port);
+            this.responder.bind("tcp://*:" + port);
             System.out.println("Server is running");
 
             Map<Gtu, Integer> targetLane = new LinkedHashMap<>();
@@ -227,8 +219,7 @@ public class OtsTransceiver
                     {
                         try
                         {
-                            // In order to allow resources to go to other processes, we sleep before
-                            // checking again
+                            // In order to allow resources to go to other processes, we sleep before checking again
                             Thread.sleep(3);
                         }
                         catch (InterruptedException e)
@@ -242,7 +233,7 @@ public class OtsTransceiver
                     {
                         // TODO: shouldn't we step in a separate thread, and then wait until this is done before processing any
                         // other message?
-                        OtsTransceiver.this.step();
+                        step();
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "STEP_REPLY", this.messageId++, new Object[0]), 0);
@@ -265,7 +256,7 @@ public class OtsTransceiver
                                 // been called on the GTU, i.e. the reference lane is not the correct lane at the end of an lc
                                 if (lc.isChangingLane())
                                 {
-                                    madatoryDesire.put(gtu, lmrs.getLatestDesire(IncentiveRoute.class).get(lc.getDirection()));
+                                    madatoryDesire.put(gtu, lmrs.getLatestDesire(FosIncentiveRoute.class).get(lc.getDirection()));
                                     lcInfo.put(gtu, lc);
                                 }
                             }
@@ -347,7 +338,7 @@ public class OtsTransceiver
                         int lane = (int) payload[9];
                         int period = (int) payload[10];
                         float value;
-                        double tEnd = OtsTransceiver.this.firstPeriod.si + OtsTransceiver.this.nextPeriods.si * period;
+                        double tEnd = this.firstPeriod.si + this.nextPeriods.si * period;
                         double tNow = OtsTransceiver.this.simulator.getSimulatorAbsTime().si;
                         if (tNow < tEnd)
                         {
@@ -357,7 +348,7 @@ public class OtsTransceiver
                         {
                             String measurement = (String) payload[11];
                             String detectorId = crossSection + "_" + lane;
-                            FosDetector detector = OtsTransceiver.this.detectors.get(detectorId);
+                            FosDetector detector = detectors.get(detectorId);
                             try
                             {
                                 switch (measurement)
@@ -398,9 +389,8 @@ public class OtsTransceiver
                         StopCriterion stopCriterium = new StopCriterion(OtsTransceiver.this.network, detectionType, fromLane,
                                 toLane, detector, threshold);
                         boolean triggered;
-                        while (!(triggered = stopCriterium.canStop()) && OtsTransceiver.this.network.getSimulator()
-                                .getSimulatorAbsTime().si < OtsTransceiver.this.network.getSimulator().getReplication()
-                                        .getEndTime().si)
+                        while (!(triggered = stopCriterium.canStop()) && network.getSimulator()
+                                .getSimulatorAbsTime().si < network.getSimulator().getReplication().getEndTime().si)
                         {
                             step();
                         }
@@ -438,18 +428,19 @@ public class OtsTransceiver
                                     (OtsSimulatorInterfaceStep) OtsTransceiver.this.network.getSimulator();
                             if (OtsTransceiver.this.showGUI)
                             {
-                                OtsTransceiver.this.app = parser.getApplication();
-                                OtsTransceiver.this.app.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-                                OtsTransceiver.this.app.getAnimationPanel().disableSimulationControlButtons();
+                                this.app = parser.getApplication();
+                                this.app.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                                this.app.getAnimationPanel().disableSimulationControlButtons();
                                 ((OtsAnimator) OtsTransceiver.this.simulator).setSpeedFactor(Double.MAX_VALUE, false);
                             }
-                            OtsTransceiver.this.firstPeriod = parser.getFirstPeriod();
-                            OtsTransceiver.this.nextPeriods = parser.getNextPeriods();
+                            this.firstPeriod = parser.getFirstPeriod();
+                            this.nextPeriods = parser.getNextPeriods();
                             // Map all detectors by their non-full id (i.e. ignoring link and lane)
                             for (FosDetector detector : OtsTransceiver.this.network.getObjectMap(FosDetector.class).values())
                             {
-                                OtsTransceiver.this.detectors.put(detector.getId(), detector);
+                                this.detectors.put(detector.getId(), detector);
                             }
+                            setupSampler(parser);
                         }
                         catch (Exception ex)
                         {
@@ -463,13 +454,13 @@ public class OtsTransceiver
                     {
                         OtsTransceiver.this.simulator = null;
                         OtsTransceiver.this.network = null;
-                        if (OtsTransceiver.this.app != null)
+                        if (this.app != null)
                         {
-                            OtsTransceiver.this.app.setVisible(false);
-                            OtsTransceiver.this.app.dispose();
-                            OtsTransceiver.this.app = null;
+                            this.app.setVisible(false);
+                            this.app.dispose();
+                            this.app = null;
                         }
-                        OtsTransceiver.this.stepNumber = 1;
+                        this.stepNumber = 1;
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "STOP_REPLY", this.messageId++, new Object[0]), 0);
@@ -501,6 +492,125 @@ public class OtsTransceiver
         }
 
         /**
+         * Sets up a sampler based on the network.
+         * @param parser parser
+         * @throws NetworkException if dummy network element cannot be created
+         */
+        private void setupSampler(final FosParser parser) throws NetworkException
+        {
+            Time endtime = Time.ZERO.plus(OtsTransceiver.this.simulator.getReplication().getEndTime());
+            this.sampler = new RoadSampler(OtsTransceiver.this.network);
+
+            // determine grid
+            int nSections = 0;
+            int fromLane = Integer.MAX_VALUE;
+            int toLane = 0;
+            for (FosLink fosLink : parser.getLinks())
+            {
+                nSections = Math.max(nSections, fosLink.sectionIndex);
+                fromLane = Math.min(fromLane, fosLink.fromLane);
+                toLane = Math.max(toLane, fosLink.toLane);
+            }
+
+            // create grid of LaneDataRoad and register regions for recording
+            Length[] lengths = new Length[nSections + 1];
+            LaneDataRoad[][] laneData = new LaneDataRoad[toLane + 1][nSections + 1];
+            for (FosLink fosLink : parser.getLinks())
+            {
+                if (lengths[fosLink.sectionIndex] == null)
+                {
+                    lengths[fosLink.sectionIndex] =
+                            Length.instantiateSI(fosLink.lanes.get(0).getLane().getLink().getEndNode().getLocation().x
+                                    - fosLink.lanes.get(0).getLane().getLink().getStartNode().getLocation().x);
+                }
+                int laneNum = fosLink.fromLane;
+                for (FosLane fosLane : fosLink.lanes)
+                {
+                    Lane lane = fosLane.getLane();
+                    laneData[laneNum][fosLink.sectionIndex] = new LaneDataRoad(lane);
+                    this.sampler.registerSpaceTimeRegion(new SpaceTimeRegion<LaneDataRoad>(
+                            laneData[laneNum][fosLink.sectionIndex], Length.ZERO, lane.getLength(), Time.ZERO, endtime));
+                    laneNum++;
+                }
+            }
+
+            // create graph paths, which ContourDataSource will use later to provide speed contour data
+            this.graphPaths = new ArrayList<>(toLane);
+            for (int i = fromLane; i < toLane; i++)
+            {
+                String pathName = "Lane " + i;
+                List<Section<LaneDataRoad>> sections = new ArrayList<>();
+                for (int j = 0; j < nSections; j++)
+                {
+                    LaneDataRoad laneDataRoad = laneData[i][j] == null ? dummyLaneData(lengths[j]) : laneData[i][j];
+                    Speed speedLimit = new Speed(100.0, SpeedUnit.KM_PER_HOUR); // used for EGTF, which Fosim does not use
+                    sections.add(new Section<>(laneDataRoad.getLength(), speedLimit, List.of(laneDataRoad)));
+                }
+                this.graphPaths.set(i, new GraphPath<>(pathName, sections));
+            }
+        }
+        
+        private FloatSpeedMatrix[] getSpeedMatrices(final Duration maxtime, final Length dx, final Duration dt)
+        {
+            // TODO: do this, and add response to event above
+            return null;
+        }
+
+        /**
+         * Creates a dummy lane data in place of a gap within a lane (row), i.e. a grass section.
+         * @param length length required
+         * @return dummy lane data
+         * @throws NetworkException
+         */
+        private LaneDataRoad dummyLaneData(final Length length) throws NetworkException
+        {
+            Point2d pointA = new Point2d(0.0, -10.0);
+            Point2d pointB = new Point2d(length.si, -10.0);
+            Node nodeA = new Node(OtsTransceiver.this.network, "_Node " + this.dummyId++, pointA);
+            Node nodeB = new Node(OtsTransceiver.this.network, "_Node " + this.dummyId++, pointB);
+            OtsLine2d line = new OtsLine2d(new PolyLine2d(pointA, pointB));
+            CrossSectionLink link = new CrossSectionLink(OtsTransceiver.this.network, "_Link " + this.dummyId++, nodeA, nodeB,
+                    DefaultsNl.FREEWAY, line, FractionalLengthData.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
+            List<CrossSectionSlice> slices =
+                    List.of(new CrossSectionSlice(Length.ZERO, Length.ZERO, Length.instantiateSI(3.5)));
+            Lane lane = new Lane(link, "_Lane " + this.dummyId++, line, new Polygon2d(line.getPoints()), slices,
+                    DefaultsRoadNl.FREEWAY, Map.of(DefaultsNl.VEHICLE, new Speed(100.0, SpeedUnit.KM_PER_HOUR)));
+            return new LaneDataRoad(lane);
+        }
+
+        /**
+         * Run a simulation step, where a 'step' is defined as a fixed time step. Note that within Ots usually a step is defined
+         * as a single event in DSOL.
+         */
+        private synchronized void step()
+        {
+            Duration until = OtsTransceiver.this.step.times(this.stepNumber++);
+            if (!OtsTransceiver.this.showGUI)
+            {
+                OtsTransceiver.this.simulator.scheduleEventAbs(until, this, "showTime", null);
+                while (OtsTransceiver.this.simulator.getSimulatorTime().lt(until))
+                {
+                    OtsTransceiver.this.simulator.step();
+                }
+            }
+            else
+            {
+                if (OtsTransceiver.this.simulator.isStartingOrRunning())
+                {
+                    OtsTransceiver.this.simulator.stop();
+                }
+                OtsTransceiver.this.simulator.runUpToAndIncluding(until);
+                while (OtsTransceiver.this.simulator.isStartingOrRunning())
+                {
+                    synchronized (OtsTransceiver.this.simulator.getWorkerThread())
+                    {
+                        //
+                    }
+                }
+            }
+        }
+
+        /**
          * Transforms an object in to a JSON string.
          * @param object object.
          * @return JSON string representation of object.
@@ -517,6 +627,16 @@ public class OtsTransceiver
             gson.toJson(object, writer);
             writer.close();
             return writer.toString();
+        }
+
+        /**
+         * Shows the time. This is mostly a dummy method scheduled at the 'run until' time such that the simulator stops at this
+         * time.
+         */
+        @SuppressWarnings("unused") // used through scheduling
+        private void showTime()
+        {
+            System.out.println(OtsTransceiver.this.simulator.getSimulatorTime());
         }
 
     }
