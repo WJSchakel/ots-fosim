@@ -11,7 +11,7 @@ import java.util.List;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-class FosLink extends FosElement
+public class FosLink extends FosElement
 {
     /** Section index. */
     final public int sectionIndex;

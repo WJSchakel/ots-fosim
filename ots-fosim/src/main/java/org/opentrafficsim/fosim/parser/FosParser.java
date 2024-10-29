@@ -39,6 +39,8 @@ import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.Point2d;
 import org.djutils.exceptions.Throw;
 import org.djutils.exceptions.Try;
+import org.djutils.immutablecollections.ImmutableHashSet;
+import org.djutils.immutablecollections.ImmutableSet;
 import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterSet;
@@ -122,7 +124,6 @@ import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AccelerationTrafficLights;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.DefaultLmrsPerceptionFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveCourtesy;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveKeep;
-import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveRoute;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSocioSpeed;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
@@ -426,6 +427,15 @@ public class FosParser
     public Duration getNextPeriods()
     {
         return this.timeStep.times(this.detectorTimes.get(1));
+    }
+
+    /**
+     * Returns the links.
+     * @return links
+     */
+    public ImmutableSet<FosLink> getLinks()
+    {
+        return new ImmutableHashSet<>(this.links.values());
     }
 
     /**
@@ -745,6 +755,7 @@ public class FosParser
                 animationPanel.enableSimulationControlButtons();
                 this.app = new OtsSimulationApplication<FosimModel>(this.model, animationPanel);
             }
+
         }
         catch (SimRuntimeException | NamingException | RemoteException | DsolException | OtsDrawingException
                 | OtsGeometryException | ParameterException e)
@@ -1587,7 +1598,7 @@ public class FosParser
 
         // incentives: voluntary, mandatory, acceleration
         Set<MandatoryIncentive> mandatoryIncentives = new LinkedHashSet<>();
-        mandatoryIncentives.add(new IncentiveRoute());
+        mandatoryIncentives.add(new FosIncentiveRoute());
         Set<VoluntaryIncentive> voluntaryIncentives = new LinkedHashSet<>();
         voluntaryIncentives.add(new IncentiveSpeedWithCourtesy());
         voluntaryIncentives.add(new IncentiveKeep());
@@ -1924,7 +1935,7 @@ public class FosParser
             double urgency = 0.0;
             for (LaneChangeInfo info : laneChangeInfo)
             {
-                double nextUrgency = IncentiveRoute.getDesireToLeave(parameters, info.remainingDistance(),
+                double nextUrgency = FosIncentiveRoute.getDesireToLeave(parameters, info.remainingDistance(),
                         info.numberOfLaneChanges(), speed);
                 urgency = urgency > nextUrgency ? urgency : nextUrgency;
             }
@@ -2009,4 +2020,5 @@ public class FosParser
             params.setParameterResettable(ParameterTypes.T, Duration.instantiateSI(tDes < t ? tDes : t));
         }
     };
+
 }

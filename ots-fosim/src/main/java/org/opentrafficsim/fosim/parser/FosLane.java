@@ -13,7 +13,7 @@ import org.opentrafficsim.road.network.lane.Lane;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-class FosLane
+public class FosLane
 {
     /**
      * Type:
