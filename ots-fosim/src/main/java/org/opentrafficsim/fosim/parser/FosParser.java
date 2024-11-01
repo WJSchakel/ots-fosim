@@ -1178,7 +1178,7 @@ public class FosParser
 
                 // add this margin to the left edge assuming maximum lane widths on the output lane
                 Length actualLeftEdge = getLeftEdgeMax(link.lanes.get(i).laneOut).minus(leftEdgeMargin);
-                leftEdgeOffsetEnd = actualLeftEdge.minus(Length.instantiateSI(endNode.getPoint().y)); // relative to node
+                leftEdgeOffsetEnd = actualLeftEdge.minus(Length.instantiateSI(startNode.getPoint().y)); // relative to line end
 
                 // build from that left edge onwards
                 lateralOffsetAtEnds.add(leftEdgeOffsetEnd.minus(link.lanes.get(i).laneWidth.times(0.5)));
