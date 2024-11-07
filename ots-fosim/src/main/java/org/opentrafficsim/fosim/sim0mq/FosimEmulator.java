@@ -114,6 +114,11 @@ public class FosimEmulator
             if ("SETUP_REPLY".equals(message.getMessageTypeId()))
             {
                 // System.out.println("SETUP_REPLY received");
+                String exception = (String) message.createObjectArray()[8];
+                if (exception != null)
+                {
+                    System.err.println(exception);
+                }
             }
             else
             {

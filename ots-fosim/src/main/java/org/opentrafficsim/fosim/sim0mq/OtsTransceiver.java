@@ -37,10 +37,10 @@ import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
+import org.opentrafficsim.fosim.parser.FosIncentiveRoute;
 import org.opentrafficsim.fosim.parser.FosLane;
 import org.opentrafficsim.fosim.parser.FosLink;
 import org.opentrafficsim.fosim.parser.FosParser;
-import org.opentrafficsim.fosim.parser.FosIncentiveRoute;
 import org.opentrafficsim.fosim.parser.ParserSetting;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.DetectionType;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorInterfaceStep;
@@ -190,7 +190,7 @@ public class OtsTransceiver
         private int dummyId;
 
         /** Graph paths. */
-        private List<GraphPath<LaneDataRoad>> graphPaths;
+        private GraphPath<LaneDataRoad>[] graphPaths;
 
         /**
          * Constructor.
@@ -256,7 +256,8 @@ public class OtsTransceiver
                                 // been called on the GTU, i.e. the reference lane is not the correct lane at the end of an lc
                                 if (lc.isChangingLane())
                                 {
-                                    madatoryDesire.put(gtu, lmrs.getLatestDesire(FosIncentiveRoute.class).get(lc.getDirection()));
+                                    madatoryDesire.put(gtu,
+                                            lmrs.getLatestDesire(FosIncentiveRoute.class).get(lc.getDirection()));
                                     lcInfo.put(gtu, lc);
                                 }
                             }
@@ -496,6 +497,7 @@ public class OtsTransceiver
          * @param parser parser
          * @throws NetworkException if dummy network element cannot be created
          */
+        @SuppressWarnings("unchecked")
         private void setupSampler(final FosParser parser) throws NetworkException
         {
             Time endtime = Time.ZERO.plus(OtsTransceiver.this.simulator.getReplication().getEndTime());
@@ -535,7 +537,7 @@ public class OtsTransceiver
             }
 
             // create graph paths, which ContourDataSource will use later to provide speed contour data
-            this.graphPaths = new ArrayList<>(toLane);
+            this.graphPaths = new GraphPath[toLane];
             for (int i = fromLane; i < toLane; i++)
             {
                 String pathName = "Lane " + i;
@@ -546,10 +548,10 @@ public class OtsTransceiver
                     Speed speedLimit = new Speed(100.0, SpeedUnit.KM_PER_HOUR); // used for EGTF, which Fosim does not use
                     sections.add(new Section<>(laneDataRoad.getLength(), speedLimit, List.of(laneDataRoad)));
                 }
-                this.graphPaths.set(i, new GraphPath<>(pathName, sections));
+                this.graphPaths[i] = new GraphPath<>(pathName, sections);
             }
         }
-        
+
         private FloatSpeedMatrix[] getSpeedMatrices(final Duration maxtime, final Length dx, final Duration dt)
         {
             // TODO: do this, and add response to event above
