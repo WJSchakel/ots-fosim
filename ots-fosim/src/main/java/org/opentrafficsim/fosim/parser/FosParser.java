@@ -1523,7 +1523,8 @@ public class FosParser
                     {
                         if (parameterData.id.equals("courtesy"))
                         {
-                            courtesy = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value() > 0.0;
+                            // courtesy = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value() > 0.0;
+                            courtesy = parameterData.value.get(vehicleTypeNumber)> 0.0;
                         }
                     }
                 }
@@ -1534,13 +1535,15 @@ public class FosParser
                     {
                         if (parameterData.id.equals("est"))
                         {
-                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
+                            // double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
+                            double value = parameterData.value.get(vehicleTypeNumber);
                             estimation = value < 0.0 ? Estimation.FACTOR_ESTIMATION
                                     : (value > 0.0 ? Estimation.FACTOR_ESTIMATION : Estimation.NONE);
                         }
                         else if (parameterData.id.equals("ant"))
                         {
-                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
+                            // double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
+                            double value = parameterData.value.get(vehicleTypeNumber);
                             anticipation = value > 1.5 ? Anticipation.CONSTANT_ACCELERATION
                                     : (value > 0.5 ? Anticipation.CONSTANT_SPEED : Anticipation.NONE);
                         }

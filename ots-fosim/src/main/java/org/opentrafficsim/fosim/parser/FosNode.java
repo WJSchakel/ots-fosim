@@ -52,7 +52,7 @@ class FosNode extends FosElement
             while (num > 0)
             {
                 int remainder = (num - 1) % 26;
-                num = (num - remainder) / 26;
+                num = (num - 1 - remainder) / 26;
                 this.name = (char) (remainder + 'A') + this.name;
             }
         }

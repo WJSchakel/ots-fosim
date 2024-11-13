@@ -8,6 +8,7 @@ package org.opentrafficsim.fosim.parameters;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
+@Deprecated
 public class Scalar implements DefaultValue
 {
     

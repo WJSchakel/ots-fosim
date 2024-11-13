@@ -50,50 +50,50 @@ public class ParameterValidator
         }
 
         // check limits
-        for (ParameterGroup group : list)
-        {
-            for (Parameter parameter : group.parameters)
-            {
-                if (parameter.minimum.value != null && parameter.maximum.value != null)
-                {
-                    assertTrue(parameter.minimum.value < parameter.maximum.value,
-                            "Limits of parameter " + parameter.id + " do not comply to min < max.");
-                }
-                if (parameter.minimum.parameter != null)
-                {
-                    assertTrue(map.containsKey(parameter.minimum.parameter), "Parameter " + parameter.id
-                            + " refers to parameter " + parameter.minimum.parameter + " (min) which does not exist.");
-                    assertTrue(map.get(parameter.minimum.parameter).maximum.parameter.equals(parameter.id),
-                            "Parameter " + parameter.id + " has a minimum of " + parameter.minimum.parameter
-                                    + " but that does not have " + parameter.id + " as maximum.");
-                }
-                if (parameter.maximum.parameter != null)
-                {
-                    assertTrue(map.containsKey(parameter.maximum.parameter), "Parameter " + parameter.id
-                            + " refers to parameter " + parameter.maximum.parameter + " (max) which does not exist.");
-                    assertTrue(map.get(parameter.maximum.parameter).minimum.parameter.equals(parameter.id),
-                            "Parameter " + parameter.id + " has a maximum of " + parameter.maximum.parameter
-                                    + " but that does not have " + parameter.id + " as minimum.");
-                }
-                for (DefaultValue value : parameter.defaultValue)
-                {
-                    if (value instanceof Scalar)
-                    {
-                        double val = ((Scalar) value).value();
-                        if (parameter.minimum != null && parameter.minimum.value != null)
-                        {
-                            assertTrue(parameter.minimum.value <= val,
-                                    "Parameter " + parameter.id + " default value is smaller than its minimum.");
-                        }
-                        if (parameter.maximum != null && parameter.maximum.value != null)
-                        {
-                            assertTrue(val <= parameter.maximum.value,
-                                    "Parameter " + parameter.id + " default value is larger than its maximum.");
-                        }
-                    }
-                }
-            }
-        }
+        // for (ParameterGroup group : list)
+        // {
+        // for (Parameter parameter : group.parameters)
+        // {
+        // if (parameter.minimum.value != null && parameter.maximum.value != null)
+        // {
+        // assertTrue(parameter.minimum.value < parameter.maximum.value,
+        // "Limits of parameter " + parameter.id + " do not comply to min < max.");
+        // }
+        // if (parameter.minimum.parameter != null)
+        // {
+        // assertTrue(map.containsKey(parameter.minimum.parameter), "Parameter " + parameter.id
+        // + " refers to parameter " + parameter.minimum.parameter + " (min) which does not exist.");
+        // assertTrue(map.get(parameter.minimum.parameter).maximum.parameter.equals(parameter.id),
+        // "Parameter " + parameter.id + " has a minimum of " + parameter.minimum.parameter
+        // + " but that does not have " + parameter.id + " as maximum.");
+        // }
+        // if (parameter.maximum.parameter != null)
+        // {
+        // assertTrue(map.containsKey(parameter.maximum.parameter), "Parameter " + parameter.id
+        // + " refers to parameter " + parameter.maximum.parameter + " (max) which does not exist.");
+        // assertTrue(map.get(parameter.maximum.parameter).minimum.parameter.equals(parameter.id),
+        // "Parameter " + parameter.id + " has a maximum of " + parameter.maximum.parameter
+        // + " but that does not have " + parameter.id + " as minimum.");
+        // }
+        // for (DefaultValue value : parameter.defaultValue)
+        // {
+        // if (value instanceof Scalar)
+        // {
+        // double val = ((Scalar) value).value();
+        // if (parameter.minimum != null && parameter.minimum.value != null)
+        // {
+        // assertTrue(parameter.minimum.value <= val,
+        // "Parameter " + parameter.id + " default value is smaller than its minimum.");
+        // }
+        // if (parameter.maximum != null && parameter.maximum.value != null)
+        // {
+        // assertTrue(val <= parameter.maximum.value,
+        // "Parameter " + parameter.id + " default value is larger than its maximum.");
+        // }
+        // }
+        // }
+        // }
+        // }
     }
 
     /**

@@ -13,6 +13,7 @@ import org.opentrafficsim.fosim.parameters.BiLingual;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
+@Deprecated
 public class Distribution extends BiLingual
 {
 

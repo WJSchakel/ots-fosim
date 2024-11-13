@@ -12,6 +12,7 @@ import org.opentrafficsim.fosim.parameters.distributions.DistributionType;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
+@Deprecated
 public class DistributionData implements ValueData
 {
 
@@ -25,7 +26,7 @@ public class DistributionData implements ValueData
     @Override
     public String toString()
     {
-        return "DistributionData [type=" + type + ", distributionParameters=" + distributionParameters + "]";
+        return "DistributionData [type=" + this.type + ", distributionParameters=" + this.distributionParameters + "]";
     }
     
 }

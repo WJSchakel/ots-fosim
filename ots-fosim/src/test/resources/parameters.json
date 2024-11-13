@@ -18,12 +18,6 @@
             4.19,
             12.0
           ],
-          "minimum": {
-            "value": 3.0
-          },
-          "maximum": {
-            "value": 26.0
-          },
           "nameNl": "<i>lengte</i>",
           "nameEn": "<i>length</i>"
         },
@@ -36,12 +30,6 @@
             1.7,
             2.55
           ],
-          "minimum": {
-            "value": 1.5
-          },
-          "maximum": {
-            "value": 2.6
-          },
           "nameNl": "<i>breedte</i>",
           "nameEn": "<i>width</i>"
         },
@@ -52,23 +40,8 @@
           "unit": "km/h",
           "defaultValue": [
             180.0,
-            {
-              "type": "Normal",
-              "defaultValue": 85.0,
-              "values": {
-                "mu": 85.0,
-                "sigma": 2.5,
-                "min": 60.0,
-                "max": 100.0
-              }
-            }
+            85.0
           ],
-          "minimum": {
-            "value": 50.0
-          },
-          "maximum": {
-            "value": 200.0
-          },
           "nameNl": "<i>v<sub>max</sub></i>",
           "nameEn": "<i>v<sub>max</sub></i>"
         }
@@ -91,12 +64,6 @@
             1.2,
             1.2
           ],
-          "minimum": {
-            "parameter": "Tmin"
-          },
-          "maximum": {
-            "value": 10.0
-          },
           "nameNl": "<i>T<sub>max</sub></i>",
           "nameEn": "<i>T<sub>max</sub></i>"
         },
@@ -109,12 +76,6 @@
             0.56,
             0.56
           ],
-          "minimum": {
-            "value": 0.1
-          },
-          "maximum": {
-            "parameter": "Tmax"
-          },
           "nameNl": "<i>T<sub>min</sub></i>",
           "nameEn": "<i>T<sub>min</sub></i>"
         },
@@ -124,33 +85,9 @@
           "descriptionEn": "Factor desired speed/legal speed limit.",
           "unit": "-",
           "defaultValue": [
-            {
-              "type": "Normal",
-              "defaultValue": 1.0308,
-              "values": {
-                "mu": 1.0308,
-                "sigma": 0.1,
-                "min": 0.5,
-                "max": 2.0
-              }
-            },
-            {
-              "type": "Normal",
-              "defaultValue": 1.0308,
-              "values": {
-                "mu": 1.0308,
-                "sigma": 0.1,
-                "min": 0.5,
-                "max": 2.0
-              }
-            }
+            1.0308,
+            1.0308
           ],
-          "minimum": {
-            "value": 0.1
-          },
-          "maximum": {
-            "value": 2.0
-          },
           "nameNl": "<i>f<sub>speed</sub></i>",
           "nameEn": "<i>f<sub>speed</sub></i>"
         }
@@ -173,12 +110,6 @@
             1.25,
             0.4
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 8.0
-          },
           "nameNl": "<i>a</i>",
           "nameEn": "<i>a</i>"
         },
@@ -191,12 +122,6 @@
             0.5,
             0.5
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "parameter": "b"
-          },
           "nameNl": "<i>b</i><sub>0</sub>",
           "nameEn": "<i>b</i><sub>0</sub>"
         },
@@ -209,12 +134,6 @@
             2.09,
             2.09
           ],
-          "minimum": {
-            "parameter": "b0"
-          },
-          "maximum": {
-            "parameter": "bCrit"
-          },
           "nameNl": "<i>b</i>",
           "nameEn": "<i>b</i>"
         },
@@ -227,12 +146,6 @@
             3.5,
             3.5
           ],
-          "minimum": {
-            "parameter": "b"
-          },
-          "maximum": {
-            "value": 8.0
-          },
           "nameNl": "<i>b<sub>crit</sub></i>",
           "nameEn": "<i>b<sub>crit</sub></i>"
         },
@@ -245,12 +158,6 @@
             3.0,
             3.0
           ],
-          "minimum": {
-            "value": 0.5
-          },
-          "maximum": {
-            "value": 8.0
-          },
           "nameNl": "<i>s</i><sub>0</sub>",
           "nameEn": "<i>s</i><sub>0</sub>"
         },
@@ -263,12 +170,6 @@
             4.0,
             4.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 1000.0
-          },
           "nameNl": "<i>δ</i>",
           "nameEn": "<i>δ</i>"
         }
@@ -291,12 +192,6 @@
             0.365,
             0.365
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "parameter": "dSync"
-          },
           "nameNl": "<i>d<sub>free</sub></i>",
           "nameEn": "<i>d<sub>free</sub></i>"
         },
@@ -309,12 +204,6 @@
             0.577,
             0.577
           ],
-          "minimum": {
-            "parameter": "dFree"
-          },
-          "maximum": {
-            "parameter": "dCoop"
-          },
           "nameNl": "<i>d<sub>sync</sub></i>",
           "nameEn": "<i>d<sub>sync</sub></i>"
         },
@@ -327,12 +216,6 @@
             0.788,
             0.788
           ],
-          "minimum": {
-            "parameter": "dSync"
-          },
-          "maximum": {
-            "value": 1.0
-          },
           "nameNl": "<i>d<sub>coop</sub></i>",
           "nameEn": "<i>d<sub>coop</sub></i>"
         },
@@ -345,12 +228,6 @@
             25.0,
             25.0
           ],
-          "minimum": {
-            "value": 1.0
-          },
-          "maximum": {
-            "value": 120.0
-          },
           "nameNl": "<i>τ</i>",
           "nameEn": "<i>τ</i>"
         },
@@ -363,12 +240,6 @@
             295.0,
             295.0
           ],
-          "minimum": {
-            "value": 100.0
-          },
-          "maximum": {
-            "value": 1000.0
-          },
           "nameNl": "<i>x</i><sub>0</sub>",
           "nameEn": "<i>x</i><sub>0</sub>"
         },
@@ -381,12 +252,6 @@
             43.0,
             43.0
           ],
-          "minimum": {
-            "value": 10.0
-          },
-          "maximum": {
-            "value": 120.0
-          },
           "nameNl": "<i>t</i><sub>0</sub>",
           "nameEn": "<i>t</i><sub>0</sub>"
         },
@@ -399,12 +264,6 @@
             69.6,
             69.6
           ],
-          "minimum": {
-            "value": 1.0
-          },
-          "maximum": {
-            "value": 130.0
-          },
           "nameNl": "<i>v<sub>gain</sub></i>",
           "nameEn": "<i>v<sub>gain</sub></i>"
         },
@@ -417,12 +276,6 @@
             60.0,
             60.0
           ],
-          "minimum": {
-            "value": 1.0
-          },
-          "maximum": {
-            "value": 130.0
-          },
           "nameNl": "<i>v<sub>cong</sub></i>",
           "nameEn": "<i>v<sub>cong</sub></i>"
         },
@@ -435,12 +288,6 @@
             3.0,
             3.0
           ],
-          "minimum": {
-            "value": 1.0
-          },
-          "maximum": {
-            "value": 5.0
-          },
           "nameNl": "<i>LC<sub>dur</sub></i>",
           "nameEn": "<i>LC<sub>dur</sub></i>"
         }
@@ -452,7 +299,7 @@
       "groupEn": "Social interactions",
       "defaultState": "ON",
       "descriptionNl": "Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.",
-      "descriptionEn": "Endogenous influence on desired speed, desired headway and lane change desire from social pressure. This mostly influences the number of lane changes and the headway distribution. It is important to use different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.",
+      "descriptionEn": "Endogenous influence on desired speed, desired headway and lane change desire from social pressure. This mostly influences the number of lane changes and the headway distribution. It is important to use a different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.",
       "parameters": [
         {
           "id": "sigma",
@@ -460,23 +307,9 @@
           "descriptionEn": "Socio-speed sensitivity.",
           "unit": "-",
           "defaultValue": [
-            {
-              "type": "Triangular",
-              "defaultValue": 0.25,
-              "values": {
-                "min": 0.0,
-                "mode": 0.25,
-                "max": 1.0
-              }
-            },
+            0.25,
             1.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 1.0
-          },
           "nameNl": "<i>σ</i>",
           "nameEn": "<i>σ</i>"
         },
@@ -489,12 +322,6 @@
             1.0,
             0.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 1.0
-          },
           "nameNl": "<i>courtesy</i>",
           "nameEn": "<i>courtesy</i>"
         }
@@ -517,12 +344,6 @@
             1.0,
             1.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 2.0
-          },
           "nameNl": "<i>TC</i>",
           "nameEn": "<i>TC</i>"
         },
@@ -535,12 +356,6 @@
             0.8,
             0.8
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "parameter": "TSmax"
-          },
           "nameNl": "<i>TS<sub>crit</sub></i>",
           "nameEn": "<i>TS<sub>crit</sub></i>"
         },
@@ -553,12 +368,6 @@
             2.0,
             2.0
           ],
-          "minimum": {
-            "parameter": "TScrit"
-          },
-          "maximum": {
-            "value": 3.0
-          },
           "nameNl": "<i>TS<sub>max</sub></i>",
           "nameEn": "<i>TS<sub>max</sub></i>"
         },
@@ -571,12 +380,6 @@
             0.5,
             0.5
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "parameter": "SAmax"
-          },
           "nameNl": "<i>SA<sub>min</sub></i>",
           "nameEn": "<i>SA<sub>min</sub></i>"
         },
@@ -589,12 +392,6 @@
             1.0,
             1.0
           ],
-          "minimum": {
-            "parameter": "SAmin"
-          },
-          "maximum": {
-            "value": 1.0
-          },
           "nameNl": "<i>SA<sub>max</sub></i>",
           "nameEn": "<i>SA<sub>max</sub></i>"
         },
@@ -607,12 +404,6 @@
             2.0,
             2.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 3.0
-          },
           "nameNl": "<i>T<sub>r,max</sub></i>",
           "nameEn": "<i>T<sub>r,max</sub></i>"
         },
@@ -625,12 +416,6 @@
             4.0,
             4.0
           ],
-          "minimum": {
-            "value": 1.0
-          },
-          "maximum": {
-            "value": 10.0
-          },
           "nameNl": "<i>h<sub>exp</sub></i>",
           "nameEn": "<i>h<sub>exp</sub></i>"
         },
@@ -643,12 +428,6 @@
             1.0,
             1.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 2.0
-          },
           "nameNl": "<i>β<sub>T</sub></i>",
           "nameEn": "<i>β<sub>T</sub></i>"
         },
@@ -661,12 +440,6 @@
             1.0,
             1.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 2.0
-          },
           "nameNl": "<i>β<sub>v0</sub></i>",
           "nameEn": "<i>β<sub>v0</sub></i>"
         },
@@ -679,12 +452,6 @@
             1.0,
             1.0
           ],
-          "minimum": {
-            "value": -1.0
-          },
-          "maximum": {
-            "value": 1.0
-          },
           "nameNl": "<i>estimation</i>",
           "nameEn": "<i>estimation</i>"
         },
@@ -697,12 +464,6 @@
             1.0,
             1.0
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 2.0
-          },
           "nameNl": "<i>anticipation</i>",
           "nameEn": "<i>anticipation</i>"
         },
@@ -715,12 +476,6 @@
             0.8,
             0.8
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 1.0
-          },
           "nameNl": "<i>α</i>",
           "nameEn": "<i>α</i>"
         },
@@ -733,12 +488,6 @@
             0.6,
             0.6
           ],
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "value": 1.0
-          },
           "nameNl": "<i>β</i>",
           "nameEn": "<i>β</i>"
         }

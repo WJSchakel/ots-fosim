@@ -5,10 +5,6 @@ import static org.opentrafficsim.fosim.parameters.ParameterDefinitions.it;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opentrafficsim.fosim.parameters.DefaultValue;
-import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
-import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -21,6 +17,7 @@ import com.google.gson.GsonBuilder;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
+@Deprecated
 public class DistributionDefinitions
 {
 
@@ -45,9 +42,10 @@ public class DistributionDefinitions
      * Return JSON string distribution definitions.
      * @param prettyString whether to use new lines and indentation.
      * @param htmlEscaping whether to escape html characters.
+     * @param version version
      * @return JSON string of distribution definitions.
      */
-    public static String getParametersJson(final boolean prettyString, final boolean htmlEscaping)
+    public static String getDistributionsJson(final boolean prettyString, final boolean htmlEscaping, final String version)
     {
         GsonBuilder builder = new GsonBuilder();
         if (prettyString)
@@ -58,9 +56,9 @@ public class DistributionDefinitions
         {
             builder.disableHtmlEscaping();
         }
-        builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        // builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
         Gson gson = builder.create();
-        return gson.toJson(ParameterDefinitions.getParameterGroups());
+        return gson.toJson(new DistributionDefinitions(version));
     }
 
     /**

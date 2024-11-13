@@ -28,7 +28,7 @@ public class ParameterDataGroup
     @Override
     public String toString()
     {
-        return "ParameterDataGroup [id=" + id + ", parameters=" + parameters + "]";
+        return "ParameterDataGroup [id=" + this.id + ", parameters=" + this.parameters + "]";
     }
     
 }

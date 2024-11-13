@@ -23,7 +23,7 @@ public class ParameterDataDefinition
     @Override
     public String toString()
     {
-        return "ParameterDataDefinition [version=" + version + ", parameterGroups=" + parameterGroups + "]";
+        return "ParameterDataDefinition [version=" + this.version + ", parameterGroups=" + this.parameterGroups + "]";
     }
     
 }

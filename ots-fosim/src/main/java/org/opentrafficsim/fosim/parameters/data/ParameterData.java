@@ -17,13 +17,14 @@ public class ParameterData
     public String id;
     
     /** Values per vehicle type. */
-    public List<ValueData> value;
+    //public List<ValueData> value;
+    public List<Double> value;
 
     /** {@inheritDoc} */
     @Override
     public String toString()
     {
-        return "ParameterData [id=" + id + ", value=" + value + "]";
+        return "ParameterData [id=" + this.id + ", value=" + this.value + "]";
     }
     
 }

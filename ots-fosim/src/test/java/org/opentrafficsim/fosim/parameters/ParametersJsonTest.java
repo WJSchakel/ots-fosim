@@ -43,7 +43,7 @@ public class ParametersJsonTest
     {
         try
         {
-            writeParametersFile(new ParameterDefinitions(OtsTransceiver.VERSION), PARAMETERS_FILENAME, true, false);
+            writeToFile(new ParameterDefinitions(OtsTransceiver.VERSION), PARAMETERS_FILENAME, true, false);
         }
         catch (NullPointerException ex)
         {
@@ -66,7 +66,7 @@ public class ParametersJsonTest
 
         try
         {
-            writeParametersFile(new DistributionDefinitions(OtsTransceiver.VERSION), DISTRIBUTIONS_FILENAME, true, false);
+            writeToFile(new DistributionDefinitions(OtsTransceiver.VERSION), DISTRIBUTIONS_FILENAME, true, false);
         }
         catch (NullPointerException ex)
         {
@@ -88,14 +88,14 @@ public class ParametersJsonTest
     }
 
     /**
-     * This method writes the 'parameters.json' file.
+     * This method writes the data to file.
      * @param data data to write.
      * @param fileName file name.
      * @param prettyString whether to use new lines and indentation.
      * @param htmlEscaping whether to escape html characters.
      * @throws IOException when the file cannot be written.
      */
-    private static void writeParametersFile(final Object data, final String fileName, final boolean prettyString,
+    private static void writeToFile(final Object data, final String fileName, final boolean prettyString,
             final boolean htmlEscaping) throws IOException
     {
         GsonBuilder builder = new GsonBuilder();
@@ -107,7 +107,7 @@ public class ParametersJsonTest
         {
             builder.disableHtmlEscaping();
         }
-        builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        // builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
         Gson gson = builder.create();
 
         // Write to resources (should not work in a Jar file)

@@ -8,6 +8,7 @@ package org.opentrafficsim.fosim.parameters.data;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
+@Deprecated
 public class ScalarData implements ValueData
 {
 
@@ -36,7 +37,7 @@ public class ScalarData implements ValueData
     @Override
     public String toString()
     {
-        return "ScalarData [value=" + value + "]";
+        return "ScalarData [value=" + this.value + "]";
     }
     
 }
