@@ -218,6 +218,7 @@ public class OtsAnimatorStep extends OtsAnimator implements OtsSimulatorInterfac
             if (isRunUntil)
             {
                 this.simulatorTime = nextEventOrUntilTime;
+                this.runState = RunState.STOPPING; // This line was added in the method copy to stop when no event was in step
             }
             else if (!isStoppingOrStopped())
             {
