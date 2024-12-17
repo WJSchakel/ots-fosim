@@ -95,25 +95,25 @@ public class StopCriterion
      * </ul>
      * @return whether the simulation can stop as the stop criterion has been reached.
      */
-    public boolean canStop()
+    public BatchStatus canStop()
     {
         if (this.detectors.isEmpty())
         {
-            return true; // there are no detectors...
+            return BatchStatus.STOPPED; // there are no detectors...
         }
 
         // check whether the next period has been reached
         int period = this.detectors.iterator().next().getCurrentPeriod() - 1;
         if (period <= this.prevPeriod)
         {
-            return false;
+            return BatchStatus.RUNNING;
         }
         this.prevPeriod = period;
 
         // for method Fosim one additional period needs to have been simulated
         if (this.stopType.equals(DetectionType.FOSIM) && this.initialTriggerPeriod < period)
         {
-            return true;
+            return BatchStatus.TRIGGERED;
         }
 
         for (FosDetector detector : this.detectors)
@@ -122,7 +122,7 @@ public class StopCriterion
             {
                 if (this.stopType.equals(DetectionType.PLM))
                 {
-                    return true;
+                    return BatchStatus.TRIGGERED;
                 }
                 if (this.stopType.equals(DetectionType.FOSIM))
                 {
@@ -138,9 +138,9 @@ public class StopCriterion
                     }
                     else if (this.network.getSimulator().getSimulatorAbsTime().si - this.initialTriggerTime.si >= QDC_TIME.si)
                     {
-                        return true;
+                        return BatchStatus.TRIGGERED;
                     }
-                    return false;
+                    return BatchStatus.RUNNING;
                 }
             }
         }
@@ -151,12 +151,11 @@ public class StopCriterion
             this.initialTriggerTime = null;
         }
 
-        return false;
+        return BatchStatus.RUNNING;
     }
 
     /**
      * Congestion detection type.
-     * @author wjschakel
      */
     public enum DetectionType
     {
@@ -168,6 +167,21 @@ public class StopCriterion
 
         /** Congestion during at least 1 additional period and additional time. */
         QDC;
+    }
+    
+    /**
+     * Return status of batch step message.
+     */
+    public enum BatchStatus
+    {
+        /** Simulation still running. */
+        RUNNING,
+        
+        /** Stop criterion met. */
+        TRIGGERED,
+        
+        /** E.g. no detectors, end of simulation reached. */
+        STOPPED;
     }
 
 }

@@ -3,15 +3,20 @@ package org.opentrafficsim.fosim.sim0mq;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Duration;
+import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vfloat.matrix.FloatDurationMatrix;
+import org.djunits.value.vfloat.matrix.FloatLengthMatrix;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
+import org.opentrafficsim.fosim.sim0mq.StopCriterion.BatchStatus;
 import org.sim0mq.Sim0MQException;
 import org.sim0mq.message.Sim0MQMessage;
 import org.zeromq.SocketType;
@@ -104,8 +109,7 @@ public class FosimEmulator
             }
 
             String fosString =
-                    new String(FosimEmulator.class.getResourceAsStream("/Afvallende rijstrook lang.fos").readAllBytes(),
-                            StandardCharsets.UTF_8);
+                    new String(FosimEmulator.class.getResourceAsStream("/Config 2.fos").readAllBytes(), StandardCharsets.UTF_8);
             encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++,
                     new Object[] {fosString});
             requester.send(encodedMessage, 0);
@@ -145,6 +149,24 @@ public class FosimEmulator
                 {
                     throw new RuntimeException("Did not receive a SETUP_REPLY on a SETUP message.");
                 }
+
+                BatchStatus batchStatus = BatchStatus.RUNNING;
+                while (BatchStatus.RUNNING.equals(batchStatus))
+                {
+                    // Batch step
+                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "BATCH_STEP", messageId++,
+                            new Object[] {});
+                    // System.out.println("Encoded Sim0MQMessage: " + Arrays.toString(encodedMessage));
+                    requester.send(encodedMessage, 0);
+                    reply = requester.recv(0);
+                    message = Sim0MQMessage.decode(reply);
+                    if ("BATCH_STEP_REPLY".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        batchStatus = BatchStatus.valueOf((String) payload[8]);
+                    }
+                }
+                System.out.println("Stopped with batch status " + batchStatus);
                 return;
             }
 
@@ -200,6 +222,32 @@ public class FosimEmulator
                     // System.out.println("VEHICLE_REPLY received");
                     // Object[] payload = message.createObjectArray();
                     // System.out.println(payload[8] + " vehicles");
+                }
+
+                if (i == 601)
+                {
+                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "CONTOUR", messageId++,
+                            new Object[] {Duration.ZERO, Duration.instantiateSI(60.0), Duration.instantiateSI(300.0),
+                                    Length.ZERO, Length.instantiateSI(100.0), Length.instantiateSI(3000.0)});
+                    long t = System.currentTimeMillis();
+                    requester.send(encodedMessage, 0);
+                    reply = requester.recv(0);
+                    message = Sim0MQMessage.decode(reply);
+                    t = System.currentTimeMillis() - t;
+                    if ("CONTOUR_REPLY".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        // TODO for now, standard decoding is to non-primitive arrays; this is java specific
+                        int[] lanes = Arrays.asList((Integer[]) payload[8]).stream().mapToInt(k -> k).toArray();
+                        System.out.println("Received data for lanes " + Arrays.toString(lanes) + " in " + t + "ms");
+                        for (int j = 0; j < lanes.length; j++)
+                        {
+                            FloatLengthMatrix distance = (FloatLengthMatrix) payload[9 + j * 2];
+                            FloatDurationMatrix time = (FloatDurationMatrix) payload[10 + j * 2];
+                            System.out.println("Lane " + lanes[j] + ": distance=" + distance.rows() + "x" + distance.cols()
+                                    + ", time=" + time.rows() + "x" + time.cols());
+                        }
+                    }
                 }
 
                 if (i == 1201)

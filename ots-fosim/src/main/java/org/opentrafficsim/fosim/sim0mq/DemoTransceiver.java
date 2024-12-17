@@ -61,27 +61,27 @@ public abstract class DemoTransceiver extends OtsTransceiver
             throws SimRuntimeException, NamingException, RemoteException, DsolException, OtsDrawingException
     {
         Duration simulationTime = Duration.instantiateSI(3600.0);
-        if (!this.showGUI)
+        if (!isShowGui())
         {
-            this.simulator = new OtsSimulatorStep("Ots-Fosim");
-            final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
-            this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
-            this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
-                    "Exception while setting up simulation.");
-            fosimModel.setNetwork(this.network);
+            setSimulator(new OtsSimulatorStep("Ots-Fosim"));
+            final FosimModel fosimModel = new FosimModel(getSimulator(), 1L);
+            getSimulator().initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
+            setNetwork(Try.assign(() -> this.setupSimulation(getSimulator()), RuntimeException.class,
+                    "Exception while setting up simulation."));
+            fosimModel.setNetwork(getNetwork());
         }
         else
         {
             OtsAnimatorStep animator = new OtsAnimatorStep("Ots-Fosim");
-            this.simulator = animator;
-            final FosimModel fosimModel = new FosimModel(this.simulator, 1L);
-            this.simulator.initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
-            this.network = Try.assign(() -> this.setupSimulation(this.simulator), RuntimeException.class,
-                    "Exception while setting up simulation.");
-            fosimModel.setNetwork(this.network);
+            setSimulator(animator);
+            final FosimModel fosimModel = new FosimModel(getSimulator(), 1L);
+            getSimulator().initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel);
+            setNetwork(Try.assign(() -> this.setupSimulation(getSimulator()), RuntimeException.class,
+                    "Exception while setting up simulation."));
+            fosimModel.setNetwork(getNetwork());
             GtuColorer colorer = OtsSwingApplication.DEFAULT_COLORER;
             OtsAnimationPanel animationPanel = new OtsAnimationPanel(fosimModel.getNetwork().getExtent(),
-                    new Dimension(800, 600), (OtsAnimator) this.simulator, fosimModel, colorer, fosimModel.getNetwork());
+                    new Dimension(800, 600), (OtsAnimator) getSimulator(), fosimModel, colorer, fosimModel.getNetwork());
             new OtsSimulationApplication<FosimModel>(fosimModel, animationPanel);
             animator.setSpeedFactor(Double.MAX_VALUE, false);
             // animationPanel.enableSimulationControlButtons();

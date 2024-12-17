@@ -65,6 +65,7 @@ import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.core.parameters.ParameterFactory;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
+import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
 import org.opentrafficsim.draw.OtsDrawingException;
 import org.opentrafficsim.fosim.FosDetector;
@@ -711,6 +712,9 @@ public class FosParser
             this.model.setNetwork(this.network);
 
             this.simulator.initialize(Time.ZERO, Duration.ZERO, this.timeStep.times(this.maximumSimulationTime), this.model);
+            // TODO replace this to constructor of replication (OTS issue #184)
+            this.simulator.getReplication().setHistoryManager(
+                    new HistoryManagerDevs(this.simulator, Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
 
             // map out network
             for (int sectionIndex = 0; sectionIndex < this.sections.size(); sectionIndex++)
@@ -1422,6 +1426,26 @@ public class FosParser
 
         // templates and parameters
         ParameterFactoryByType parameterFactory = new ParameterFactoryByType();
+
+        // TODO: temporary boost in efficiency
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
+        {
+            GtuType gtuType = this.gtuTypes.get(vehicleTypeNumber);
+            if (this.isTruck.get(vehicleTypeNumber))
+            {
+                parameterFactory.addParameter(gtuType, ParameterTypes.A, Acceleration.instantiateSI(1.0));
+            }
+            else
+            {
+                parameterFactory.addParameter(gtuType, ParameterTypes.A, Acceleration.instantiateSI(2.0));
+                parameterFactory.addParameter(LmrsParameters.VGAIN, new Speed(15.0, SpeedUnit.KM_PER_HOUR));
+            }
+        }
+        parameterFactory.addParameter(ParameterTypes.TMIN, Duration.instantiateSI(0.3));
+        parameterFactory.addParameter(ParameterTypes.TMAX, Duration.instantiateSI(1.0));
+        ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         this.parameterSupplier.setAllInParameterFactory(this.gtuTypes, parameterFactory);
         Map<GtuType, GtuTemplate> templates = new LinkedHashMap<>();
         if (this.otsParameters == null)
@@ -1524,7 +1548,7 @@ public class FosParser
                         if (parameterData.id.equals("courtesy"))
                         {
                             // courtesy = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value() > 0.0;
-                            courtesy = parameterData.value.get(vehicleTypeNumber)> 0.0;
+                            courtesy = parameterData.value.get(vehicleTypeNumber) > 0.0;
                         }
                     }
                 }
@@ -1621,9 +1645,8 @@ public class FosParser
         accelerationIncentives.add(new AccelerationTrafficLights());
 
         // create the factories
-        LmrsFactory lmrsFactory =
-                new LmrsFactory(cfModelFactory, perceptionFactory, Synchronization.PASSIVE, Cooperation.PASSIVE,
-                        GapAcceptance.INFORMED, tailgating, mandatoryIncentives, voluntaryIncentives, accelerationIncentives);
+        LmrsFactory lmrsFactory = new LmrsFactory(cfModelFactory, perceptionFactory, ALIGN_GAP, Cooperation.PASSIVE,
+                GapAcceptance.INFORMED, tailgating, mandatoryIncentives, voluntaryIncentives, accelerationIncentives);
         return new LaneBasedStrategicalRoutePlannerFactory(lmrsFactory, parameterFactory);
     }
 
@@ -1955,8 +1978,6 @@ public class FosParser
                 final LaneChange laneChange, final LateralDirectionality initiatedLaneChange)
                 throws ParameterException, OperationalPlanException
         {
-            Break.on(perception, "320", 5 * 60 + 15, true);
-
             Acceleration a = Acceleration.POSITIVE_INFINITY;
             EgoPerception<?, ?> ego = perception.getPerceptionCategory(EgoPerception.class);
             Speed ownSpeed = ego.getSpeed();
