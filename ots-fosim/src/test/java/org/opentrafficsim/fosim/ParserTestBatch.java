@@ -20,6 +20,7 @@ import org.opentrafficsim.core.dsol.AbstractOtsModel;
 import org.opentrafficsim.core.dsol.OtsSimulator;
 import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
+import org.opentrafficsim.core.perception.HistoryManagerDevs;
 import org.opentrafficsim.fosim.parameters.ParametersJsonTest;
 import org.opentrafficsim.fosim.parser.FosParser;
 import org.opentrafficsim.fosim.parser.ParserSetting;
@@ -96,7 +97,7 @@ public class ParserTestBatch
                 {
                     //
                 }
-            });
+            }, HistoryManagerDevs.noHistory(simulator));
             Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();
             parserSettings.put(ParserSetting.STRIPED_AREAS, false);
             parserSettings.put(ParserSetting.GUI, MANUAL);

@@ -6,11 +6,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.djunits.unit.SpeedUnit;
+import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vfloat.matrix.FloatDurationMatrix;
 import org.djunits.value.vfloat.matrix.FloatLengthMatrix;
+import org.djunits.value.vfloat.vector.FloatDurationVector;
+import org.djunits.value.vfloat.vector.FloatLengthVector;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
@@ -58,6 +61,9 @@ public class FosimEmulator
 
     /** Batch test (or normal). */
     private static final boolean BATCH = false;
+
+    /** Configuration file. */
+    private static final String CONFIGURATION = "Config 2.fos";
 
     /**
      * Main method.
@@ -108,8 +114,8 @@ public class FosimEmulator
                 throw new RuntimeException("Did not receive a PARAMETERS_REPLY on a PARAMETERS message.");
             }
 
-            String fosString =
-                    new String(FosimEmulator.class.getResourceAsStream("/Config 2.fos").readAllBytes(), StandardCharsets.UTF_8);
+            String fosString = new String(FosimEmulator.class.getResourceAsStream("/" + CONFIGURATION).readAllBytes(),
+                    StandardCharsets.UTF_8);
             encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "SETUP", messageId++,
                     new Object[] {fosString});
             requester.send(encodedMessage, 0);
@@ -172,7 +178,7 @@ public class FosimEmulator
 
             long step = (long) (500 / SPEED);
             long t0 = -1;
-            for (int i = 0; i < 7200; i++)
+            for (int i = 0; i < 3600 * 4; i++)
             {
                 if (t0 > 0)
                 {
@@ -217,7 +223,7 @@ public class FosimEmulator
 
                 reply = requester.recv(0);
                 message = Sim0MQMessage.decode(reply);
-                if ("VEHICLE_REPLY".equals(message.getMessageTypeId()))
+                if ("VEHICLES_REPLY".equals(message.getMessageTypeId()))
                 {
                     // System.out.println("VEHICLE_REPLY received");
                     // Object[] payload = message.createObjectArray();
@@ -228,7 +234,7 @@ public class FosimEmulator
                 {
                     encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "CONTOUR", messageId++,
                             new Object[] {Duration.ZERO, Duration.instantiateSI(60.0), Duration.instantiateSI(300.0),
-                                    Length.ZERO, Length.instantiateSI(100.0), Length.instantiateSI(3000.0)});
+                                    Length.ZERO, Length.instantiateSI(100.0), Length.instantiateSI(3500.0)});
                     long t = System.currentTimeMillis();
                     requester.send(encodedMessage, 0);
                     reply = requester.recv(0);
@@ -246,6 +252,29 @@ public class FosimEmulator
                             FloatDurationMatrix time = (FloatDurationMatrix) payload[10 + j * 2];
                             System.out.println("Lane " + lanes[j] + ": distance=" + distance.rows() + "x" + distance.cols()
                                     + ", time=" + time.rows() + "x" + time.cols());
+                        }
+                    }
+
+                    encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TRAJECTORIES", messageId++,
+                            new Object[] {Duration.ZERO, Duration.instantiateSI(541.0), Length.ZERO,
+                                    Length.instantiateSI(3500.0), 20});
+                    t = System.currentTimeMillis();
+                    requester.send(encodedMessage, 0);
+                    reply = requester.recv(0);
+                    message = Sim0MQMessage.decode(reply);
+                    t = System.currentTimeMillis() - t;
+                    if ("TRAJECTORIES_REPLY".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        int n = (int) payload[8];
+                        System.out.println("Received data for " + n + " GTUs in " + t + "ms");
+                        for (int j = 0; j < n; j++)
+                        {
+                            FloatDurationVector distance = (FloatDurationVector) payload[9 + j * 3];
+                            FloatLengthVector time = (FloatLengthVector) payload[10 + j * 3];
+                            Integer[] lane = (Integer[]) payload[11 + j * 3];
+                            System.out.println("GTU " + j + ": distance=" + distance.size() + ", time=" + time.size()
+                                    + ", lane=" + lane.length);
                         }
                     }
                 }

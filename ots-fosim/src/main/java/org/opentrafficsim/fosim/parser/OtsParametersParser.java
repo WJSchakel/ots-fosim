@@ -34,8 +34,6 @@ import org.opentrafficsim.fosim.parameters.data.DistributionData;
 import org.opentrafficsim.fosim.parameters.data.ParameterData;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
-import org.opentrafficsim.fosim.parameters.data.ScalarData;
-import org.opentrafficsim.fosim.parameters.data.ValueData;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
@@ -125,13 +123,12 @@ public class OtsParametersParser
         // Generator<Speed> speed =
         // (valueMaxV instanceof ScalarData) ? () -> new Speed(((ScalarData) valueMaxV).value(), SpeedUnit.KM_PER_HOUR)
         // : getDistribution((DistributionData) valueMaxV, stream, Speed.class, SpeedUnit.KM_PER_HOUR);
-        Generator<Length> length = () -> Length
-                .instantiateSI(getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "l").value.get(vehicleTypeNumber));
-        Generator<Length> width = () -> Length
-                .instantiateSI(getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "w").value.get(vehicleTypeNumber));
-        Generator<Speed> speed =
-                () -> new Speed(getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "vMax").value.get(vehicleTypeNumber),
-                        SpeedUnit.KM_PER_HOUR);
+        double l = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "l").value.get(vehicleTypeNumber);
+        Generator<Length> length = () -> Length.instantiateSI(l);
+        double w = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "w").value.get(vehicleTypeNumber);
+        Generator<Length> width = () -> Length.instantiateSI(w);
+        double v = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "vMax").value.get(vehicleTypeNumber);
+        Generator<Speed> speed = () -> new Speed(v, SpeedUnit.KM_PER_HOUR);
 
         templates.put(gtuType, new GtuTemplate(gtuType, length, width, speed));
 
@@ -142,11 +139,11 @@ public class OtsParametersParser
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
             {
-                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state.isActive())
+                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state != null && group.state.isActive())
                 {
                     social = true;
                 }
-                if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state.isActive())
+                if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state != null && group.state.isActive())
                 {
                     perception = true;
                 }

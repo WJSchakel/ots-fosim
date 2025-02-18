@@ -97,6 +97,9 @@ public class StopCriterion
      */
     public BatchStatus canStop()
     {
+        
+        // TODO: consider cross-section, rather than individual detectors
+        
         if (this.detectors.isEmpty())
         {
             return BatchStatus.STOPPED; // there are no detectors...
@@ -126,6 +129,7 @@ public class StopCriterion
                 }
                 if (this.stopType.equals(DetectionType.FOSIM))
                 {
+                    System.out.println("First trigger in period " + period);
                     // need one more period to calculate capacity
                     this.initialTriggerPeriod = period;
                 }

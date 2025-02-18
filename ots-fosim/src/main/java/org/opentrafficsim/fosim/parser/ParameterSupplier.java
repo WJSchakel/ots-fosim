@@ -7,11 +7,9 @@ import java.util.Map.Entry;
 
 import org.djunits.unit.Unit;
 import org.djunits.value.vdouble.scalar.base.DoubleScalarRel;
-import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterType;
 import org.opentrafficsim.base.parameters.ParameterTypeNumeric;
 import org.opentrafficsim.core.distributions.Generator;
-import org.opentrafficsim.core.distributions.ProbabilityException;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistDoubleScalar;
@@ -193,7 +191,7 @@ public class ParameterSupplier
 
         /** {@inheritDoc} */
         @Override
-        public T draw() throws ProbabilityException, ParameterException
+        public T draw()
         {
             return this.value;
         }
@@ -242,7 +240,7 @@ public class ParameterSupplier
 
         /** {@inheritDoc} */
         @Override
-        public T draw() throws ProbabilityException, ParameterException
+        public T draw()
         {
             return this.distribution.draw();
         }
@@ -290,7 +288,7 @@ public class ParameterSupplier
 
         /** {@inheritDoc} */
         @Override
-        public Double draw() throws ProbabilityException, ParameterException
+        public Double draw()
         {
             return this.distribution.draw();
         }
@@ -336,7 +334,7 @@ public class ParameterSupplier
 
         /** {@inheritDoc} */
         @Override
-        public Integer draw() throws ProbabilityException, ParameterException
+        public Integer draw()
         {
             return (int) this.distribution.draw();
         }

@@ -24,8 +24,7 @@ import org.opentrafficsim.road.network.LaneChangeInfo;
  * Equal to IncentiveRoute, but adds 100m of full lane change desire. This is because in the original LMRS vehicles could be
  * deleted. This cannot happen in OTS which cause vehicles to stop instead, especially at splits.
  * <p>
- * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
- * <br>
+ * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
  * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
@@ -50,12 +49,12 @@ public class FosIncentiveRoute implements MandatoryIncentive
 
         // desire to leave current lane
         SortedSet<LaneChangeInfo> currentInfo = infra.getLegalLaneChangeInfo(RelativeLane.CURRENT);
-        Length currentFirst = currentInfo.isEmpty() || currentInfo.first().numberOfLaneChanges() == 0
-                ? Length.POSITIVE_INFINITY : currentInfo.first().remainingDistance();
+        Length currentFirst = currentInfo.isEmpty() || currentInfo.first().numberOfLaneChanges() == 0 ? Length.POSITIVE_INFINITY
+                : currentInfo.first().remainingDistance();
         double dCurr = getDesireToLeave(parameters, infra, RelativeLane.CURRENT, speed);
         double dLeft = 0;
-        if (perception.getLaneStructure().exists(RelativeLane.LEFT) && infra
-                .getLegalLaneChangePossibility(RelativeLane.CURRENT, LateralDirectionality.LEFT).neg().lt(currentFirst))
+        if (perception.getLaneStructure().exists(RelativeLane.LEFT)
+                && infra.getLegalLaneChangePossibility(RelativeLane.CURRENT, LateralDirectionality.LEFT).neg().lt(currentFirst))
         {
             // desire to leave left lane
             dLeft = getDesireToLeave(parameters, infra, RelativeLane.LEFT, speed);

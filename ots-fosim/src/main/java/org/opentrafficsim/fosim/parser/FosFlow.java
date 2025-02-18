@@ -35,11 +35,13 @@ class FosFlow
     public FosFlow(final String string)
     {
         String[] fields = FosParser.splitStringByBlank(string, 0);
+        Frequency lastFrequency = null;
         for (String subString : fields)
         {
             String[] valueStrings = FosParser.splitAndTrimString(subString, "\\|"); // pipe is a meta character in regex
             this.time.add(Time.instantiateSI(Double.parseDouble(valueStrings[0])));
-            this.flow.add(new Frequency(Double.parseDouble(valueStrings[1]), FrequencyUnit.PER_HOUR));
+            lastFrequency = new Frequency(Double.parseDouble(valueStrings[1]), FrequencyUnit.PER_HOUR);
+            this.flow.add(lastFrequency);
         }
     }
 
@@ -56,8 +58,7 @@ class FosFlow
      */
     public TimeVector getTimeVector()
     {
-        return new TimeVector(
-                DoubleVectorData.instantiate(this.time.toArray(new Time[this.time.size()]), StorageType.DENSE),
+        return new TimeVector(DoubleVectorData.instantiate(this.time.toArray(new Time[this.time.size()]), StorageType.DENSE),
                 TimeUnit.BASE_SECOND);
     }
 
@@ -70,5 +71,19 @@ class FosFlow
         return new FrequencyVector(
                 DoubleVectorData.instantiate(this.flow.toArray(new Frequency[this.flow.size()]), StorageType.DENSE),
                 FrequencyUnit.PER_SECOND);
+    }
+
+    /**
+     * Sets the end time. This makes sure that the last flow value is constantly maintained towards the end of simulation, as is
+     * applicable in FOSIM.
+     * @param endTime end time
+     */
+    public void setEndTime(final Time endTime)
+    {
+        if (this.time.get(this.time.size() - 1).lt(endTime))
+        {
+            this.time.add(endTime);
+            this.flow.add(this.flow.get(this.flow.size() - 1));
+        }
     }
 }

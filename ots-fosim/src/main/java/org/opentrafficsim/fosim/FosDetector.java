@@ -8,12 +8,13 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Throw;
+import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.gtu.RelativePosition;
 import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.object.LaneBasedObject;
 import org.opentrafficsim.road.network.lane.object.detector.LaneDetector;
 
 /**
@@ -73,7 +74,8 @@ public class FosDetector extends LaneDetector
             final OtsSimulatorInterface simulator, final Map<String, Time> prevTime, final Map<String, Time> thisTime,
             final Time firstAggregation, final Duration aggregationTime) throws NetworkException
     {
-        super(id, lane, longitudinalPosition, RelativePosition.FRONT, simulator, DefaultsRoadNl.LOOP_DETECTOR);
+        super(id, lane, longitudinalPosition, RelativePosition.FRONT, LaneBasedObject.makeLine(lane, longitudinalPosition, 1.0),
+                DefaultsNl.LOOP_DETECTOR);
         this.prevTime = prevTime;
         this.thisTime = thisTime;
         this.firstAggregation = firstAggregation;
@@ -100,7 +102,8 @@ public class FosDetector extends LaneDetector
     protected void triggerResponse(final LaneBasedGtu gtu)
     {
         this.count.set(this.index, this.count.get(this.index) + 1);
-        this.sumReciprocalSpeed.set(this.index, this.sumReciprocalSpeed.get(this.index) + (1.0 / Math.max(gtu.getSpeed().si, 0.05)));
+        this.sumReciprocalSpeed.set(this.index,
+                this.sumReciprocalSpeed.get(this.index) + (1.0 / Math.max(gtu.getSpeed().si, 0.05)));
         Time now = getSimulator().getSimulatorAbsTime();
         Time prev = this.prevTime.remove(gtu.getId());
         if (prev != null)
@@ -154,7 +157,7 @@ public class FosDetector extends LaneDetector
         checkPeriod(period);
         return this.sumTravelTime.get(period);
     }
-    
+
     /**
      * Returns the current period index.
      * @return current period index.

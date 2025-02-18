@@ -3,7 +3,7 @@ package org.opentrafficsim.fosim.parser;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
 import org.djutils.exceptions.Throw;
-import org.opentrafficsim.road.network.lane.Lane;
+import org.opentrafficsim.road.network.lane.CrossSectionElement;
 
 /**
  * Parsed lane info. The interpretation if this has been reverse-engineered by setting various properties in a .fos file.
@@ -42,8 +42,8 @@ public class FosLane
     public final String taper;
 
     /**
-     * Lane number out; for diagonal sections. For both a merge taper and its adjacent lane, this is the same lane as the
-     * merge taper. For diverge tapers, these values are not affected.
+     * Lane number out; for diagonal sections. For both a merge taper and its adjacent lane, this is the same lane as the merge
+     * taper. For diverge tapers, these values are not affected.
      */
     public final int laneOut;
 
@@ -70,9 +70,9 @@ public class FosLane
 
     /** Trajectory control. */
     public final boolean trajectoryControl;
-    
+
     /** Lane object created. */
-    private Lane lane;
+    private CrossSectionElement lane;
 
     /**
      * Switched lane.
@@ -138,7 +138,7 @@ public class FosLane
     {
         return (this.type.equals("L") && !stripedAreas) || (this.type.equals("R") && !stripedAreas) || this.type.equals("X");
     }
-    
+
     /**
      * Whether this lane is switched (rush-hour lane or plus lane).
      * @return whether this lane is switched (rush-hour lane or plus lane).
@@ -157,12 +157,12 @@ public class FosLane
         Throw.when(!isSwitched(), RuntimeException.class, "Requesting switch times of lane that is not switched.");
         return Math.abs(this.switchedLane);
     }
-    
+
     /**
      * Get the lane.
      * @return lane.
      */
-    public Lane getLane()
+    public CrossSectionElement getLane()
     {
         return this.lane;
     }
@@ -171,7 +171,7 @@ public class FosLane
      * Set the lane.
      * @param lane lane.
      */
-    public void setLane(final Lane lane)
+    public void setLane(final CrossSectionElement lane)
     {
         this.lane = lane;
     }
