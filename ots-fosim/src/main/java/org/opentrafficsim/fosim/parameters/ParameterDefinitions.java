@@ -200,21 +200,22 @@ public class ParameterDefinitions
                 .setDefault(1.0, 1.0).setDescriptionNl("Taak capaciteit.").setDescriptionEn("Task capacity."));
         group.addParameter(new Parameter("TScrit", it("TS_crit"), "-")// .setMin(0.0).setMax("TSmax")
                 .setDefault(0.8, 0.8)
-                .setDescriptionNl("Kritische taak saturatie, waarboven <i>SA</i> afneemt en <i>T<sub>r</sub></i> toeneemt.")
+                .setDescriptionNl(
+                        "Kritische taak saturatie, waarboven situationele aandacht afneemt en de reactietijd toeneemt.")
                 .setDescriptionEn(
-                        "Critical task saturation, above which <i>SA</i> reduces and <i>T<sub>r</sub></i> increases."));
+                        "Critical task saturation, above which situational awareness reduces and reaction time increases."));
         group.addParameter(new Parameter("TSmax", it("TS_max"), "-")// .setMin("TScrit").setMax(3.0)
-                .setDefault(2.0, 2.0).setDescriptionNl("Maximale taak saturatie <i>TS</i>.")
-                .setDescriptionEn("Maximum task saturation <i>TS</i>."));
+                .setDefault(2.0, 2.0).setDescriptionNl("Maximale taak saturatie.")
+                .setDescriptionEn("Maximum task saturation."));
         group.addParameter(new Parameter("SAmin", it("SA_min"), "-")// .setMin(0).setMax("SAmax")
-                .setDefault(0.5, 0.5).setDescriptionNl("Minimale situationele aandacht <i>SA</i>.")
-                .setDescriptionEn("Minimum situational awareness <i>SA</i>."));
+                .setDefault(0.5, 0.5).setDescriptionNl("Minimale situationele aandacht.")
+                .setDescriptionEn("Minimum situational awareness."));
         group.addParameter(new Parameter("SAmax", it("SA_max"), "-")// .setMin("SAmin").setMax(1.0)
-                .setDefault(1.0, 1.0).setDescriptionNl("Maximale situationele aandacht <i>SA</i>.")
-                .setDescriptionEn("Maximum situational awareness <i>SA</i>."));
+                .setDefault(1.0, 1.0).setDescriptionNl("Maximale situationele aandacht.")
+                .setDescriptionEn("Maximum situational awareness."));
         group.addParameter(new Parameter("Trmax", it("T_r,max"), "s")// .setMin(0.0).setMax(3.0)
-                .setDefault(2.0, 2.0).setDescriptionNl("Maximale reactietijd <i>T<sub>r</sub></i>.")
-                .setDescriptionEn("Maximum reaction time <i>T<sub>r</sub></i>."));
+                .setDefault(2.0, 2.0).setDescriptionNl("Maximale reactietijd.")
+                .setDescriptionEn("Maximum reaction time."));
         group.addParameter(new Parameter("hexp", it("h_exp"), "s")// .setMin(1.0).setMax(10.0)
                 .setDefault(4.0, 4.0).setDescriptionNl("Helling van afname volg-taak last bij toenemen volgtijd.")
                 .setDescriptionEn("Slope of reduction of car-following task demand as headway increases."));

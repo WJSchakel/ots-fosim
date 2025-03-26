@@ -349,8 +349,8 @@
         },
         {
           "id": "TScrit",
-          "descriptionNl": "Kritische taak saturatie, waarboven <i>SA</i> afneemt en <i>T<sub>r</sub></i> toeneemt.",
-          "descriptionEn": "Critical task saturation, above which <i>SA</i> reduces and <i>T<sub>r</sub></i> increases.",
+          "descriptionNl": "Kritische taak saturatie, waarboven situationele aandacht afneemt en de reactietijd toeneemt.",
+          "descriptionEn": "Critical task saturation, above which situational awareness reduces and reaction time increases.",
           "unit": "-",
           "defaultValue": [
             0.8,
@@ -361,8 +361,8 @@
         },
         {
           "id": "TSmax",
-          "descriptionNl": "Maximale taak saturatie <i>TS</i>.",
-          "descriptionEn": "Maximum task saturation <i>TS</i>.",
+          "descriptionNl": "Maximale taak saturatie.",
+          "descriptionEn": "Maximum task saturation.",
           "unit": "-",
           "defaultValue": [
             2.0,
@@ -373,8 +373,8 @@
         },
         {
           "id": "SAmin",
-          "descriptionNl": "Minimale situationele aandacht <i>SA</i>.",
-          "descriptionEn": "Minimum situational awareness <i>SA</i>.",
+          "descriptionNl": "Minimale situationele aandacht.",
+          "descriptionEn": "Minimum situational awareness.",
           "unit": "-",
           "defaultValue": [
             0.5,
@@ -385,8 +385,8 @@
         },
         {
           "id": "SAmax",
-          "descriptionNl": "Maximale situationele aandacht <i>SA</i>.",
-          "descriptionEn": "Maximum situational awareness <i>SA</i>.",
+          "descriptionNl": "Maximale situationele aandacht.",
+          "descriptionEn": "Maximum situational awareness.",
           "unit": "-",
           "defaultValue": [
             1.0,
@@ -397,8 +397,8 @@
         },
         {
           "id": "Trmax",
-          "descriptionNl": "Maximale reactietijd <i>T<sub>r</sub></i>.",
-          "descriptionEn": "Maximum reaction time <i>T<sub>r</sub></i>.",
+          "descriptionNl": "Maximale reactietijd.",
+          "descriptionEn": "Maximum reaction time.",
           "unit": "s",
           "defaultValue": [
             2.0,
