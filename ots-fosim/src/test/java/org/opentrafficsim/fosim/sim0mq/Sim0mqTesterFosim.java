@@ -11,9 +11,20 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+/**
+ * Simple sim0mq tester representing FOSIM.
+ * @author wjschakel
+ */
 public class Sim0mqTesterFosim
 {
 
+    /**
+     * Main method.
+     * @param args arguments
+     * @throws Sim0MQException exception
+     * @throws SerializationException exception
+     * @throws InterruptedException exception
+     */
     public static void main(final String... args) throws Sim0MQException, SerializationException, InterruptedException
     {
         ZContext context = new ZContext(1);

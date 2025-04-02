@@ -6,6 +6,7 @@ import java.lang.reflect.Field;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,7 @@ import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.geometry.FractionalLengthData;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
+import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.LateralDirectionality;
 import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
@@ -59,6 +61,11 @@ import org.opentrafficsim.fosim.parser.FosParser;
 import org.opentrafficsim.fosim.parser.ParserSetting;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.BatchStatus;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.DetectionType;
+import org.opentrafficsim.fosim.sim0mq.trace.AccelerationChangeListener;
+import org.opentrafficsim.fosim.sim0mq.trace.LaneChangeListener;
+import org.opentrafficsim.fosim.sim0mq.trace.OdTravelTimeListener;
+import org.opentrafficsim.fosim.sim0mq.trace.Trace;
+import org.opentrafficsim.fosim.sim0mq.trace.TraceData;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorInterfaceStep;
 import org.opentrafficsim.kpi.interfaces.LaneData;
 import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
@@ -141,11 +148,8 @@ public class OtsTransceiver
     /** The network. */
     private RoadNetwork network;
 
-    /** Map of lane change start times per GTU. */
-    private Map<String, VirtualLaneChange> laneChanges = new LinkedHashMap<>();
-
     /** Duration of virtual lane change. */
-    public Duration virtualLcDuration = Duration.instantiateSI(3.0);
+    private final static Duration VIRTUAL_LC_DURATION = Duration.instantiateSI(3.0);
 
     /**
      * Constructor.
@@ -229,8 +233,11 @@ public class OtsTransceiver
      * </p>
      * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
      */
-    protected class Worker extends Thread
+    protected class Worker extends Thread implements EventListener
     {
+
+        /** */
+        private static final long serialVersionUID = 20250320L;
 
         /** */
         private ZContext context;
@@ -249,6 +256,9 @@ public class OtsTransceiver
 
         /** Duration of detector periods after first. */
         private Duration nextPeriods;
+
+        /** GTU types from parser. */
+        private List<GtuType> gtuTypes;
 
         /** Detectors. */
         protected Map<String, FosDetector> detectors = new LinkedHashMap<>();
@@ -273,6 +283,18 @@ public class OtsTransceiver
 
         /** Minute when time was shown. */
         private int shownMinute = -1;
+
+        /** Map of lane change start times per GTU. */
+        private Map<String, VirtualLaneChange> laneChanges = new LinkedHashMap<>();
+
+        /** Trace files activated, with optional data storage. */
+        private Map<Trace, TraceData> traceFiles = new EnumMap<>(Trace.class);
+
+        /** Step in vehicle trace file. */
+        private Duration vehiclesTraceStep = Duration.instantiateSI(0.5);
+
+        /** OD node name mappings (OTS names are the keys, Fosim names the fields). */
+        private Map<String, Integer> odNames;
 
         /**
          * Constructor.
@@ -346,6 +368,20 @@ public class OtsTransceiver
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "BATCH_STEP_REPLY", this.messageId++, new Object[] {triggered.name()}), 0);
                     }
+                    else if ("TRAJECTORIES".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = getTrajectoriesPayload(message);
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "TRAJECTORIES_REPLY", this.messageId++, payload), 0);
+                    }
+                    else if ("CONTOUR".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = getSpeedContourPayload(message);
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "CONTOUR_REPLY", this.messageId++, payload), 0);
+                    }
                     else if ("DISTRIBUTIONS".equals(message.getMessageTypeId()))
                     {
                         String distributions = asJsonString(new DistributionDefinitions(OtsTransceiver.VERSION));
@@ -363,23 +399,52 @@ public class OtsTransceiver
                     else if ("SETUP".equals(message.getMessageTypeId()))
                     {
                         String exceptionMessage = setup(message);
+                        if (!exceptionMessage.isEmpty())
+                        {
+                            setupTraceData();
+                        }
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "SETUP_REPLY", this.messageId++, exceptionMessage), 0);
                     }
-                    else if ("TRAJECTORIES".equals(message.getMessageTypeId()))
+                    else if ("TRACE_FILES".equals(message.getMessageTypeId()))
                     {
-                        Object[] payload = getTrajectoriesPayload(message);
+                        Object[] payload = getTraceFilesPayload();
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "TRAJECTORIES_REPLY", this.messageId++, payload), 0);
+                                "TRACE_FILES_REPLY", this.messageId++, payload), 0);
                     }
-                    else if ("CONTOUR".equals(message.getMessageTypeId()))
+                    else if ("TRACE_ACTIVE".equals(message.getMessageTypeId()))
                     {
-                        Object[] payload = getSpeedContourPayload(message);
+                        Object[] payload = message.createObjectArray();
+                        Trace trace = Trace.byId((String) payload[8]);
+                        boolean enable = (Boolean) payload[9];
+                        if (enable)
+                        {
+                            this.traceFiles.put(trace, new TraceData(trace.getInfo().header().length));
+                        }
+                        else
+                        {
+                            this.traceFiles.remove(trace);
+                        }
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "CONTOUR_REPLY", this.messageId++, payload), 0);
+                                "TRACE_ACTIVE_REPLY", this.messageId++, new Object[0]), 0);
+                    }
+                    else if ("TRACE_VEHICLES_STEP".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = message.createObjectArray();
+                        this.vehiclesTraceStep = (Duration) payload[8];
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "TRACE_VEHICLES_STEP_REPLY", this.messageId++, new Object[0]), 0);
+                    }
+                    else if ("TRACE_GET".equals(message.getMessageTypeId()))
+                    {
+                        Object[] payload = getTracePayload((String) message.createObjectArray()[8]);
+                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                                "TRACE_GET_REPLY", this.messageId++, payload), 0);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {
@@ -415,6 +480,133 @@ public class OtsTransceiver
         }
 
         /**
+         * Setups up all the trace file data recording.
+         */
+        private void setupTraceData()
+        {
+            this.traceFiles.values().forEach((td) -> td.clear());
+            if (this.traceFiles.containsKey(Trace.ACCELERATION_CHANGE))
+            {
+                new AccelerationChangeListener(OtsTransceiver.this.network, this.gtuTypes,
+                        this.traceFiles.get(Trace.ACCELERATION_CHANGE));
+            }
+            if (this.traceFiles.containsKey(Trace.LANE_CHANGE))
+            {
+                new LaneChangeListener(OtsTransceiver.this.network, this.gtuTypes, this.traceFiles.get(Trace.LANE_CHANGE));
+            }
+            if (this.traceFiles.containsKey(Trace.OD_TRAVEL_TIME))
+            {
+                new OdTravelTimeListener(OtsTransceiver.this.network, this.gtuTypes, this.odNames,
+                        this.traceFiles.get(Trace.OD_TRAVEL_TIME));
+            }
+            // Detection, TravelTime and Vehicles are based on detectors and the sampler
+        }
+
+        /**
+         * Returns the payload of a trace file.
+         * @param traceId id of the trace file
+         * @return
+         */
+        private Object[] getTracePayload(final String traceId)
+        {
+            switch (traceId)
+            {
+                case Trace.Info.ACCELERATION_CHANGE_ID:
+                {
+                    TraceData data = this.traceFiles.get(Trace.ACCELERATION_CHANGE);
+                    Object[] payload = new Object[9];
+                    int index = 0;
+                    payload[index] = data.asDuration(index++); // t
+                    payload[index] = data.asInteger(index++); // fromln
+                    payload[index] = data.asInteger(index++); // tolane
+                    payload[index] = data.asAcceleration(index++); // from a
+                    payload[index] = data.asAcceleration(index++); // to a
+                    payload[index] = data.asLength(index++); // pos
+                    payload[index] = data.asSpeed(index++); // v
+                    payload[index] = data.asInteger(index++); // type
+                    payload[index] = data.asInteger(index++); // id
+                    data.clear();
+                    return payload;
+                }
+                case Trace.Info.DETECTION_ID:
+                {
+                    // pos, lane, t, v, type, id, dest
+                    this.detectors.forEach(null);
+                }
+                case Trace.Info.LANE_CHANGE_ID:
+                {
+                    TraceData data = this.traceFiles.get(Trace.LANE_CHANGE);
+                    Object[] payload = new Object[6];
+                    int index = 0;
+                    payload[index] = data.asDuration(index++); // t
+                    payload[index] = data.asInteger(index++); // fromln
+                    payload[index] = data.asInteger(index++); // tolane
+                    payload[index] = data.asLength(index++); // pos
+                    payload[index] = data.asInteger(index++); // type
+                    payload[index] = data.asInteger(index++); // id
+                    data.clear();
+                    return payload;
+                }
+                case Trace.Info.OD_TRAVEL_TIME_ID:
+                {
+                    TraceData data = this.traceFiles.get(Trace.OD_TRAVEL_TIME);
+                    Object[] payload = new Object[7];
+                    int index = 0;
+                    payload[index] = data.asDuration(index++); // t
+                    payload[index] = data.asInteger(index++); // origin
+                    payload[index] = data.asInteger(index++); // dest
+                    payload[index] = data.asDuration(index++); // tt
+                    payload[index] = data.asSpeed(index++); // v
+                    payload[index] = data.asInteger(index++); // type
+                    payload[index] = data.asInteger(index++); // id
+                    data.clear();
+                    return payload;
+                }
+                case Trace.Info.TRAVEL_TIME_ID:
+                {
+                    // pos, lane, t, dt, v, type, id, dest
+                    // dt = time between detectors
+                    // pos, lane, t = at downstream detector
+                    this.detectors.forEach(null);
+                }
+                case Trace.Info.VEHICLES_ID:
+                {
+                    // t, id, type, origin, dest, lane, pos, v
+                    // Note: need to remember origin and dest per GTU
+                    this.sampler.getSamplerData().forEach(null);
+                }
+                default:
+                {
+                    return new Object[0];
+                }
+            }
+        }
+
+        /**
+         * Returns payload on the information of supported trace files. This is based on the {@code Trace} class.
+         * @return payload on the information of supported trace files
+         */
+        private Object[] getTraceFilesPayload()
+        {
+            Object[] payload = new Object[Trace.values().length * 3];
+            int i = 0;
+            for (Trace trace : Trace.values())
+            {
+                payload[i++] = trace.getInfo().id();
+                payload[i++] = trace.getInfo().menuName();
+                StringBuilder str = new StringBuilder();
+                String sep = "";
+                for (String col : trace.getInfo().header())
+                {
+                    str.append(sep).append(col);
+                    sep = ", ";
+                }
+                payload[i++] = sep.toString();
+            }
+            return payload;
+        }
+
+        /**
          * Obtains vehicle message payload in case of virtual lane changes.
          * @return payload
          * @throws GtuException
@@ -426,16 +618,16 @@ public class OtsTransceiver
             for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
             {
                 String gtuId = gtu.getId();
-                if (OtsTransceiver.this.laneChanges.containsKey(gtuId))
+                if (this.laneChanges.containsKey(gtuId))
                 {
-                    VirtualLaneChange lc = OtsTransceiver.this.laneChanges.get(gtuId);
-                    if (now.si - lc.time.si >= OtsTransceiver.this.virtualLcDuration.si)
+                    VirtualLaneChange lc = this.laneChanges.get(gtuId);
+                    if (now.si - lc.time.si >= VIRTUAL_LC_DURATION.si)
                     {
-                        OtsTransceiver.this.laneChanges.remove(gtuId);
+                        this.laneChanges.remove(gtuId);
                     }
                 }
             }
-            int lcGtus = OtsTransceiver.this.laneChanges.size();
+            int lcGtus = this.laneChanges.size();
             Object[] payload = new Object[1 + 5 * (numGtus - lcGtus) + 7 * lcGtus];
             payload[0] = numGtus;
             int k = 1;
@@ -453,13 +645,13 @@ public class OtsTransceiver
                 payload[k++] = gtu.getAcceleration();
 
                 String gtuId = gtu.getId();
-                if (OtsTransceiver.this.laneChanges.containsKey(gtuId))
+                if (this.laneChanges.containsKey(gtuId))
                 {
-                    VirtualLaneChange lc = OtsTransceiver.this.laneChanges.get(gtuId);
+                    VirtualLaneChange lc = this.laneChanges.get(gtuId);
                     // 1 = for overtaking, 2 = for destination
                     payload[k++] = lc.overtaking ? 1 : 2;
                     payload[k++] = lc.left;
-                    payload[k++] = (now.si - lc.time.si) / OtsTransceiver.this.virtualLcDuration.si;
+                    payload[k++] = (now.si - lc.time.si) / VIRTUAL_LC_DURATION.si;
                 }
                 else
                 {
@@ -583,6 +775,7 @@ public class OtsTransceiver
             String exceptionMessage = "";
             try
             {
+                stopSimulation();
                 this.dummyId = 0;
                 String fosString = (String) message.createObjectArray()[8];
                 Map<ParserSetting, Boolean> settings = new LinkedHashMap<>();
@@ -591,6 +784,7 @@ public class OtsTransceiver
                 settings.put(ParserSetting.INSTANT_LC, OtsTransceiver.this.instantLc);
                 FosParser parser = new FosParser().setSettings(settings);
                 parser.parseFromString(fosString);
+                this.gtuTypes = parser.getGtuTypes();
                 OtsTransceiver.this.network = parser.getNetwork();
                 OtsTransceiver.this.simulator = (OtsSimulatorInterfaceStep) OtsTransceiver.this.network.getSimulator();
                 if (OtsTransceiver.this.showGui)
@@ -608,6 +802,8 @@ public class OtsTransceiver
                 {
                     this.detectors.put(detector.getId(), detector);
                 }
+                this.gtuTypes = parser.getGtuTypes();
+                this.odNames = parser.getOdNameMappings();
                 setupSampler(parser);
                 if (OtsTransceiver.this.instantLc)
                 {
@@ -687,57 +883,55 @@ public class OtsTransceiver
             }
         }
 
+        /**
+         * Listen to lane change events to maintain 3s bookkeeping.
+         */
         private void setupVirtualLaneChanges()
         {
-            EventListener listener = new EventListener()
+            OtsTransceiver.this.network.addListener(this, Network.GTU_ADD_EVENT);
+            OtsTransceiver.this.network.addListener(this, Network.GTU_REMOVE_EVENT);
+        }
+
+        @Override
+        public void notify(final Event event) throws RemoteException
+        {
+            if (event.getType().equals(LaneBasedGtu.LANE_CHANGE_EVENT))
             {
-                /** */
-                private static final long serialVersionUID = 20250114L;
+                Object[] content = (Object[]) event.getContent();
+                String gtuId = (String) content[0];
+                Gtu gtu = OtsTransceiver.this.network.getGTU(gtuId);
+                LateralDirectionality dir = LateralDirectionality.valueOf((String) content[1]);
 
-                @Override
-                public void notify(final Event event) throws RemoteException
+                double totalDesire;
+                try
                 {
-                    if (event.getType().equals(LaneBasedGtu.LANE_CHANGE_EVENT))
-                    {
-                        Object[] content = (Object[]) event.getContent();
-                        String gtuId = (String) content[0];
-                        Gtu gtu = OtsTransceiver.this.network.getGTU(gtuId);
-                        LateralDirectionality dir = LateralDirectionality.valueOf((String) content[1]);
-
-                        double totalDesire;
-                        try
-                        {
-                            totalDesire = dir.isLeft() ? gtu.getParameters().getParameter(LmrsParameters.DLEFT)
-                                    : gtu.getParameters().getParameter(LmrsParameters.DRIGHT);
-                        }
-                        catch (ParameterException ex)
-                        {
-                            totalDesire = 1.0;
-                        }
-                        Lmrs lmrs = (Lmrs) ((LaneBasedGtu) gtu).getTacticalPlanner();
-                        double mandatoryDesire = lmrs.getLatestDesire(FosIncentiveRoute.class).get(dir);
-                        boolean overtaking = mandatoryDesire / totalDesire < 0.5;
-
-                        OtsTransceiver.this.laneChanges.put(gtuId, new VirtualLaneChange(dir.isLeft(),
-                                OtsTransceiver.this.simulator.getSimulatorAbsTime(), overtaking));
-                    }
-                    else if (event.getType().equals(Network.GTU_ADD_EVENT))
-                    {
-                        String id = (String) event.getContent();
-                        Gtu gtu = OtsTransceiver.this.network.getGTU(id);
-                        gtu.addListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
-                    }
-                    else if (event.getType().equals(Network.GTU_REMOVE_EVENT))
-                    {
-                        String id = (String) event.getContent();
-                        Gtu gtu = OtsTransceiver.this.network.getGTU(id);
-                        gtu.removeListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
-                        OtsTransceiver.this.laneChanges.remove(id);
-                    }
+                    totalDesire = dir.isLeft() ? gtu.getParameters().getParameter(LmrsParameters.DLEFT)
+                            : gtu.getParameters().getParameter(LmrsParameters.DRIGHT);
                 }
-            };
-            OtsTransceiver.this.network.addListener(listener, Network.GTU_ADD_EVENT);
-            OtsTransceiver.this.network.addListener(listener, Network.GTU_REMOVE_EVENT);
+                catch (ParameterException ex)
+                {
+                    totalDesire = 1.0;
+                }
+                Lmrs lmrs = (Lmrs) ((LaneBasedGtu) gtu).getTacticalPlanner();
+                double mandatoryDesire = lmrs.getLatestDesire(FosIncentiveRoute.class).get(dir);
+                boolean overtaking = mandatoryDesire / totalDesire < 0.5;
+
+                this.laneChanges.put(gtuId,
+                        new VirtualLaneChange(dir.isLeft(), OtsTransceiver.this.simulator.getSimulatorAbsTime(), overtaking));
+            }
+            else if (event.getType().equals(Network.GTU_ADD_EVENT))
+            {
+                String id = (String) event.getContent();
+                Gtu gtu = OtsTransceiver.this.network.getGTU(id);
+                gtu.addListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
+            }
+            else if (event.getType().equals(Network.GTU_REMOVE_EVENT))
+            {
+                String id = (String) event.getContent();
+                Gtu gtu = OtsTransceiver.this.network.getGTU(id);
+                gtu.removeListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
+                this.laneChanges.remove(id);
+            }
         }
 
         /**
@@ -828,11 +1022,6 @@ public class OtsTransceiver
             int toLane = (int) payload[10];
             int detector = (int) payload[11];
             Speed threshold = (Speed) payload[12];
-            // TODO: remove after bypass: "at any detector" gives detector = 0, should be -1
-            if (detector == 0)
-            {
-                detector = -1;
-            }
             this.stopCriterion =
                     new StopCriterion(OtsTransceiver.this.network, detectionType, fromLane, toLane, detector, threshold);
         }
@@ -1032,6 +1221,7 @@ public class OtsTransceiver
             this.dummyId = 0;
             this.targetLane.clear();
             this.graphPaths = null;
+            this.laneChanges.clear();
         }
 
         /**

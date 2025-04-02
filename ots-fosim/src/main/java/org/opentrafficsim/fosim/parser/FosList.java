@@ -54,6 +54,16 @@ class FosList<T> implements Iterable<T>
     {
         return this.list.get(index);
     }
+    
+    /**
+     * Returns the index of the given value.
+     * @param value value 
+     * @return index of the given value
+     */
+    public int indexOf(final T  value)
+    {
+        return this.list.indexOf(value);
+    }
 
     /** {@inhertitDoc} */
     @Override

@@ -1,6 +1,8 @@
 package org.opentrafficsim.fosim.sim0mq;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.djunits.value.vdouble.scalar.Duration;
@@ -18,7 +20,7 @@ public class StopCriterion
 
     /** Additional time in QDC method. */
     private static final Duration QDC_TIME = Duration.instantiateSI(600.0);
-    
+
     /** Network. */
     private final RoadNetwork network;
 
@@ -29,7 +31,7 @@ public class StopCriterion
     private final Speed threshold;
 
     /** Detectors to check. */
-    private final Set<FosDetector> detectors = new LinkedHashSet<>();
+    private final Map<Integer, Set<FosDetector>> detectors = new LinkedHashMap<>();
 
     /** Previous period index. */
     private int prevPeriod = -1;
@@ -64,7 +66,7 @@ public class StopCriterion
             int lane = Integer.valueOf(crossSeciontAndLane[1]);
             if (fromLane <= lane && lane <= toLane && (detector < 0 || detector == detNum))
             {
-                this.detectors.add(det);
+                this.detectors.computeIfAbsent(detNum, (dn) -> new LinkedHashSet<>()).add(det);
             }
         }
     }
@@ -97,16 +99,13 @@ public class StopCriterion
      */
     public BatchStatus canStop()
     {
-        
-        // TODO: consider cross-section, rather than individual detectors
-        
         if (this.detectors.isEmpty())
         {
             return BatchStatus.STOPPED; // there are no detectors...
         }
 
         // check whether the next period has been reached
-        int period = this.detectors.iterator().next().getCurrentPeriod() - 1;
+        int period = this.detectors.values().iterator().next().iterator().next().getCurrentPeriod() - 1;
         if (period <= this.prevPeriod)
         {
             return BatchStatus.RUNNING;
@@ -119,9 +118,16 @@ public class StopCriterion
             return BatchStatus.TRIGGERED;
         }
 
-        for (FosDetector detector : this.detectors)
+        for (Set<FosDetector> detectorCrossSection : this.detectors.values())
         {
-            if (1.0 / (detector.getSumReciprocalSpeed(period) / detector.getCount(period)) < this.threshold.si)
+            double sumSumReciprocalSpeed = 0;
+            double sumCount = 0;
+            for (FosDetector detector : detectorCrossSection)
+            {
+                sumSumReciprocalSpeed += detector.getSumReciprocalSpeed(period);
+                sumCount += detector.getCount(period);
+            }
+            if (sumCount / sumSumReciprocalSpeed < this.threshold.si)
             {
                 if (this.stopType.equals(DetectionType.PLM))
                 {
@@ -172,7 +178,7 @@ public class StopCriterion
         /** Congestion during at least 1 additional period and additional time. */
         QDC;
     }
-    
+
     /**
      * Return status of batch step message.
      */
@@ -180,10 +186,10 @@ public class StopCriterion
     {
         /** Simulation still running. */
         RUNNING,
-        
+
         /** Stop criterion met. */
         TRIGGERED,
-        
+
         /** E.g. no detectors, end of simulation reached. */
         STOPPED;
     }

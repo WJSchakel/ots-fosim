@@ -13,6 +13,10 @@ import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 
+/**
+ * Simple sim0mq tester representing OTS.
+ * @author wjschakel
+ */
 public class Sim0mqTesterOts
 {
 
@@ -34,6 +38,10 @@ public class Sim0mqTesterOts
         new Worker().start();
     }
 
+    /**
+     * Main method.
+     * @param args arguments
+     */
     public static void main(final String... args)
     {
         new Sim0mqTesterOts();

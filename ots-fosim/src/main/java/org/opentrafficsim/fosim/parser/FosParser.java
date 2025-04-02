@@ -310,6 +310,9 @@ public class FosParser
 
     /** GTU types. */
     private List<GtuType> gtuTypes = new ArrayList<>();
+    
+    /** OD node name mappings (OTS names are the keys, Fosim numbers the fields). */
+    private Map<String, Integer> odNumbers = new LinkedHashMap<>();
 
     /**
      * Sets the settings.
@@ -560,9 +563,7 @@ public class FosParser
             GsonBuilder builder = new GsonBuilder();
             builder.registerTypeAdapter(ValueData.class, new ValueAdapter());
             Gson gson = builder.create();
-            JsonReader reader = new JsonReader(new StringReader(fieldValue(
-                    line.replace("\"state\":\"Always\"", "\"state\":\"ALWAYS\"").replace("\"state\":\"On\"", "\"state\":\"ON\"")
-                            .replace("\"state\":\"Off\"", "\"state\":\"OFF\""))));
+            JsonReader reader = new JsonReader(new StringReader(fieldValue(line)));
             this.otsParameters = (ParameterDataDefinition) gson.fromJson(reader, ParameterDataDefinition.class);
             return;
         }
@@ -941,6 +942,7 @@ public class FosParser
             FosNode sourceNode = new FosNode(this.lastMappedNode++);
             sourceNode.source = source;
             sourceNode.name = source.name;
+            this.odNumbers.put(sourceNode.name, this.source.indexOf(source));
             sourceNode.outLinks.add(link);
             link.fromNode = sourceNode;
             this.nodes.add(sourceNode);
@@ -967,6 +969,7 @@ public class FosParser
                 name = sinkNode.getName() + " (" + sink.name + ")"; // number to "AZ" and sink name
             }
             sinkNode.name = name;
+            this.odNumbers.put(sinkNode.name, this.sink.indexOf(sink));
             sinkNode.inLinks.add(link);
             link.toNode = sinkNode;
             this.nodes.add(sinkNode);
@@ -2241,6 +2244,24 @@ public class FosParser
                 + (1 - limitedDesire) * params.getParameter(ParameterTypes.TMAX).si;
         double t = params.getParameter(ParameterTypes.T).si;
         params.setParameterResettable(ParameterTypes.T, Duration.instantiateSI(tDes < t ? tDes : t));
+    }
+
+    /**
+     * Return the GTU types.
+     * @return GTU types (safe copy)
+     */
+    public List<GtuType> getGtuTypes()
+    {
+        return new ArrayList<>(this.gtuTypes);
+    }
+    
+    /**
+     * Returns the mapped OD names.
+     * @return mapped OD names (safe copy, OTS names are the keys, Fosim numbers the fields)
+     */
+    public Map<String, Integer> getOdNameMappings()
+    {
+        return new LinkedHashMap<>(this.odNumbers);
     }
 
 }

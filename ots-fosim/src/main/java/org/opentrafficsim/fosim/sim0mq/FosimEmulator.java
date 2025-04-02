@@ -20,6 +20,7 @@ import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.BatchStatus;
+import org.opentrafficsim.fosim.sim0mq.trace.Trace;
 import org.sim0mq.Sim0MQException;
 import org.sim0mq.message.Sim0MQMessage;
 import org.zeromq.SocketType;
@@ -112,6 +113,51 @@ public class FosimEmulator
             else
             {
                 throw new RuntimeException("Did not receive a PARAMETERS_REPLY on a PARAMETERS message.");
+            }
+
+            // Trace
+            encodedMessage =
+                    Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TRACE_FILES", messageId++, new Object[] {});
+            requester.send(encodedMessage, 0);
+            reply = requester.recv(0);
+            message = Sim0MQMessage.decode(reply);
+            if ("TRACE_FILES_REPLY".equals(message.getMessageTypeId()))
+            {
+                Object[] payload = message.createObjectArray();
+                System.out.println("TRACE_FILES_REPLY with " + (payload.length - 8) + " fields.");
+            }
+            else
+            {
+                throw new RuntimeException("Did not receive a TRACE_FILES_REPLY on a TRACE_FILES message.");
+            }
+            for (Trace trace : Trace.values())
+            {
+                encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TRACE_ACTIVE", messageId++,
+                        new Object[] {trace.getInfo().id(), true});
+                requester.send(encodedMessage, 0);
+                reply = requester.recv(0);
+                message = Sim0MQMessage.decode(reply);
+                if ("TRACE_ACTIVE_REPLY".equals(message.getMessageTypeId()))
+                {
+                    System.out.println("TRACE_ACTIVE_REPLY for " + trace.getInfo().id() + " received.");
+                }
+                else
+                {
+                    throw new RuntimeException("Did not receive a TRACE_ACTIVE_REPLY on a TRACE_ACTIVE message.");
+                }
+            }
+            encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TRACE_VEHICLES_STEP", messageId++,
+                    new Object[] {Duration.instantiateSI(0.5)});
+            requester.send(encodedMessage, 0);
+            reply = requester.recv(0);
+            message = Sim0MQMessage.decode(reply);
+            if ("TRACE_VEHICLES_STEP_REPLY".equals(message.getMessageTypeId()))
+            {
+                System.out.println("TRACE_VEHICLES_STEP_REPLY received.");
+            }
+            else
+            {
+                throw new RuntimeException("Did not receive a TRACE_VEHICLES_STEP_REPLY on a TRACE_VEHICLES_STEP message.");
             }
 
             String fosString = new String(FosimEmulator.class.getResourceAsStream("/" + CONFIGURATION).readAllBytes(),
