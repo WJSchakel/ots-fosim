@@ -1,15 +1,21 @@
 package org.opentrafficsim.fosim;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
+import java.util.Set;
+import java.util.TreeMap;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
+import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Throw;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
+import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.gtu.RelativePosition;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
@@ -48,6 +54,9 @@ public class FosDetector extends LaneDetector
 
     /** Sum of travel time since last detector. */
     private final List<Double> sumTravelTime = new ArrayList<>();
+
+    /** GTU passings. */
+    private NavigableMap<Time, Passing> passings = new TreeMap<>();
 
     /** Current period index. */
     private int index = -1;
@@ -108,8 +117,16 @@ public class FosDetector extends LaneDetector
         Time prev = this.prevTime.remove(gtu.getId());
         if (prev != null)
         {
+            Duration travelTime = now.minus(prev);
             this.travelTimeCount.set(this.index, this.travelTimeCount.get(this.index) + 1);
-            this.sumTravelTime.set(this.index, this.sumTravelTime.get(this.index) + now.minus(prev).si);
+            this.sumTravelTime.set(this.index, this.sumTravelTime.get(this.index) + travelTime.si);
+            this.passings.put(now, new Passing(now, travelTime, gtu.getSpeed(), gtu.getType(), gtu.getId(),
+                    gtu.getStrategicalPlanner().getDestination().getId()));
+        }
+        else
+        {
+            this.passings.put(now, new Passing(now, null, gtu.getSpeed(), gtu.getType(), gtu.getId(),
+                    gtu.getStrategicalPlanner().getDestination().getId()));
         }
         this.thisTime.put(gtu.getId(), now);
     }
@@ -176,5 +193,38 @@ public class FosDetector extends LaneDetector
         Throw.when(period < 0 || period > this.index, IndexOutOfBoundsException.class, "Index %s is not a valid period.",
                 period);
     }
+
+    /**
+     * Returns safe copy of the passings since given time.
+     * @param startTime start time (exclusive)
+     * @return passings since given time
+     */
+    public Set<Passing> getPassings(final Time startTime)
+    {
+        return new LinkedHashSet<>(this.passings.tailMap(startTime, false).values());
+    }
+    
+    /**
+     * Clear passings up to given time.
+     * @param time time (inclusive)
+     */
+    public void clearPassingsUpTo(final Time time)
+    {
+        this.passings.headMap(time, true).clear();
+    }
+
+    /**
+     * Single vehicle passage record.
+     * @param time time
+     * @param travelTimeSinceDetector travel time since last detector
+     * @param speed speed
+     * @param gtuType GTU type
+     * @param id id
+     * @param destination destination node id
+     */
+    public record Passing(Time time, Duration travelTimeSinceDetector, Speed speed, GtuType gtuType, String id,
+            String destination)
+    {
+    };
 
 }

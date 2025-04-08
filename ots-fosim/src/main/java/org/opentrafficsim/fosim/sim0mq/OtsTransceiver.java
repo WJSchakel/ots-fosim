@@ -23,16 +23,20 @@ import org.djunits.value.vdouble.scalar.Speed;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djunits.value.vfloat.matrix.FloatDurationMatrix;
 import org.djunits.value.vfloat.matrix.FloatLengthMatrix;
+import org.djunits.value.vfloat.scalar.FloatDuration;
+import org.djunits.value.vfloat.scalar.FloatLength;
+import org.djunits.value.vfloat.scalar.FloatSpeed;
 import org.djunits.value.vfloat.vector.FloatDurationVector;
 import org.djunits.value.vfloat.vector.FloatLengthVector;
 import org.djutils.cli.CliUtil;
+import org.djutils.data.Column;
+import org.djutils.data.Row;
 import org.djutils.draw.line.PolyLine2d;
 import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.Point2d;
 import org.djutils.event.Event;
 import org.djutils.event.EventListener;
 import org.djutils.exceptions.Throw;
-import org.djutils.exceptions.Try;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.base.geometry.OtsLine2d;
 import org.opentrafficsim.base.parameters.ParameterException;
@@ -50,6 +54,7 @@ import org.opentrafficsim.draw.graphs.GraphPath;
 import org.opentrafficsim.draw.graphs.GraphPath.Section;
 import org.opentrafficsim.draw.graphs.GraphUtil;
 import org.opentrafficsim.fosim.FosDetector;
+import org.opentrafficsim.fosim.FosDetector.Passing;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
@@ -64,6 +69,7 @@ import org.opentrafficsim.fosim.sim0mq.StopCriterion.DetectionType;
 import org.opentrafficsim.fosim.sim0mq.trace.AccelerationChangeListener;
 import org.opentrafficsim.fosim.sim0mq.trace.LaneChangeListener;
 import org.opentrafficsim.fosim.sim0mq.trace.OdTravelTimeListener;
+import org.opentrafficsim.fosim.sim0mq.trace.StaticVehiclesTraceDataListener;
 import org.opentrafficsim.fosim.sim0mq.trace.Trace;
 import org.opentrafficsim.fosim.sim0mq.trace.TraceData;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorInterfaceStep;
@@ -225,6 +231,17 @@ public class OtsTransceiver
     }
 
     /**
+     * Returns the lane number.
+     * @param laneId lane id
+     * @return lane number
+     */
+    public static int getLaneRowFromId(final String laneId)
+    {
+        int underscore = laneId.indexOf("_");
+        return Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
+    }
+
+    /**
      * Worker thread to listen to messages and respond.
      * <p>
      * Copyright (c) 2023-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
@@ -293,8 +310,38 @@ public class OtsTransceiver
         /** Step in vehicle trace file. */
         private Duration vehiclesTraceStep = Duration.instantiateSI(0.5);
 
+        /** Time until which detections data was returned. */
+        private Time lastDetectionTime;
+
+        /** Time until which travel time data was returned. */
+        private Time lastTravelTimeTime;
+
+        /** Time until which vehicle data was returned. */
+        private Time lastVehiclesTime;
+
+        /** Listener to static vehicles trace data. */
+        private StaticVehiclesTraceDataListener staticVehiclesTraceDataListener;
+
+        /** Time column in sampler data for Vehicles trace data. */
+        private Column<FloatDuration> tColumn;
+
+        /** GTU id column in sampler data for Vehicles trace data. */
+        private Column<String> gtuIdColumn;
+
+        /** Link id column in sampler data for Vehicles trace data. */
+        private Column<String> linkColumn;
+
+        /** Lane id column in sampler data for Vehicles trace data. */
+        private Column<String> laneColumn;
+
+        /** Lane location column in sampler data for Vehicles trace data. */
+        private Column<FloatLength> xColumn;
+
+        /** Speed column in sampler data for Vehicles trace data. */
+        private Column<FloatSpeed> vColumn;
+
         /** OD node name mappings (OTS names are the keys, Fosim names the fields). */
-        private Map<String, Integer> odNames;
+        private Map<String, Integer> odNumbers;
 
         /**
          * Constructor.
@@ -362,7 +409,7 @@ public class OtsTransceiver
                     }
                     else if ("BATCH_STEP".equals(message.getMessageTypeId()))
                     {
-                        // TODO: we could perform the next step asynchronously
+                        // TODO: We could perform the next step asynchronously?
                         BatchStatus triggered = batchStep();
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
@@ -399,7 +446,7 @@ public class OtsTransceiver
                     else if ("SETUP".equals(message.getMessageTypeId()))
                     {
                         String exceptionMessage = setup(message);
-                        if (!exceptionMessage.isEmpty())
+                        if (exceptionMessage.isEmpty())
                         {
                             setupTraceData();
                         }
@@ -416,17 +463,7 @@ public class OtsTransceiver
                     }
                     else if ("TRACE_ACTIVE".equals(message.getMessageTypeId()))
                     {
-                        Object[] payload = message.createObjectArray();
-                        Trace trace = Trace.byId((String) payload[8]);
-                        boolean enable = (Boolean) payload[9];
-                        if (enable)
-                        {
-                            this.traceFiles.put(trace, new TraceData(trace.getInfo().header().length));
-                        }
-                        else
-                        {
-                            this.traceFiles.remove(trace);
-                        }
+                        setTraceActive(message);
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "TRACE_ACTIVE_REPLY", this.messageId++, new Object[0]), 0);
@@ -480,8 +517,54 @@ public class OtsTransceiver
         }
 
         /**
-         * Setups up all the trace file data recording.
+         * Returns payload on the information of supported trace files. This is based on the {@code Trace} class.
+         * @return payload on the information of supported trace files
          */
+        private Object[] getTraceFilesPayload()
+        {
+            Object[] payload = new Object[Trace.values().length * 4];
+            int i = 0;
+            for (Trace trace : Trace.values())
+            {
+                payload[i++] = trace.getInfo().id();
+                payload[i++] = trace.getInfo().dutchName();
+                payload[i++] = trace.getInfo().englishName();
+                // TODO Header should become a String[]
+                StringBuilder str = new StringBuilder();
+                String sep = "";
+                for (String col : trace.getInfo().header())
+                {
+                    str.append(sep).append(col);
+                    sep = ", ";
+                }
+                payload[i++] = sep.toString();
+            }
+            return payload;
+        }
+
+        /**
+         * Sets trace file active or not.
+         * @param message message
+         */
+        private void setTraceActive(final Sim0MQMessage message)
+        {
+            Object[] payload = message.createObjectArray();
+            Trace trace = Trace.byId((String) payload[8]);
+            boolean enable = (Boolean) payload[9];
+            if (enable)
+            {
+                this.traceFiles.put(trace, new TraceData(trace.getInfo().header().length));
+            }
+            else
+            {
+                this.traceFiles.remove(trace);
+            }
+        }
+
+        /**
+         * Sets up active trace file data recording.
+         */
+        @SuppressWarnings("unchecked")
         private void setupTraceData()
         {
             this.traceFiles.values().forEach((td) -> td.clear());
@@ -496,8 +579,24 @@ public class OtsTransceiver
             }
             if (this.traceFiles.containsKey(Trace.OD_TRAVEL_TIME))
             {
-                new OdTravelTimeListener(OtsTransceiver.this.network, this.gtuTypes, this.odNames,
+                new OdTravelTimeListener(OtsTransceiver.this.network, this.gtuTypes, this.odNumbers,
                         this.traceFiles.get(Trace.OD_TRAVEL_TIME));
+            }
+            if (this.traceFiles.containsKey(Trace.VEHICLES))
+            {
+                this.staticVehiclesTraceDataListener = new StaticVehiclesTraceDataListener(OtsTransceiver.this.network);
+                this.tColumn = (Column<FloatDuration>) this.sampler.getSamplerData()
+                        .getColumn(this.sampler.getSamplerData().getColumnNumber("t"));
+                this.gtuIdColumn = (Column<String>) this.sampler.getSamplerData()
+                        .getColumn(this.sampler.getSamplerData().getColumnNumber("gtuId"));
+                this.linkColumn = (Column<String>) this.sampler.getSamplerData()
+                        .getColumn(this.sampler.getSamplerData().getColumnNumber("linkId"));
+                this.laneColumn = (Column<String>) this.sampler.getSamplerData()
+                        .getColumn(this.sampler.getSamplerData().getColumnNumber("laneId"));
+                this.xColumn = (Column<FloatLength>) this.sampler.getSamplerData()
+                        .getColumn(this.sampler.getSamplerData().getColumnNumber("x"));
+                this.vColumn = (Column<FloatSpeed>) this.sampler.getSamplerData()
+                        .getColumn(this.sampler.getSamplerData().getColumnNumber("v"));
             }
             // Detection, TravelTime and Vehicles are based on detectors and the sampler
         }
@@ -514,66 +613,104 @@ public class OtsTransceiver
                 case Trace.Info.ACCELERATION_CHANGE_ID:
                 {
                     TraceData data = this.traceFiles.get(Trace.ACCELERATION_CHANGE);
-                    Object[] payload = new Object[9];
+                    Object[] payload = new Object[10];
                     int index = 0;
-                    payload[index] = data.asDuration(index++); // t
-                    payload[index] = data.asInteger(index++); // fromln
-                    payload[index] = data.asInteger(index++); // tolane
-                    payload[index] = data.asAcceleration(index++); // from a
-                    payload[index] = data.asAcceleration(index++); // to a
-                    payload[index] = data.asLength(index++); // pos
-                    payload[index] = data.asSpeed(index++); // v
-                    payload[index] = data.asInteger(index++); // type
-                    payload[index] = data.asInteger(index++); // id
+                    payload[++index] = data.asDuration(index - 1); // t
+                    payload[++index] = data.asInteger(index - 1); // fromln
+                    payload[++index] = data.asInteger(index - 1); // tolane
+                    payload[++index] = data.asAcceleration(index - 1); // from a
+                    payload[++index] = data.asAcceleration(index - 1); // to a
+                    payload[++index] = data.asLength(index - 1); // pos
+                    payload[++index] = data.asSpeed(index - 1); // v
+                    payload[++index] = data.asInteger(index - 1); // type
+                    payload[++index] = data.asInteger(index - 1); // id
+                    payload[0] = traceId;
                     data.clear();
                     return payload;
                 }
                 case Trace.Info.DETECTION_ID:
+                case Trace.Info.TRAVEL_TIME_ID:
                 {
-                    // pos, lane, t, v, type, id, dest
-                    this.detectors.forEach(null);
+                    // pos, lane, t, ___ v, type, id, dest
+                    // pos, lane, t, dt, v, type, id, dest
+                    boolean addTravelTime = traceId.equals(Trace.Info.TRAVEL_TIME_ID);
+                    Time time = addTravelTime ? this.lastTravelTimeTime : this.lastDetectionTime;
+                    int numberOfColumns = addTravelTime ? 8 : 7;
+                    TraceData data = new TraceData(numberOfColumns);
+                    this.detectors.values().forEach((d) -> addTraceDataFromPassings(d, time, data, addTravelTime));
+                    Object[] payload = new Object[numberOfColumns + 1];
+                    int index = 0;
+                    payload[++index] = data.asLength(index - 1); // pos
+                    payload[++index] = data.asInteger(index - 1); // lane
+                    payload[++index] = data.asDuration(index - 1); // t
+                    if (addTravelTime)
+                    {
+                        payload[++index] = data.asDuration(index - 1); // dt
+                    }
+                    payload[++index] = data.asSpeed(index - 1); // v
+                    payload[++index] = data.asInteger(index - 1); // type
+                    payload[++index] = data.asInteger(index - 1); // id
+                    payload[++index] = data.asInteger(index - 1); // dest
+                    payload[0] = traceId;
+                    if (addTravelTime)
+                    {
+                        this.lastTravelTimeTime = OtsTransceiver.this.simulator.getSimulatorAbsTime();
+                    }
+                    else
+                    {
+                        this.lastDetectionTime = OtsTransceiver.this.simulator.getSimulatorAbsTime();
+                    }
+                    return payload;
                 }
                 case Trace.Info.LANE_CHANGE_ID:
                 {
                     TraceData data = this.traceFiles.get(Trace.LANE_CHANGE);
-                    Object[] payload = new Object[6];
+                    Object[] payload = new Object[7];
                     int index = 0;
-                    payload[index] = data.asDuration(index++); // t
-                    payload[index] = data.asInteger(index++); // fromln
-                    payload[index] = data.asInteger(index++); // tolane
-                    payload[index] = data.asLength(index++); // pos
-                    payload[index] = data.asInteger(index++); // type
-                    payload[index] = data.asInteger(index++); // id
+                    payload[++index] = data.asDuration(index - 1); // t
+                    payload[++index] = data.asInteger(index - 1); // fromln
+                    payload[++index] = data.asInteger(index - 1); // tolane
+                    payload[++index] = data.asLength(index - 1); // pos
+                    payload[++index] = data.asInteger(index - 1); // type
+                    payload[++index] = data.asInteger(index - 1); // id
+                    payload[0] = traceId;
                     data.clear();
                     return payload;
                 }
                 case Trace.Info.OD_TRAVEL_TIME_ID:
                 {
                     TraceData data = this.traceFiles.get(Trace.OD_TRAVEL_TIME);
-                    Object[] payload = new Object[7];
+                    Object[] payload = new Object[8];
                     int index = 0;
-                    payload[index] = data.asDuration(index++); // t
-                    payload[index] = data.asInteger(index++); // origin
-                    payload[index] = data.asInteger(index++); // dest
-                    payload[index] = data.asDuration(index++); // tt
-                    payload[index] = data.asSpeed(index++); // v
-                    payload[index] = data.asInteger(index++); // type
-                    payload[index] = data.asInteger(index++); // id
+                    payload[++index] = data.asDuration(index - 1); // t
+                    payload[++index] = data.asInteger(index - 1); // origin
+                    payload[++index] = data.asInteger(index - 1); // dest
+                    payload[++index] = data.asDuration(index - 1); // tt
+                    payload[++index] = data.asSpeed(index - 1); // v
+                    payload[++index] = data.asInteger(index - 1); // type
+                    payload[++index] = data.asInteger(index - 1); // id
+                    payload[0] = traceId;
                     data.clear();
                     return payload;
-                }
-                case Trace.Info.TRAVEL_TIME_ID:
-                {
-                    // pos, lane, t, dt, v, type, id, dest
-                    // dt = time between detectors
-                    // pos, lane, t = at downstream detector
-                    this.detectors.forEach(null);
                 }
                 case Trace.Info.VEHICLES_ID:
                 {
                     // t, id, type, origin, dest, lane, pos, v
-                    // Note: need to remember origin and dest per GTU
-                    this.sampler.getSamplerData().forEach(null);
+                    TraceData data = new TraceData(8);
+                    this.sampler.getSamplerData().forEach((row) -> addVehiclesTraceRow(row, data));
+                    Object[] payload = new Object[9];
+                    int index = 0;
+                    payload[++index] = data.asDuration(index - 1); // t
+                    payload[++index] = data.asInteger(index - 1); // id
+                    payload[++index] = data.asInteger(index - 1); // type
+                    payload[++index] = data.asInteger(index - 1); // origin
+                    payload[++index] = data.asInteger(index - 1); // dest
+                    payload[++index] = data.asInteger(index - 1); // lane
+                    payload[++index] = data.asLength(index - 1); // pos
+                    payload[++index] = data.asSpeed(index - 1); // v
+                    payload[0] = traceId;
+                    this.lastVehiclesTime = OtsTransceiver.this.simulator.getSimulatorAbsTime();
+                    return payload;
                 }
                 default:
                 {
@@ -583,27 +720,62 @@ public class OtsTransceiver
         }
 
         /**
-         * Returns payload on the information of supported trace files. This is based on the {@code Trace} class.
-         * @return payload on the information of supported trace files
+         * Add passing data to trace data for a single detector.
+         * @param detector detector
+         * @param since time since last data was sent
+         * @param data object to add data to
+         * @param addTravelTime whether to include the travel time since last detector data
          */
-        private Object[] getTraceFilesPayload()
+        private void addTraceDataFromPassings(final FosDetector detector, final Time since, final TraceData data,
+                final boolean addTravelTime)
         {
-            Object[] payload = new Object[Trace.values().length * 3];
-            int i = 0;
-            for (Trace trace : Trace.values())
+            FloatLength pos = FloatLength.instantiateSI((float) detector.getLocation().x);
+            Integer lane = getLaneRowFromId(detector.getLane().getId());
+            for (Passing passing : detector.getPassings(since))
             {
-                payload[i++] = trace.getInfo().id();
-                payload[i++] = trace.getInfo().menuName();
-                StringBuilder str = new StringBuilder();
-                String sep = "";
-                for (String col : trace.getInfo().header())
+                if (!addTravelTime || passing.travelTimeSinceDetector() != null)
                 {
-                    str.append(sep).append(col);
-                    sep = ", ";
+                    Object[] row = new Object[addTravelTime ? 8 : 7];
+                    int index = 0;
+                    row[index++] = pos; // pos
+                    row[index++] = lane; // lane
+                    row[index++] = FloatDuration.instantiateSI((float) passing.time().si); // t
+                    if (addTravelTime)
+                    {
+                        row[index++] = FloatDuration.instantiateSI((float) passing.travelTimeSinceDetector().si); // dt
+                    }
+                    row[index++] = FloatSpeed.instantiateSI((float) passing.speed().si); // v
+                    row[index++] = this.gtuTypes.indexOf(passing.gtuType()); // type
+                    row[index++] = Integer.valueOf(passing.id()); // id
+                    row[index++] = this.odNumbers.get(passing.destination()); // dest
+                    data.append(row);
                 }
-                payload[i++] = sep.toString();
             }
-            return payload;
+            detector.clearPassingsUpTo(Time.min(this.lastDetectionTime, this.lastTravelTimeTime));
+        }
+
+        /**
+         * Adds sampler row to vehicles trace data, if it is at the right vehicles trace step in time.
+         * @param row sampler row
+         * @param data vehicles trace data
+         * @return
+         */
+        private void addVehiclesTraceRow(final Row row, final TraceData data)
+        {
+            FloatDuration t = row.getValue(this.tColumn);
+            if (t.si % this.vehiclesTraceStep.si < 1e-6 && t.si > this.lastVehiclesTime.si - 1e-6)
+            {
+                // t, id, type, origin, dest, lane, pos, v
+                String id = row.getValue(this.gtuIdColumn);
+                int type = this.gtuTypes.indexOf(this.staticVehiclesTraceDataListener.getGtuType(id));
+                int origin = this.odNumbers.get(this.staticVehiclesTraceDataListener.getOrigin(id));
+                int dest = this.odNumbers.get(this.staticVehiclesTraceDataListener.getDestination(id));
+                double x0 = OtsTransceiver.this.network.getLink(row.getValue(this.linkColumn)).getStartNode().getPoint().x;
+                int lane = getLaneRowFromId(row.getValue(this.laneColumn));
+                FloatLength pos = FloatLength.instantiateSI((float) (x0 + row.getValue(this.xColumn).si));
+                FloatSpeed v = FloatSpeed.instantiateSI((float) row.getValue(this.vColumn).si);
+                data.append(t, Integer.valueOf(id), type, origin, dest, lane, pos, v);
+            }
         }
 
         /**
@@ -637,7 +809,7 @@ public class OtsTransceiver
                 double front = gtu.getFront().dx().si;
                 double laneStart = pos.lane().getLink().getStartNode().getPoint().x;
                 Length position = Length.instantiateSI(pos.position().si + front + laneStart);
-                int lane = getLane(pos.lane().getId());
+                int lane = getLaneRowFromId(pos.lane().getId());
 
                 payload[k++] = lane;
                 payload[k++] = position;
@@ -703,7 +875,7 @@ public class OtsTransceiver
                 double front = gtu.getFront().dx().si;
                 double laneStart = pos.lane().getLink().getStartNode().getPoint().x;
                 Length position = Length.instantiateSI(pos.position().si + front + laneStart);
-                int lane = getLane(pos.lane().getId());
+                int lane = getLaneRowFromId(pos.lane().getId());
                 LaneChange lc = lcInfo.get(gtu);
                 if (lc == null)
                 {
@@ -755,17 +927,6 @@ public class OtsTransceiver
         }
 
         /**
-         * Returns the lane number.
-         * @param laneId lane id
-         * @return lane number
-         */
-        private int getLane(final String laneId)
-        {
-            int underscore = laneId.indexOf("_");
-            return Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
-        }
-
-        /**
          * Setup a new simulation.
          * @param message message through Sim0MQ
          * @return possible exception message, empty when ok
@@ -803,7 +964,10 @@ public class OtsTransceiver
                     this.detectors.put(detector.getId(), detector);
                 }
                 this.gtuTypes = parser.getGtuTypes();
-                this.odNames = parser.getOdNameMappings();
+                this.lastDetectionTime = Time.instantiateSI(-1.0);
+                this.lastTravelTimeTime = Time.instantiateSI(-1.0);
+                this.lastVehiclesTime = Time.instantiateSI(-1.0);
+                this.odNumbers = parser.getOdNameMappings();
                 setupSampler(parser);
                 if (OtsTransceiver.this.instantLc)
                 {
@@ -1100,9 +1264,8 @@ public class OtsTransceiver
                 {
                     for (Trajectory<?> trajectory : this.sampler.getSamplerData().getTrajectoryGroup(laneData))
                     {
-                        // TODO: remove Try.assign after update to later OTS version
-                        boolean spatialOverlap = Try.assign(() -> trajectory.getX(0) < finishPositionLane.si
-                                && trajectory.getX(trajectory.size() - 1) > startPositionLane.si, "");
+                        boolean spatialOverlap = trajectory.getX(0) < finishPositionLane.si
+                                && trajectory.getX(trajectory.size() - 1) > startPositionLane.si;
                         if (spatialOverlap && GraphUtil.considerTrajectory(trajectory, startTime, finishTime))
                         {
                             trajectoriesPerGtu.computeIfAbsent(trajectory.getGtuId(), (id) -> new TreeSet<>(trajectoryComp))
@@ -1131,8 +1294,7 @@ public class OtsTransceiver
                     float[] t = trajectory.getT();
                     float[] x = trajectory.getX();
                     Lane laneRoad = laneOfTrajectory.get(trajectory);
-                    int underscore = laneRoad.getId().lastIndexOf("_");
-                    int laneNum = Integer.valueOf(laneRoad.getId().substring(underscore + 1));
+                    int laneNum = getLaneRowFromId(laneRoad.getId());
                     float laneStart = (float) laneRoad.getCenterLine().getFirst().x;
                     float laneLength = (float) laneRoad.getLength().si;
                     float xMin = Math.max(0.0f, (float) startPosition.si - laneStart);
@@ -1222,6 +1384,10 @@ public class OtsTransceiver
             this.targetLane.clear();
             this.graphPaths = null;
             this.laneChanges.clear();
+            this.lastDetectionTime = null;
+            this.lastTravelTimeTime = null;
+            this.lastVehiclesTime = null;
+            this.staticVehiclesTraceDataListener = null;
         }
 
         /**

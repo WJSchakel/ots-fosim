@@ -1,6 +1,7 @@
 package org.opentrafficsim.fosim.sim0mq.trace;
 
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ public class OdTravelTimeListener implements EventListener
     private final Network network;
 
     /** GTU types. */
-    private List<GtuType> gtuTypes;
+    private final List<GtuType> gtuTypes;
 
     /** OD node name mappings (OTS names are the keys, Fosim numbers the fields). */
     private final Map<String, Integer> odNumbers;
@@ -50,6 +51,7 @@ public class OdTravelTimeListener implements EventListener
             final TraceData data)
     {
         this.network = network;
+        this.gtuTypes = new ArrayList<>(gtuTypes);
         this.odNumbers = odNumbers;
         this.data = data;
         this.network.addListener(this, Network.GTU_ADD_EVENT);
@@ -77,7 +79,7 @@ public class OdTravelTimeListener implements EventListener
                     - gtu.getStrategicalPlanner().getOrigin().getPoint().x;
             FloatSpeed v = FloatSpeed.instantiateSI((float) (dx / ttt));
             int type = this.gtuTypes.indexOf(gtu.getType());
-            this.data.append(t, origin, dest, tt, v, type, id);
+            this.data.append(t, origin, dest, tt, v, type, Integer.valueOf(id));
         }
     }
 

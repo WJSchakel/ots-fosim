@@ -2,8 +2,11 @@ package org.opentrafficsim.fosim.sim0mq.trace;
 
 import java.rmi.RemoteException;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Speed;
@@ -16,6 +19,7 @@ import org.djutils.event.Event;
 import org.djutils.event.EventListener;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.Network;
+import org.opentrafficsim.fosim.sim0mq.OtsTransceiver;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 
 /**
@@ -40,6 +44,9 @@ public class AccelerationChangeListener implements EventListener
     /** Previous data on each GTU. */
     private final Map<String, GtuStamp> previousStamp = new LinkedHashMap<>();
 
+    /** GTUs that changed lane in their most recent time step. */
+    private final Set<String> justChangedLane = new LinkedHashSet<>();
+
     /**
      * Constructor.
      * @param network network
@@ -60,14 +67,15 @@ public class AccelerationChangeListener implements EventListener
     {
         if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))
         {
-            // TODO: no lane change when leaving diagonal lane?
             Object[] payload = (Object[]) event.getContent();
             String id = (String) payload[0];
             FloatAcceleration toA = FloatAcceleration.instantiateSI(((Acceleration) payload[4]).floatValue());
             String laneId = (String) payload[8];
-            int tolane = Integer.valueOf(laneId.split("_")[0]);
+            Integer tolane = OtsTransceiver.getLaneRowFromId(laneId);
             GtuStamp stamp = this.previousStamp.get(id);
-            if (stamp != null && (stamp.lane() != tolane || Math.round(stamp.acceleration().si) != Math.round(toA.si)))
+            // Note: toLane != fromLane might just mean the GTU left a diagonal lane, so need to consider justChangedLane
+            if (stamp != null && (Math.round(stamp.acceleration().si) != Math.round(toA.si)
+                    || !Objects.equals(stamp.lane(), tolane) && this.justChangedLane.contains(id)))
             {
                 // add row to data
                 LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(id);
@@ -76,8 +84,8 @@ public class AccelerationChangeListener implements EventListener
                 FloatAcceleration fromA = stamp.acceleration();
                 FloatLength pos = FloatLength.instantiateSI(((PositionVector) payload[1]).get(0).floatValue());
                 FloatSpeed v = FloatSpeed.instantiateSI(((Speed) payload[3]).floatValue());
-                int type = gtuTypes.indexOf(gtu.getType());
-                this.data.append(t, fromln, tolane, fromA, toA, pos, v, type, id);
+                int type = this.gtuTypes.indexOf(gtu.getType());
+                this.data.append(t, fromln, tolane, fromA, toA, pos, v, type, Integer.valueOf(id));
             }
             this.previousStamp.put(id, new GtuStamp(toA, tolane));
         }
@@ -85,12 +93,19 @@ public class AccelerationChangeListener implements EventListener
         {
             LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent());
             gtu.addListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+            gtu.addListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
         }
         else if (event.getType().equals(Network.GTU_REMOVE_EVENT))
         {
             LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent());
             gtu.removeListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+            gtu.removeListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
             this.previousStamp.remove(gtu.getId());
+            this.justChangedLane.remove(gtu.getId());
+        }
+        else if (event.getType().equals(LaneBasedGtu.LANE_CHANGE_EVENT))
+        {
+            this.justChangedLane.add((String) ((Object[]) event.getContent())[0]);
         }
     }
 

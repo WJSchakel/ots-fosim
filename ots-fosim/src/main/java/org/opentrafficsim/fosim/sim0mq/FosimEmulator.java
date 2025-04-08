@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Locale;
 
 import org.djunits.unit.SpeedUnit;
-import org.djunits.value.vdouble.scalar.Acceleration;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
@@ -14,10 +14,10 @@ import org.djunits.value.vfloat.matrix.FloatDurationMatrix;
 import org.djunits.value.vfloat.matrix.FloatLengthMatrix;
 import org.djunits.value.vfloat.vector.FloatDurationVector;
 import org.djunits.value.vfloat.vector.FloatLengthVector;
+import org.djunits.value.vfloat.vector.base.FloatVector;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
-import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.BatchStatus;
 import org.opentrafficsim.fosim.sim0mq.trace.Trace;
@@ -106,8 +106,8 @@ public class FosimEmulator
             message = Sim0MQMessage.decode(reply);
             if ("PARAMETERS_REPLY".equals(message.getMessageTypeId()))
             {
-                Object[] payload = message.createObjectArray();
-                ParameterDefinitions parameters = loadString((String) payload[8], ParameterDefinitions.class);
+                // Object[] payload = message.createObjectArray();
+                // ParameterDefinitions parameters = loadString((String) payload[8], ParameterDefinitions.class);
                 // System.out.println(Sim0MQMessage.print(payload));
             }
             else
@@ -276,8 +276,16 @@ public class FosimEmulator
                     // System.out.println(payload[8] + " vehicles");
                 }
 
-                if (i == 601)
+                // Check various data messages
+                if (i == 301)
                 {
+                    // Manual test: comment out this line & check that at 601 the same amount of data is returned as at 301+601
+                    // messageId = getTraceData(requester, messageId);
+                }
+                else if (i == 601)
+                {
+                    messageId = getTraceData(requester, messageId);
+
                     encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "CONTOUR", messageId++,
                             new Object[] {Duration.ZERO, Duration.instantiateSI(60.0), Duration.instantiateSI(300.0),
                                     Length.ZERO, Length.instantiateSI(100.0), Length.instantiateSI(3500.0)});
@@ -289,9 +297,8 @@ public class FosimEmulator
                     if ("CONTOUR_REPLY".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = message.createObjectArray();
-                        // TODO for now, standard decoding is to non-primitive arrays; this is java specific
                         int[] lanes = Arrays.asList((Integer[]) payload[8]).stream().mapToInt(k -> k).toArray();
-                        System.out.println("Received data for lanes " + Arrays.toString(lanes) + " in " + t + "ms");
+                        System.out.println("Received contour data for lanes " + Arrays.toString(lanes) + " in " + t + "ms");
                         for (int j = 0; j < lanes.length; j++)
                         {
                             FloatLengthMatrix distance = (FloatLengthMatrix) payload[9 + j * 2];
@@ -313,7 +320,7 @@ public class FosimEmulator
                     {
                         Object[] payload = message.createObjectArray();
                         int n = (int) payload[8];
-                        System.out.println("Received data for " + n + " GTUs in " + t + "ms");
+                        System.out.println("Received trajectory data for " + n + " GTUs in " + t + "ms");
                         for (int j = 0; j < n; j++)
                         {
                             FloatDurationVector distance = (FloatDurationVector) payload[9 + j * 3];
@@ -324,8 +331,7 @@ public class FosimEmulator
                         }
                     }
                 }
-
-                if (i == 1201)
+                else if (i == 1201)
                 {
                     for (int crossSection = 0; crossSection < 20; crossSection++)
                     {
@@ -403,9 +409,80 @@ public class FosimEmulator
             requester.close();
             context.destroy();
             context.close();
-
-            System.out.println("Fosim terminated");
         }
+        System.out.println("Fosim terminated");
+    }
+
+    /**
+     * Displays information on currently received trace data.
+     * @param requester socket
+     * @param messageId message id
+     * @return increased message id
+     * @throws Sim0MQException exception
+     * @throws SerializationException exception
+     */
+    private static int getTraceData(final ZMQ.Socket requester, final int messageId)
+            throws Sim0MQException, SerializationException
+    {
+        int msgId = messageId;
+        for (Trace trace : Trace.values())
+        {
+            byte[] encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TRACE_GET", msgId++,
+                    new Object[] {trace.getInfo().id()});
+            long t = System.currentTimeMillis();
+            requester.send(encodedMessage, 0);
+            byte[] reply = requester.recv(0);
+            Sim0MQMessage message = Sim0MQMessage.decode(reply);
+            t = System.currentTimeMillis() - t;
+            if ("TRACE_GET_REPLY".equals(message.getMessageTypeId()))
+            {
+                Object[] payload = message.createObjectArray();
+                short m = (short) ((short) payload[7] - 1);
+                System.out.println("Received trace data for " + payload[8] + " with " + m + " fields in " + t + "ms");
+                for (int j = 0; j < m; j++)
+                {
+                    Object obj = payload[9 + j];
+                    int length;
+                    if (obj instanceof int[] arr)
+                    {
+                        length = arr.length;
+                    }
+                    else if (obj instanceof double[] arr)
+                    {
+                        length = arr.length;
+                    }
+                    if (obj instanceof Integer[] arr)
+                    {
+                        length = arr.length;
+                    }
+                    else if (obj instanceof Double[] arr)
+                    {
+                        length = arr.length;
+                    }
+                    else
+                    {
+                        FloatVector<?, ?, ?> vector = (FloatVector<?, ?, ?>) obj;
+                        if ((trace.equals(Trace.ACCELERATION_CHANGE) && j == 0) || (trace.equals(Trace.DETECTION) && j == 2)
+                                || (trace.equals(Trace.TRAVEL_TIME) && j == 2) || (trace.equals(Trace.LANE_CHANGE) && j == 0)
+                                || (trace.equals(Trace.OD_TRAVEL_TIME) && j == 0) || (trace.equals(Trace.VEHICLES) && j == 0))
+                        {
+                            // Print min and max time in data
+                            float tMin = Float.POSITIVE_INFINITY;
+                            float tMax = Float.NEGATIVE_INFINITY;
+                            for (int k = 0; k < vector.size(); k++)
+                            {
+                                tMin = Math.min(tMin, vector.getSI(k));
+                                tMax = Math.max(tMax, vector.getSI(k));
+                            }
+                            System.out.println(String.format(Locale.US, " Time in data: [%.2f, %.2f]", tMin, tMax));
+                        }
+                        length = vector.size();
+                    }
+                    System.out.println(" Payload field " + (j + 1) + " has length " + length);
+                }
+            }
+        }
+        return msgId;
     }
 
     /**
