@@ -11,7 +11,6 @@ import org.opentrafficsim.fosim.parameters.MinMax;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class DistributionParameter extends MinMax<DistributionParameter>
 {
 

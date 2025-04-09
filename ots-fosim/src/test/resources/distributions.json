@@ -3,18 +3,13 @@
   "distributions": [
     {
       "type": "Exponential",
+      "notation": "E",
       "parameters": [
         {
           "id": "lambda",
-          "defaultValue": {
-            "parameter": "param.default"
-          },
-          "minimum": {
-            "value": 0.0
-          },
-          "maximum": {
-            "parameter": "param.max"
-          },
+          "defaultValue": "param.default",
+          "minimum": 0.0,
+          "maximum": "param.max",
           "nameNl": "<i>λ</i>",
           "nameEn": "<i>λ</i>"
         }
@@ -25,46 +20,29 @@
     },
     {
       "type": "Triangular",
+      "notation": "T",
       "parameters": [
         {
           "id": "min",
-          "defaultValue": {
-            "parameter": "param.min"
-          },
-          "minimum": {
-            "parameter": "param.min"
-          },
-          "maximum": {
-            "parameter": "mode"
-          },
+          "defaultValue": "param.min",
+          "minimum": "param.min",
+          "maximum": "mode",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "mode",
-          "defaultValue": {
-            "parameter": "param.default"
-          },
-          "minimum": {
-            "parameter": "min"
-          },
-          "maximum": {
-            "parameter": "max"
-          },
+          "defaultValue": "param.default",
+          "minimum": "min",
+          "maximum": "max",
           "nameNl": "<i>mode</i>",
           "nameEn": "<i>mode</i>"
         },
         {
           "id": "max",
-          "defaultValue": {
-            "parameter": "param.max"
-          },
-          "minimum": {
-            "parameter": "mode"
-          },
-          "maximum": {
-            "parameter": "param.max"
-          },
+          "defaultValue": "param.max",
+          "minimum": "mode",
+          "maximum": "param.max",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }
@@ -75,57 +53,36 @@
     },
     {
       "type": "Normal",
+      "notation": "N",
       "parameters": [
         {
           "id": "mu",
-          "defaultValue": {
-            "parameter": "param.default"
-          },
-          "minimum": {
-            "parameter": "min"
-          },
-          "maximum": {
-            "parameter": "max"
-          },
+          "defaultValue": "param.default",
+          "minimum": "min",
+          "maximum": "max",
           "nameNl": "<i>μ</i>",
           "nameEn": "<i>μ</i>"
         },
         {
           "id": "sigma",
-          "defaultValue": {
-            "value": 1.0
-          },
-          "minimum": {
-            "value": 0.0
-          },
+          "defaultValue": 1.0,
+          "minimum": 0.0,
           "nameNl": "<i>σ</i>",
           "nameEn": "<i>σ</i>"
         },
         {
           "id": "min",
-          "defaultValue": {
-            "parameter": "param.min"
-          },
-          "minimum": {
-            "parameter": "param.min"
-          },
-          "maximum": {
-            "parameter": "mu"
-          },
+          "defaultValue": "param.min",
+          "minimum": "param.min",
+          "maximum": "mu",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "max",
-          "defaultValue": {
-            "parameter": "param.max"
-          },
-          "minimum": {
-            "parameter": "mu"
-          },
-          "maximum": {
-            "parameter": "param.max"
-          },
+          "defaultValue": "param.max",
+          "minimum": "mu",
+          "maximum": "param.max",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }
@@ -136,57 +93,34 @@
     },
     {
       "type": "LogNormal",
+      "notation": "LN",
       "parameters": [
         {
-          "id": "mean",
-          "defaultValue": {
-            "parameter": "param.default"
-          },
-          "minimum": {
-            "parameter": "min"
-          },
-          "maximum": {
-            "parameter": "max"
-          },
-          "nameNl": "<i>gemiddeld</i>",
-          "nameEn": "<i>mean</i>"
+          "id": "mu",
+          "defaultValue": 1.0,
+          "nameNl": "<i>μ</i>",
+          "nameEn": "<i>μ</i>"
         },
         {
-          "id": "std",
-          "defaultValue": {
-            "value": 1.0
-          },
-          "minimum": {
-            "value": 0.0
-          },
-          "nameNl": "<i>std</i>",
-          "nameEn": "<i>std</i>"
+          "id": "sigma",
+          "defaultValue": 1.0,
+          "minimum": 0.0,
+          "nameNl": "<i>σ</i>",
+          "nameEn": "<i>σ</i>"
         },
         {
           "id": "min",
-          "defaultValue": {
-            "parameter": "param.min"
-          },
-          "minimum": {
-            "parameter": "param.min"
-          },
-          "maximum": {
-            "parameter": "mean"
-          },
+          "defaultValue": "param.min",
+          "minimum": "param.min",
+          "maximum": "max",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "max",
-          "defaultValue": {
-            "parameter": "param.max"
-          },
-          "minimum": {
-            "parameter": "mean"
-          },
-          "maximum": {
-            "parameter": "param.max"
-          },
+          "defaultValue": "param.max",
+          "minimum": "min",
+          "maximum": "param.max",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }
@@ -197,32 +131,21 @@
     },
     {
       "type": "Uniform",
+      "notation": "U",
       "parameters": [
         {
           "id": "min",
-          "defaultValue": {
-            "parameter": "param.min"
-          },
-          "minimum": {
-            "parameter": "param.min"
-          },
-          "maximum": {
-            "parameter": "max"
-          },
+          "defaultValue": "param.min",
+          "minimum": "param.min",
+          "maximum": "max",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "max",
-          "defaultValue": {
-            "parameter": "param.max"
-          },
-          "minimum": {
-            "parameter": "min"
-          },
-          "maximum": {
-            "parameter": "param.max"
-          },
+          "defaultValue": "param.max",
+          "minimum": "min",
+          "maximum": "param.max",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }

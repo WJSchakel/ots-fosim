@@ -41,44 +41,28 @@ public class ParametersJsonTest
      */
     public static void main(final String[] args) throws IOException
     {
-        try
-        {
-            writeToFile(new ParameterDefinitions(OtsTransceiver.VERSION), PARAMETERS_FILENAME, true, false);
-        }
-        catch (NullPointerException ex)
-        {
-            System.err.println("Unable to save file. Make sure \"src/test/resources/" + PARAMETERS_FILENAME
-                    + "\" exists so it can be found to be overwritten.");
-        }
-        @SuppressWarnings("unused")
-        Object t;
+        writeToFile(new ParameterDefinitions(OtsTransceiver.VERSION), PARAMETERS_FILENAME, true, false);
         try
         {
             TypeToken<ParameterDefinitions> typeToken = new TypeToken<>()
             {
             };
-            t = loadFile(PARAMETERS_FILENAME, typeToken);
+            @SuppressWarnings("unused")
+            ParameterDefinitions param = loadFile(PARAMETERS_FILENAME, typeToken);
         }
         catch (Exception ex)
         {
             System.err.println("Unable to load " + PARAMETERS_FILENAME + ".");
         }
 
-        try
-        {
-            writeToFile(new DistributionDefinitions(OtsTransceiver.VERSION), DISTRIBUTIONS_FILENAME, true, false);
-        }
-        catch (NullPointerException ex)
-        {
-            System.err.println("Unable to save file. Make sure \"src/test/resources/" + DISTRIBUTIONS_FILENAME
-                    + "\" exists so it can be found to be overwritten.");
-        }
+        writeToFile(new DistributionDefinitions(OtsTransceiver.VERSION), DISTRIBUTIONS_FILENAME, true, false);
         try
         {
             TypeToken<DistributionDefinitions> typeToken = new TypeToken<>()
             {
             };
-            t = loadFile(DISTRIBUTIONS_FILENAME, typeToken);
+            @SuppressWarnings("unused")
+            DistributionDefinitions dist = loadFile(DISTRIBUTIONS_FILENAME, typeToken);
         }
         catch (Exception ex)
         {
@@ -107,16 +91,18 @@ public class ParametersJsonTest
         {
             builder.disableHtmlEscaping();
         }
-        // builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        builder.registerTypeAdapter(Limit.class, new LimitAdapter());
         Gson gson = builder.create();
 
         // Write to resources (should not work in a Jar file)
-        String path = ParametersJsonTest.class.getResource("/" + fileName).getPath();
-        if (path.endsWith("target/test-classes/" + fileName))
+        String path = ParametersJsonTest.class.getResource("/").getPath();
+        if (path.endsWith("target/test-classes/"))
         {
             // hard-coded overule to save to src/test/resources
-            path = path.replace("target/test-classes/" + fileName, "src/test/resources/" + fileName);
+            path = path.replace("target/test-classes/", "src/test/resources/");
         }
+        path += fileName;
         PrintWriter writer = new PrintWriter(new File(path));
         gson.toJson(data, writer);
         writer.close();
@@ -136,6 +122,7 @@ public class ParametersJsonTest
     {
         GsonBuilder builder = new GsonBuilder();
         builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        builder.registerTypeAdapter(Limit.class, new LimitAdapter());
         Gson gson = builder.create();
         InputStream stream = ParametersJsonTest.class.getResourceAsStream("/" + fileName);
         Reader streamReader = new InputStreamReader(stream, "UTF-8");

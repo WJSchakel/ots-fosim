@@ -15,10 +15,9 @@ public class ParameterData
 
     /** Id. */
     public String id;
-    
+
     /** Values per vehicle type. */
-    //public List<ValueData> value;
-    public List<Double> value;
+    public List<ValueData> value;
 
     /** {@inheritDoc} */
     @Override
@@ -26,5 +25,5 @@ public class ParameterData
     {
         return "ParameterData [id=" + this.id + ", value=" + this.value + "]";
     }
-    
+
 }

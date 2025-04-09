@@ -13,7 +13,6 @@ import org.opentrafficsim.fosim.parameters.DefaultValue;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class DistributionValue implements DefaultValue
 {
 

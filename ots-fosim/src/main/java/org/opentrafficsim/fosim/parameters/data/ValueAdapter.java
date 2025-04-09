@@ -24,7 +24,6 @@ import com.google.gson.reflect.TypeToken;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class ValueAdapter implements JsonSerializer<ValueData>, JsonDeserializer<ValueData>
 {
 

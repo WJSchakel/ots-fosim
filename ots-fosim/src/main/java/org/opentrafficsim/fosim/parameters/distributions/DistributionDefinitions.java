@@ -5,6 +5,11 @@ import static org.opentrafficsim.fosim.parameters.ParameterDefinitions.it;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opentrafficsim.fosim.parameters.DefaultValue;
+import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
+import org.opentrafficsim.fosim.parameters.Limit;
+import org.opentrafficsim.fosim.parameters.LimitAdapter;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -17,18 +22,17 @@ import com.google.gson.GsonBuilder;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class DistributionDefinitions
 {
 
     /** Version. */
     @SuppressWarnings("unused") // used to parse to json
     private final String version;
-    
+
     /** Distributions. */
     @SuppressWarnings("unused") // used to parse to json
     private final List<Distribution> distributions = getDistributions();
-    
+
     /**
      * Constructor.
      * @param version version.
@@ -37,7 +41,7 @@ public class DistributionDefinitions
     {
         this.version = version;
     }
-    
+
     /**
      * Return JSON string distribution definitions.
      * @param prettyString whether to use new lines and indentation.
@@ -56,7 +60,8 @@ public class DistributionDefinitions
         {
             builder.disableHtmlEscaping();
         }
-        // builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        builder.registerTypeAdapter(Limit.class, new LimitAdapter());
         Gson gson = builder.create();
         return gson.toJson(new DistributionDefinitions(version));
     }
@@ -70,7 +75,7 @@ public class DistributionDefinitions
         List<Distribution> list = new ArrayList<>();
 
         // Exponential
-        Distribution exponential = new Distribution(DistributionType.Exponential, "Exponentieel", "Exponential")
+        Distribution exponential = new Distribution(DistributionType.Exponential, "E", "Exponentieel", "Exponential")
                 .setValidRange(ValidRange.positive_inclusive);
         DistributionParameter lambda =
                 new DistributionParameter("lambda", it("λ")).setMin(0.0).setMax("param.max").setDefault("param.default");
@@ -78,7 +83,7 @@ public class DistributionDefinitions
         list.add(exponential);
 
         // Triangular
-        Distribution triangular = new Distribution(DistributionType.Triangular, "Driehoek", "Triangular");
+        Distribution triangular = new Distribution(DistributionType.Triangular, "T", "Driehoek", "Triangular");
         DistributionParameter triMin =
                 new DistributionParameter("min", it("min")).setMin("param.min").setMax("mode").setDefault("param.min");
         DistributionParameter triMode =
@@ -91,7 +96,7 @@ public class DistributionDefinitions
         list.add(triangular);
 
         // Normal
-        Distribution normal = new Distribution(DistributionType.Normal, "Normaal", "Normal");
+        Distribution normal = new Distribution(DistributionType.Normal, "N", "Normaal", "Normal");
         DistributionParameter normMu =
                 new DistributionParameter("mu", it("μ")).setMin("min").setMax("max").setDefault("param.default");
         DistributionParameter normSigma = new DistributionParameter("sigma", it("σ")).setMin(0.0).setDefault(1.0);
@@ -107,23 +112,21 @@ public class DistributionDefinitions
 
         // LogNormal
         Distribution logNormal =
-                new Distribution(DistributionType.LogNormal, "LogNormaal", "LogNormal").setValidRange(ValidRange.positive);
-        DistributionParameter logMean = new DistributionParameter("mean", it("gemiddeld"), it("mean")).setMin("min")
-                .setMax("max").setDefault("param.default");
-        DistributionParameter logStd = new DistributionParameter("std", it("std")).setMin(0.0).setDefault(1.0);
+                new Distribution(DistributionType.LogNormal, "LN", "LogNormaal", "LogNormal").setValidRange(ValidRange.positive);
+        DistributionParameter logMu = new DistributionParameter("mu", it("μ")).setDefault(1.0);
+        DistributionParameter logSigma = new DistributionParameter("sigma", it("σ")).setMin(0.0).setDefault(1.0);
         DistributionParameter logMin =
-                new DistributionParameter("min", it("min")).setMin("param.min").setMax("mean").setDefault("param.min");
+                new DistributionParameter("min", it("min")).setMin("param.min").setMax("max").setDefault("param.min");
         DistributionParameter logMax =
-                new DistributionParameter("max", it("max")).setMin("mean").setMax("param.max").setDefault("param.max");
-        logNormal.addParameter(logMean);
-        logNormal.addParameter(logStd);
+                new DistributionParameter("max", it("max")).setMin("min").setMax("param.max").setDefault("param.max");
+        logNormal.addParameter(logMu);
+        logNormal.addParameter(logSigma);
         logNormal.addParameter(logMin);
         logNormal.addParameter(logMax);
         list.add(logNormal);
 
         // Uniform
-        Distribution uniform =
-                new Distribution(DistributionType.Uniform, "Uniform", "Uniform");
+        Distribution uniform = new Distribution(DistributionType.Uniform, "U", "Uniform", "Uniform");
         DistributionParameter uniMin =
                 new DistributionParameter("min", it("min")).setMin("param.min").setMax("max").setDefault("param.min");
         DistributionParameter uniMax =

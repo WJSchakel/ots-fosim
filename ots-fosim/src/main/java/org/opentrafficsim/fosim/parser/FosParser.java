@@ -73,10 +73,13 @@ import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.model.CarFollowingTask;
 import org.opentrafficsim.fosim.model.LaneChangeTask;
 import org.opentrafficsim.fosim.model.TaskManagerAr;
+import org.opentrafficsim.fosim.parameters.Limit;
+import org.opentrafficsim.fosim.parameters.LimitAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.data.ParameterData;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
+import org.opentrafficsim.fosim.parameters.data.ScalarData;
 import org.opentrafficsim.fosim.parameters.data.ValueAdapter;
 import org.opentrafficsim.fosim.parameters.data.ValueData;
 import org.opentrafficsim.fosim.sim0mq.FosimModel;
@@ -310,7 +313,7 @@ public class FosParser
 
     /** GTU types. */
     private List<GtuType> gtuTypes = new ArrayList<>();
-    
+
     /** OD node name mappings (OTS names are the keys, Fosim numbers the fields). */
     private Map<String, Integer> odNumbers = new LinkedHashMap<>();
 
@@ -1592,8 +1595,7 @@ public class FosParser
                     {
                         if (parameterData.id.equals("courtesy"))
                         {
-                            // courtesy = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value() > 0.0;
-                            courtesy = parameterData.value.get(vehicleTypeNumber) > 0.0;
+                            courtesy = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value() > 0.0;
                         }
                     }
                 }
@@ -1605,15 +1607,13 @@ public class FosParser
                     {
                         if (parameterData.id.equals("est"))
                         {
-                            // double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
-                            double value = parameterData.value.get(vehicleTypeNumber);
+                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
                             estimation = value < 0.0 ? Estimation.FACTOR_ESTIMATION
                                     : (value > 0.0 ? Estimation.FACTOR_ESTIMATION : Estimation.NONE);
                         }
                         else if (parameterData.id.equals("ant"))
                         {
-                            // double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
-                            double value = parameterData.value.get(vehicleTypeNumber);
+                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
                             anticipation = value > 1.5 ? Anticipation.CONSTANT_ACCELERATION
                                     : (value > 0.5 ? Anticipation.CONSTANT_SPEED : Anticipation.NONE);
                         }
@@ -2254,7 +2254,7 @@ public class FosParser
     {
         return new ArrayList<>(this.gtuTypes);
     }
-    
+
     /**
      * Returns the mapped OD names.
      * @return mapped OD names (safe copy, OTS names are the keys, Fosim numbers the fields)

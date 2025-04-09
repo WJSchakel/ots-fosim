@@ -57,6 +57,8 @@ import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.FosDetector.Passing;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
+import org.opentrafficsim.fosim.parameters.Limit;
+import org.opentrafficsim.fosim.parameters.LimitAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
 import org.opentrafficsim.fosim.parser.FosIncentiveRoute;
@@ -1433,6 +1435,7 @@ public class OtsTransceiver
             GsonBuilder builder = new GsonBuilder();
             builder.disableHtmlEscaping();
             builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+            builder.registerTypeAdapter(Limit.class, new LimitAdapter());
             Gson gson = builder.create();
 
             StringWriter writer = new StringWriter();

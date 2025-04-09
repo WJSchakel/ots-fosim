@@ -12,7 +12,6 @@ import org.opentrafficsim.fosim.parameters.distributions.DistributionType;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class DistributionData implements ValueData
 {
 

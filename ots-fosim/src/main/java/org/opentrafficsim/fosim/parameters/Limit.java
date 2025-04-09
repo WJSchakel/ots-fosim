@@ -10,7 +10,6 @@ package org.opentrafficsim.fosim.parameters;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class Limit
 {
 
@@ -19,5 +18,5 @@ public class Limit
 
     /** Value. */
     public Double value;
-
+    
 }

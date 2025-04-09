@@ -8,7 +8,6 @@ package org.opentrafficsim.fosim.parameters.data;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class ScalarData implements ValueData
 {
 

@@ -3,6 +3,8 @@ package org.opentrafficsim.fosim.parameters;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opentrafficsim.fosim.parameters.distributions.DistributionValue;
+
 /**
  * Contains information on how and what to display for a parameter.
  * <p>
@@ -11,7 +13,7 @@ import java.util.List;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public class Parameter extends BiLingual // MinMax<Parameter>
+public class Parameter extends MinMax<Parameter>
 {
 
     /** Parameter id. */
@@ -27,8 +29,7 @@ public class Parameter extends BiLingual // MinMax<Parameter>
     public String unit;
 
     /** List of default values for vehicle-driver classes. */
-    // public List<DefaultValue> defaultValue;
-    public List<Double> defaultValue;
+    public List<DefaultValue> defaultValue;
 
     /**
      * Constructor using same name for Dutch and English.
@@ -93,17 +94,16 @@ public class Parameter extends BiLingual // MinMax<Parameter>
         {
             if (defaultValues[i] instanceof Number)
             {
-                // this.defaultValue.add(new Scalar(((Number) defaultValues[i]).doubleValue()));
-                this.defaultValue.add(((Number) defaultValues[i]).doubleValue());
+                this.defaultValue.add(new Scalar(((Number) defaultValues[i]).doubleValue()));
             }
-            // else if (defaultValues[i] instanceof Scalar)
-            // {
-            // this.defaultValue.add((Scalar) defaultValues[i]);
-            // }
-            // else if (defaultValues[i] instanceof DistributionValue)
-            // {
-            // this.defaultValue.add((DistributionValue) defaultValues[i]);
-            // }
+            else if (defaultValues[i] instanceof Scalar)
+            {
+                this.defaultValue.add((Scalar) defaultValues[i]);
+            }
+            else if (defaultValues[i] instanceof DistributionValue)
+            {
+                this.defaultValue.add((DistributionValue) defaultValues[i]);
+            }
             else
             {
                 throw new IllegalArgumentException("Element at index " + i + " is not a Number, Scalar or Distribution.");

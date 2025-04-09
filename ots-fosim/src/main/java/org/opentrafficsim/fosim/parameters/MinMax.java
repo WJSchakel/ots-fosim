@@ -9,7 +9,6 @@ package org.opentrafficsim.fosim.parameters;
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  * @param <T> type of object itself
  */
-@Deprecated
 public class MinMax<T extends MinMax<T>> extends BiLingual
 {
 

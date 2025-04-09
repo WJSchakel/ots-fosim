@@ -18,6 +18,8 @@ import org.djunits.value.vfloat.vector.base.FloatVector;
 import org.djutils.serialization.SerializationException;
 import org.opentrafficsim.fosim.parameters.DefaultValue;
 import org.opentrafficsim.fosim.parameters.DefaultValueAdapter;
+import org.opentrafficsim.fosim.parameters.Limit;
+import org.opentrafficsim.fosim.parameters.LimitAdapter;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.BatchStatus;
 import org.opentrafficsim.fosim.sim0mq.trace.Trace;
@@ -498,6 +500,7 @@ public class FosimEmulator
     {
         GsonBuilder builder = new GsonBuilder();
         builder.registerTypeAdapter(DefaultValue.class, new DefaultValueAdapter());
+        builder.registerTypeAdapter(Limit.class, new LimitAdapter());
         Gson gson = builder.create();
         JsonReader reader = new JsonReader(new StringReader(json));
         return (T) gson.fromJson(reader, clazz);

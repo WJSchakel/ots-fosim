@@ -20,7 +20,6 @@ import com.google.gson.JsonSerializer;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDeserializer<DefaultValue>
 {
 

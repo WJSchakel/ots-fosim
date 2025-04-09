@@ -34,6 +34,8 @@ import org.opentrafficsim.fosim.parameters.data.DistributionData;
 import org.opentrafficsim.fosim.parameters.data.ParameterData;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
+import org.opentrafficsim.fosim.parameters.data.ScalarData;
+import org.opentrafficsim.fosim.parameters.data.ValueData;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
@@ -111,24 +113,18 @@ public class OtsParametersParser
     {
         // GTU templates
         GtuType gtuType = this.gtuTypes.get(vehicleTypeNumber);
-        // ValueData valueLength = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "l").value.get(vehicleTypeNumber);
-        // Generator<Length> length =
-        // (valueLength instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueLength).value())
-        // : getDistribution((DistributionData) valueLength, stream, Length.class, LengthUnit.SI);
-        // ValueData valueWidth = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "w").value.get(vehicleTypeNumber);
-        // Generator<Length> width =
-        // (valueWidth instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueWidth).value())
-        // : getDistribution((DistributionData) valueWidth, stream, Length.class, LengthUnit.SI);
-        // ValueData valueMaxV = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "vMax").value.get(vehicleTypeNumber);
-        // Generator<Speed> speed =
-        // (valueMaxV instanceof ScalarData) ? () -> new Speed(((ScalarData) valueMaxV).value(), SpeedUnit.KM_PER_HOUR)
-        // : getDistribution((DistributionData) valueMaxV, stream, Speed.class, SpeedUnit.KM_PER_HOUR);
-        double l = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "l").value.get(vehicleTypeNumber);
-        Generator<Length> length = () -> Length.instantiateSI(l);
-        double w = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "w").value.get(vehicleTypeNumber);
-        Generator<Length> width = () -> Length.instantiateSI(w);
-        double v = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "vMax").value.get(vehicleTypeNumber);
-        Generator<Speed> speed = () -> new Speed(v, SpeedUnit.KM_PER_HOUR);
+        ValueData valueLength = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "l").value.get(vehicleTypeNumber);
+        Generator<Length> length =
+                (valueLength instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueLength).value())
+                        : getDistribution((DistributionData) valueLength, stream, Length.class, LengthUnit.SI);
+        ValueData valueWidth = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "w").value.get(vehicleTypeNumber);
+        Generator<Length> width =
+                (valueWidth instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueWidth).value())
+                        : getDistribution((DistributionData) valueWidth, stream, Length.class, LengthUnit.SI);
+        ValueData valueMaxV = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "vMax").value.get(vehicleTypeNumber);
+        Generator<Speed> speed =
+                (valueMaxV instanceof ScalarData) ? () -> new Speed(((ScalarData) valueMaxV).value(), SpeedUnit.KM_PER_HOUR)
+                        : getDistribution((DistributionData) valueMaxV, stream, Speed.class, SpeedUnit.KM_PER_HOUR);
 
         templates.put(gtuType, new GtuTemplate(gtuType, length, width, speed));
 
@@ -154,11 +150,9 @@ public class OtsParametersParser
         addParameter(parameterFactory, ParameterTypes.TMAX, ParameterDefinitions.DRIVER_GROUP_ID, "Tmax", Duration.class,
                 DurationUnit.SI, stream, vehicleTypeNumber);
         // T = Tmax
-        // ValueData valueData = getParameterData(ParameterDefinitions.DRIVER_GROUP_ID, "Tmax").value.get(vehicleTypeNumber);
-        // Duration t = Duration.instantiateSI(valueData instanceof ScalarData ? ((ScalarData) valueData).value()
-        // : getTypicalValue((DistributionData) valueData));
-        Duration t = Duration
-                .instantiateSI(getParameterData(ParameterDefinitions.DRIVER_GROUP_ID, "Tmax").value.get(vehicleTypeNumber));
+        ValueData valueData = getParameterData(ParameterDefinitions.DRIVER_GROUP_ID, "Tmax").value.get(vehicleTypeNumber);
+        Duration t = Duration.instantiateSI(valueData instanceof ScalarData ? ((ScalarData) valueData).value()
+                : getTypicalValue((DistributionData) valueData));
 
         parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), ParameterTypes.T, t);
         addParameter(parameterFactory, ParameterTypes.TMIN, ParameterDefinitions.DRIVER_GROUP_ID, "Tmin", Duration.class,
@@ -277,20 +271,18 @@ public class OtsParametersParser
             final String parameterGroup, final String parameterId, final StreamInterface stream, final int vehicleTypeNumber)
             throws ParameterException
     {
-        // ValueData valueData = getParameterData(parameterGroup, parameterId).value.get(vehicleTypeNumber);
-        // if (valueData instanceof ScalarData)
-        // {
-        // double value = ((ScalarData) valueData).value();
-        // parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType, value);
-        // }
-        // else
-        // {
-        // DistributionData distribution = ((DistributionData) valueData);
-        // DistContinuous dist = getDistribution(distribution, stream);
-        // parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType, dist);
-        // }
-        parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
-                getParameterData(parameterGroup, parameterId).value.get(vehicleTypeNumber));
+        ValueData valueData = getParameterData(parameterGroup, parameterId).value.get(vehicleTypeNumber);
+        if (valueData instanceof ScalarData)
+        {
+            double value = ((ScalarData) valueData).value();
+            parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType, value);
+        }
+        else
+        {
+            DistributionData distribution = ((DistributionData) valueData);
+            DistContinuous dist = getDistribution(distribution, stream);
+            parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType, dist);
+        }
     }
 
     /**
@@ -313,68 +305,63 @@ public class OtsParametersParser
             final String parameterGroup, final String parameterId, final Class<T> clazz, final U unit,
             final StreamInterface stream, final int vehicleTypeNumber) throws ParameterException
     {
-        // ValueData valueData = getParameterData(parameterGroup, parameterId).value.get(vehicleTypeNumber);
-        double valueData = getParameterData(parameterGroup, parameterId).value.get(vehicleTypeNumber);
-        // if (valueData instanceof ScalarData)
-        // {
-        T value;
-        if (unit.equals(LengthUnit.SI) || unit.equals(LengthUnit.KILOMETER))
+        ValueData valueData = getParameterData(parameterGroup, parameterId).value.get(vehicleTypeNumber);
+        if (valueData instanceof ScalarData)
         {
-            // value = (T) new Length(((ScalarData) valueData).value(), (LengthUnit) unit);
-            value = (T) new Length(valueData, (LengthUnit) unit);
-        }
-        else if (unit.equals(SpeedUnit.SI) || unit.equals(SpeedUnit.KM_PER_HOUR))
-        {
-            // value = (T) new Speed(((ScalarData) valueData).value(), (SpeedUnit) unit);
-            value = (T) new Speed(valueData, (SpeedUnit) unit);
-        }
-        else if (unit.equals(AccelerationUnit.SI))
-        {
-            // value = (T) new Acceleration(((ScalarData) valueData).value(), (AccelerationUnit) unit);
-            value = (T) new Acceleration(valueData, (AccelerationUnit) unit);
-        }
-        else if (unit.equals(DurationUnit.SI))
-        {
-            // value = (T) new Duration(((ScalarData) valueData).value(), (DurationUnit) unit);
-            value = (T) new Duration(valueData, (DurationUnit) unit);
+            T value;
+            if (unit.equals(LengthUnit.SI) || unit.equals(LengthUnit.KILOMETER))
+            {
+                value = (T) new Length(((ScalarData) valueData).value(), (LengthUnit) unit);
+            }
+            else if (unit.equals(SpeedUnit.SI) || unit.equals(SpeedUnit.KM_PER_HOUR))
+            {
+                value = (T) new Speed(((ScalarData) valueData).value(), (SpeedUnit) unit);
+            }
+            else if (unit.equals(AccelerationUnit.SI))
+            {
+                value = (T) new Acceleration(((ScalarData) valueData).value(), (AccelerationUnit) unit);
+            }
+            else if (unit.equals(DurationUnit.SI))
+            {
+                value = (T) new Duration(((ScalarData) valueData).value(), (DurationUnit) unit);
+            }
+            else
+            {
+                throw new ParameterException("Unknown unit " + unit);
+            }
+            parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType, value);
         }
         else
         {
-            throw new ParameterException("Unknown unit " + unit);
+            if (unit.equals(LengthUnit.SI) || unit.equals(LengthUnit.KILOMETER))
+            {
+                parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
+                        (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
+                                Length.class, (LengthUnit) unit));
+            }
+            else if (unit.equals(SpeedUnit.SI) || unit.equals(SpeedUnit.KM_PER_HOUR))
+            {
+                parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
+                        (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
+                                Speed.class, (SpeedUnit) unit));
+            }
+            else if (unit.equals(AccelerationUnit.SI))
+            {
+                parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
+                        (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
+                                Acceleration.class, (AccelerationUnit) unit));
+            }
+            else if (unit.equals(DurationUnit.SI))
+            {
+                parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
+                        (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
+                                Duration.class, (DurationUnit) unit));
+            }
+            else
+            {
+                throw new ParameterException("Unknown unit " + unit);
+            }
         }
-        parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType, value);
-        // }
-        // else
-        // {
-        // if (unit.equals(LengthUnit.SI) || unit.equals(LengthUnit.KILOMETER))
-        // {
-        // parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
-        // (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
-        // Length.class, (LengthUnit) unit));
-        // }
-        // else if (unit.equals(SpeedUnit.SI) || unit.equals(SpeedUnit.KM_PER_HOUR))
-        // {
-        // parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
-        // (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
-        // Speed.class, (SpeedUnit) unit));
-        // }
-        // else if (unit.equals(AccelerationUnit.SI))
-        // {
-        // parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
-        // (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
-        // Acceleration.class, (AccelerationUnit) unit));
-        // }
-        // else if (unit.equals(DurationUnit.SI))
-        // {
-        // parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), parameterType,
-        // (ContinuousDistDoubleScalar.Rel<T, U>) getDistribution((DistributionData) valueData, stream,
-        // Duration.class, (DurationUnit) unit));
-        // }
-        // else
-        // {
-        // throw new ParameterException("Unknown unit " + unit);
-        // }
-        // }
     }
 
     /**

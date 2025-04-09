@@ -2,6 +2,7 @@ package org.opentrafficsim.fosim.parameters.distributions;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.opentrafficsim.fosim.parameters.BiLingual;
 
@@ -13,13 +14,15 @@ import org.opentrafficsim.fosim.parameters.BiLingual;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-@Deprecated
 public class Distribution extends BiLingual
 {
 
     /** Distribution type. */
     public DistributionType type;
 
+    /** String to represent the distribution. */
+    public String notation;
+    
     /** Parameters of the distribution. */
     public List<DistributionParameter> parameters;
 
@@ -28,31 +31,33 @@ public class Distribution extends BiLingual
 
     /**
      * Constructor using same name for Dutch and English.
-     * @param type distribution type.
-     * @param name distribution name.
+     * @param type distribution type
+     * @param notation symbol used in notation, e.g. "N" for "N(mu=3, sigma=1)"
+     * @param name distribution name
      */
-    public Distribution(final DistributionType type, final String name)
+    public Distribution(final DistributionType type, final String notation, final String name)
     {
-        super(name);
-        this.type = type;
+        this(type, notation, name, name);
     }
 
     /**
      * Constructor with different names between Dutch and English.
-     * @param type distribution type.
-     * @param nameNl Dutch distribution name.
-     * @param nameEn English distribution name.
+     * @param type distribution type
+     * @param notation symbol used in notation, e.g. "N" for "N(mu=3, sigma=1)"
+     * @param nameNl Dutch distribution name
+     * @param nameEn English distribution name
      */
-    public Distribution(final DistributionType type, final String nameNl, final String nameEn)
+    public Distribution(final DistributionType type, final String notation, final String nameNl, final String nameEn)
     {
         super(nameNl, nameEn);
         this.type = type;
+        this.notation = notation;
     }
 
     /**
      * Sets the valid range. By default this is {@code ValidRange.all}.
-     * @param validRange valid range.
-     * @return for method chaining.
+     * @param validRange valid range
+     * @return for method chaining
      */
     public Distribution setValidRange(final ValidRange validRange)
     {
@@ -62,7 +67,7 @@ public class Distribution extends BiLingual
 
     /**
      * Adds a parameter to the distribution.
-     * @param parameter distribution parameter.
+     * @param parameter distribution parameter
      */
     public void addParameter(final DistributionParameter parameter)
     {
@@ -71,6 +76,21 @@ public class Distribution extends BiLingual
             this.parameters = new ArrayList<>();
         }
         this.parameters.add(parameter);
+    }
+
+    @Override
+    public String toString()
+    {
+        String name = this.notation == null ? this.type.name() : this.notation;
+        String sep = "";
+        StringBuilder str = new StringBuilder(name).append("(");
+        for (DistributionParameter param : this.parameters)
+        {
+            str.append(sep).append(param.id).append("=").append(param.defaultValue.value == null ? param.defaultValue.parameter
+                    : String.format(Locale.US, "%.2f", param.defaultValue.value));
+            sep = ", ";
+        }
+        return str.append(")").toString();
     }
 
 }
