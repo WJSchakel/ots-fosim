@@ -16,9 +16,6 @@ import org.opentrafficsim.fosim.parameters.DefaultValue;
 public class DistributionValue implements DefaultValue
 {
 
-    /** Distribution type. */
-    public final DistributionType type;
-
     /**
      * Default value. This is solely used when a parameter distribution is selected by the user, where the mean/mode/median
      * needs to get a default value. This value is then the default value of the parameter. In case that default value is a
@@ -26,15 +23,18 @@ public class DistributionValue implements DefaultValue
      */
     public final double defaultValue;
 
+    /** Distribution type. */
+    public final DistributionType type;
+
     /** Names and values of distribution parameters. */
-    public final LinkedHashMap<String, Double> values = new LinkedHashMap<>();
+    public final LinkedHashMap<String, Double> distributionParameters = new LinkedHashMap<>();
 
     /**
      * Constructor.
-     * @param type distribution type.
      * @param defaultValue value of the default mean/mode/median value in another distribution should the user select it.
+     * @param type distribution type.
      */
-    private DistributionValue(final DistributionType type, final double defaultValue)
+    public DistributionValue(final double defaultValue, final DistributionType type)
     {
         this.type = type;
         this.defaultValue = defaultValue;
@@ -47,8 +47,8 @@ public class DistributionValue implements DefaultValue
      */
     public static DistributionValue exponential(final double lambda)
     {
-        DistributionValue dist = new DistributionValue(DistributionType.Exponential, lambda);
-        dist.values.put("lambda", lambda);
+        DistributionValue dist = new DistributionValue(lambda, DistributionType.Exponential);
+        dist.distributionParameters.put("lambda", lambda);
         return dist;
     }
 
@@ -61,10 +61,10 @@ public class DistributionValue implements DefaultValue
      */
     public static DistributionValue triangular(final double min, final double mode, final double max)
     {
-        DistributionValue dist = new DistributionValue(DistributionType.Triangular, mode);
-        dist.values.put("min", min);
-        dist.values.put("mode", mode);
-        dist.values.put("max", max);
+        DistributionValue dist = new DistributionValue(mode, DistributionType.Triangular);
+        dist.distributionParameters.put("min", min);
+        dist.distributionParameters.put("mode", mode);
+        dist.distributionParameters.put("max", max);
         return dist;
     }
 
@@ -78,11 +78,11 @@ public class DistributionValue implements DefaultValue
      */
     public static DistributionValue normal(final double mu, final double sigma, final double min, final double max)
     {
-        DistributionValue dist = new DistributionValue(DistributionType.Normal, mu);
-        dist.values.put("mu", mu);
-        dist.values.put("sigma", sigma);
-        dist.values.put("min", min);
-        dist.values.put("max", max);
+        DistributionValue dist = new DistributionValue(mu, DistributionType.Normal);
+        dist.distributionParameters.put("mu", mu);
+        dist.distributionParameters.put("sigma", sigma);
+        dist.distributionParameters.put("min", min);
+        dist.distributionParameters.put("max", max);
         return dist;
     }
 
@@ -96,11 +96,11 @@ public class DistributionValue implements DefaultValue
      */
     public static DistributionValue logNormal(final double mean, final double std, final double min, final double max)
     {
-        DistributionValue dist = new DistributionValue(DistributionType.LogNormal, mean);
-        dist.values.put("mu", mean);
-        dist.values.put("sigma", std);
-        dist.values.put("min", min);
-        dist.values.put("max", max);
+        DistributionValue dist = new DistributionValue(mean, DistributionType.LogNormal);
+        dist.distributionParameters.put("mu", mean);
+        dist.distributionParameters.put("sigma", std);
+        dist.distributionParameters.put("min", min);
+        dist.distributionParameters.put("max", max);
         return dist;
     }
 
@@ -112,9 +112,9 @@ public class DistributionValue implements DefaultValue
      */
     public static DistributionValue uniform(final double min, final double max)
     {
-        DistributionValue dist = new DistributionValue(DistributionType.Uniform, 0.5 * (min + max));
-        dist.values.put("min", min);
-        dist.values.put("max", max);
+        DistributionValue dist = new DistributionValue(0.5 * (min + max), DistributionType.Uniform);
+        dist.distributionParameters.put("min", min);
+        dist.distributionParameters.put("max", max);
         return dist;
     }
 

@@ -1,16 +1,20 @@
 package org.opentrafficsim.fosim.parameters;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 
+import org.opentrafficsim.fosim.parameters.distributions.DistributionType;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionValue;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.google.gson.reflect.TypeToken;
 
 /**
  * Adapter for default values, which are either {@code Scalar} or {@code Distribution}.
@@ -34,7 +38,12 @@ public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDe
         {
             return context.serialize(((Scalar) src).value(), Double.class);
         }
-        return context.serialize(src, DistributionValue.class);
+        DistributionValue distributionValue = (DistributionValue) src;
+        JsonObject obj = new JsonObject();
+        obj.addProperty("defaultValue", distributionValue.defaultValue);
+        obj.addProperty("type", distributionValue.type.name());
+        distributionValue.distributionParameters.forEach((name, value) -> obj.addProperty(name, value));
+        return obj;
     }
 
     /** {@inheritDoc} */
@@ -46,7 +55,16 @@ public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDe
         {
             return new Scalar(json.getAsDouble());
         }
-        return GSON.fromJson(json, DistributionValue.class);
+        JsonObject jsonObject = json.getAsJsonObject();
+        DistributionType distributionType = DistributionType.valueOf(jsonObject.get("type").getAsString());
+        double defaultValue = jsonObject.get("defaultValue").getAsDouble();
+        DistributionValue distributionValue = new DistributionValue(defaultValue, distributionType);
+        jsonObject.remove("type");
+        jsonObject.remove("defaultValue");
+        Map<String, Double> map =
+                GSON.fromJson(jsonObject, TypeToken.getParameterized(Map.class, String.class, Double.class).getType());
+        distributionValue.distributionParameters.putAll(map);
+        return distributionValue;
     }
 
 }

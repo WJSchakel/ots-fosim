@@ -27,7 +27,7 @@ public class Distribution extends BiLingual
     public List<DistributionParameter> parameters;
 
     /** Range for which this distribution is valid. */
-    public ValidRange validRange = ValidRange.all;
+    public Support validRange = Support.all;
 
     /**
      * Constructor using same name for Dutch and English.
@@ -59,7 +59,7 @@ public class Distribution extends BiLingual
      * @param validRange valid range
      * @return for method chaining
      */
-    public Distribution setValidRange(final ValidRange validRange)
+    public Distribution setSupport(final Support validRange)
     {
         this.validRange = validRange;
         return this;

@@ -45,14 +45,12 @@
           "defaultValue": [
             180.0,
             {
-              "type": "Normal",
               "defaultValue": 85.0,
-              "values": {
-                "mu": 85.0,
-                "sigma": 2.5,
-                "min": 60.0,
-                "max": 100.0
-              }
+              "type": "Normal",
+              "mu": 85.0,
+              "sigma": 2.5,
+              "min": 60.0,
+              "max": 100.0
             }
           ],
           "minimum": 50.0,
@@ -104,24 +102,20 @@
           "unit": "-",
           "defaultValue": [
             {
-              "type": "Normal",
               "defaultValue": 1.0308,
-              "values": {
-                "mu": 1.0308,
-                "sigma": 0.1,
-                "min": 0.5,
-                "max": 2.0
-              }
+              "type": "Normal",
+              "mu": 1.0308,
+              "sigma": 0.1,
+              "min": 0.5,
+              "max": 2.0
             },
             {
-              "type": "Normal",
               "defaultValue": 1.0308,
-              "values": {
-                "mu": 1.0308,
-                "sigma": 0.1,
-                "min": 0.5,
-                "max": 2.0
-              }
+              "type": "Normal",
+              "mu": 1.0308,
+              "sigma": 0.1,
+              "min": 0.5,
+              "max": 2.0
             }
           ],
           "minimum": 0.1,
@@ -376,13 +370,11 @@
           "unit": "-",
           "defaultValue": [
             {
-              "type": "Triangular",
               "defaultValue": 0.25,
-              "values": {
-                "min": 0.0,
-                "mode": 0.25,
-                "max": 1.0
-              }
+              "type": "Triangular",
+              "min": 0.0,
+              "mode": 0.25,
+              "max": 1.0
             },
             1.0
           ],

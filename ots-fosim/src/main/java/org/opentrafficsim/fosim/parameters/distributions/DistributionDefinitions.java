@@ -75,35 +75,35 @@ public class DistributionDefinitions
         List<Distribution> list = new ArrayList<>();
 
         // Exponential
-        Distribution exponential = new Distribution(DistributionType.Exponential, "E", "Exponentieel", "Exponential")
-                .setValidRange(ValidRange.positive_inclusive);
-        DistributionParameter lambda =
-                new DistributionParameter("lambda", it("λ")).setMin(0.0).setMax("param.max").setDefault("param.default");
+        Distribution exponential = new Distribution(DistributionType.Exponential, it("E"), "Exponentieel", "Exponential")
+                .setSupport(Support.from_zero);
+        DistributionParameter lambda = new DistributionParameter("lambda", it("λ")).setMin(0.0).setMax("param.maximum")
+                .setDefault("param.defaultValue");
         exponential.addParameter(lambda);
         list.add(exponential);
 
         // Triangular
-        Distribution triangular = new Distribution(DistributionType.Triangular, "T", "Driehoek", "Triangular");
+        Distribution triangular = new Distribution(DistributionType.Triangular, it("T"), "Driehoek", "Triangular");
         DistributionParameter triMin =
-                new DistributionParameter("min", it("min")).setMin("param.min").setMax("mode").setDefault("param.min");
+                new DistributionParameter("min", it("min")).setMin("param.minimum").setMax("mode").setDefault("param.minimum");
         DistributionParameter triMode =
-                new DistributionParameter("mode", it("mode")).setMin("min").setMax("max").setDefault("param.default");
+                new DistributionParameter("mode", it("mode")).setMin("min").setMax("max").setDefault("param.defaultValue");
         DistributionParameter triMax =
-                new DistributionParameter("max", it("max")).setMin("mode").setMax("param.max").setDefault("param.max");
+                new DistributionParameter("max", it("max")).setMin("mode").setMax("param.maximum").setDefault("param.maximum");
         triangular.addParameter(triMin);
         triangular.addParameter(triMode);
         triangular.addParameter(triMax);
         list.add(triangular);
 
         // Normal
-        Distribution normal = new Distribution(DistributionType.Normal, "N", "Normaal", "Normal");
+        Distribution normal = new Distribution(DistributionType.Normal, it("N"), "Normaal", "Normal");
         DistributionParameter normMu =
-                new DistributionParameter("mu", it("μ")).setMin("min").setMax("max").setDefault("param.default");
+                new DistributionParameter("mu", it("μ")).setMin("min").setMax("max").setDefault("param.defaultValue");
         DistributionParameter normSigma = new DistributionParameter("sigma", it("σ")).setMin(0.0).setDefault(1.0);
         DistributionParameter normMin =
-                new DistributionParameter("min", it("min")).setMin("param.min").setMax("mu").setDefault("param.min");
+                new DistributionParameter("min", it("min")).setMin("param.minimum").setMax("mu").setDefault("param.minimum");
         DistributionParameter normMax =
-                new DistributionParameter("max", it("max")).setMin("mu").setMax("param.max").setDefault("param.max");
+                new DistributionParameter("max", it("max")).setMin("mu").setMax("param.maximum").setDefault("param.maximum");
         normal.addParameter(normMu);
         normal.addParameter(normSigma);
         normal.addParameter(normMin);
@@ -111,14 +111,14 @@ public class DistributionDefinitions
         list.add(normal);
 
         // LogNormal
-        Distribution logNormal =
-                new Distribution(DistributionType.LogNormal, "LN", "LogNormaal", "LogNormal").setValidRange(ValidRange.positive);
+        Distribution logNormal = new Distribution(DistributionType.LogNormal, it("LN"), "LogNormaal", "LogNormal")
+                .setSupport(Support.positive);
         DistributionParameter logMu = new DistributionParameter("mu", it("μ")).setDefault(1.0);
         DistributionParameter logSigma = new DistributionParameter("sigma", it("σ")).setMin(0.0).setDefault(1.0);
         DistributionParameter logMin =
-                new DistributionParameter("min", it("min")).setMin("param.min").setMax("max").setDefault("param.min");
+                new DistributionParameter("min", it("min")).setMin("param.minimum").setMax("max").setDefault("param.minimum");
         DistributionParameter logMax =
-                new DistributionParameter("max", it("max")).setMin("min").setMax("param.max").setDefault("param.max");
+                new DistributionParameter("max", it("max")).setMin("min").setMax("param.maximum").setDefault("param.maximum");
         logNormal.addParameter(logMu);
         logNormal.addParameter(logSigma);
         logNormal.addParameter(logMin);
@@ -126,11 +126,11 @@ public class DistributionDefinitions
         list.add(logNormal);
 
         // Uniform
-        Distribution uniform = new Distribution(DistributionType.Uniform, "U", "Uniform", "Uniform");
+        Distribution uniform = new Distribution(DistributionType.Uniform, it("U"), "Uniform", "Uniform");
         DistributionParameter uniMin =
-                new DistributionParameter("min", it("min")).setMin("param.min").setMax("max").setDefault("param.min");
+                new DistributionParameter("min", it("min")).setMin("param.minimum").setMax("max").setDefault("param.minimum");
         DistributionParameter uniMax =
-                new DistributionParameter("max", it("max")).setMin("min").setMax("param.max").setDefault("param.max");
+                new DistributionParameter("max", it("max")).setMin("min").setMax("param.maximum").setDefault("param.maximum");
         uniform.addParameter(uniMin);
         uniform.addParameter(uniMax);
         list.add(uniform);

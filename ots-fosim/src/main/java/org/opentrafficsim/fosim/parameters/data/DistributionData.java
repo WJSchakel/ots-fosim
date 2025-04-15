@@ -17,7 +17,7 @@ public class DistributionData implements ValueData
 
     /** Distribution type. */
     public DistributionType type;
-    
+
     /** List of parameters that define the distribution. */
     public Map<String, Double> distributionParameters;
 
@@ -27,5 +27,5 @@ public class DistributionData implements ValueData
     {
         return "DistributionData [type=" + this.type + ", distributionParameters=" + this.distributionParameters + "]";
     }
-    
+
 }

@@ -40,7 +40,8 @@ public class ValueAdapter implements JsonSerializer<ValueData>, JsonDeserializer
         }
         DistributionData distribution = (DistributionData) src;
         JsonObject obj = new JsonObject();
-        obj.addProperty("type", distribution.type.toString());
+        obj.addProperty("type", distribution.type.name());
+        distribution.distributionParameters.forEach((name, value) -> obj.addProperty(name, value));
         for (Entry<String, Double> entry : distribution.distributionParameters.entrySet())
         {
             obj.addProperty(entry.getKey(), entry.getValue());

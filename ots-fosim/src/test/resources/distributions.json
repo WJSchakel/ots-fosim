@@ -3,36 +3,36 @@
   "distributions": [
     {
       "type": "Exponential",
-      "notation": "E",
+      "notation": "<i>E</i>",
       "parameters": [
         {
           "id": "lambda",
-          "defaultValue": "param.default",
+          "defaultValue": "param.defaultValue",
           "minimum": 0.0,
-          "maximum": "param.max",
+          "maximum": "param.maximum",
           "nameNl": "<i>λ</i>",
           "nameEn": "<i>λ</i>"
         }
       ],
-      "validRange": "positive_inclusive",
+      "validRange": "from_zero",
       "nameNl": "Exponentieel",
       "nameEn": "Exponential"
     },
     {
       "type": "Triangular",
-      "notation": "T",
+      "notation": "<i>T</i>",
       "parameters": [
         {
           "id": "min",
-          "defaultValue": "param.min",
-          "minimum": "param.min",
+          "defaultValue": "param.minimum",
+          "minimum": "param.minimum",
           "maximum": "mode",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "mode",
-          "defaultValue": "param.default",
+          "defaultValue": "param.defaultValue",
           "minimum": "min",
           "maximum": "max",
           "nameNl": "<i>mode</i>",
@@ -40,9 +40,9 @@
         },
         {
           "id": "max",
-          "defaultValue": "param.max",
+          "defaultValue": "param.maximum",
           "minimum": "mode",
-          "maximum": "param.max",
+          "maximum": "param.maximum",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }
@@ -53,11 +53,11 @@
     },
     {
       "type": "Normal",
-      "notation": "N",
+      "notation": "<i>N</i>",
       "parameters": [
         {
           "id": "mu",
-          "defaultValue": "param.default",
+          "defaultValue": "param.defaultValue",
           "minimum": "min",
           "maximum": "max",
           "nameNl": "<i>μ</i>",
@@ -72,17 +72,17 @@
         },
         {
           "id": "min",
-          "defaultValue": "param.min",
-          "minimum": "param.min",
+          "defaultValue": "param.minimum",
+          "minimum": "param.minimum",
           "maximum": "mu",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "max",
-          "defaultValue": "param.max",
+          "defaultValue": "param.maximum",
           "minimum": "mu",
-          "maximum": "param.max",
+          "maximum": "param.maximum",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }
@@ -93,7 +93,7 @@
     },
     {
       "type": "LogNormal",
-      "notation": "LN",
+      "notation": "<i>LN</i>",
       "parameters": [
         {
           "id": "mu",
@@ -110,17 +110,17 @@
         },
         {
           "id": "min",
-          "defaultValue": "param.min",
-          "minimum": "param.min",
+          "defaultValue": "param.minimum",
+          "minimum": "param.minimum",
           "maximum": "max",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "max",
-          "defaultValue": "param.max",
+          "defaultValue": "param.maximum",
           "minimum": "min",
-          "maximum": "param.max",
+          "maximum": "param.maximum",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }
@@ -131,21 +131,21 @@
     },
     {
       "type": "Uniform",
-      "notation": "U",
+      "notation": "<i>U</i>",
       "parameters": [
         {
           "id": "min",
-          "defaultValue": "param.min",
-          "minimum": "param.min",
+          "defaultValue": "param.minimum",
+          "minimum": "param.minimum",
           "maximum": "max",
           "nameNl": "<i>min</i>",
           "nameEn": "<i>min</i>"
         },
         {
           "id": "max",
-          "defaultValue": "param.max",
+          "defaultValue": "param.maximum",
           "minimum": "min",
-          "maximum": "param.max",
+          "maximum": "param.maximum",
           "nameNl": "<i>max</i>",
           "nameEn": "<i>max</i>"
         }

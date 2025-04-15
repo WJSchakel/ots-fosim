@@ -27,7 +27,7 @@ public class ParameterValidator
 {
 
     /** Ordinal list. */
-    private static final List<String> ORDER = List.of("param.min", "min", "", "max", "param.max");
+    private static final List<String> ORDER = List.of("param.minimum", "min", "", "max", "param.maximum");
 
     /**
      * Test parameter validity. Parameters referred to in the limits exist, parameters must be unique by their id, default
@@ -50,57 +50,59 @@ public class ParameterValidator
         }
 
         // check limits
-        // for (ParameterGroup group : list)
-        // {
-        // for (Parameter parameter : group.parameters)
-        // {
-        // if (parameter.minimum.value != null && parameter.maximum.value != null)
-        // {
-        // assertTrue(parameter.minimum.value < parameter.maximum.value,
-        // "Limits of parameter " + parameter.id + " do not comply to min < max.");
-        // }
-        // if (parameter.minimum.parameter != null)
-        // {
-        // assertTrue(map.containsKey(parameter.minimum.parameter), "Parameter " + parameter.id
-        // + " refers to parameter " + parameter.minimum.parameter + " (min) which does not exist.");
-        // assertTrue(map.get(parameter.minimum.parameter).maximum.parameter.equals(parameter.id),
-        // "Parameter " + parameter.id + " has a minimum of " + parameter.minimum.parameter
-        // + " but that does not have " + parameter.id + " as maximum.");
-        // }
-        // if (parameter.maximum.parameter != null)
-        // {
-        // assertTrue(map.containsKey(parameter.maximum.parameter), "Parameter " + parameter.id
-        // + " refers to parameter " + parameter.maximum.parameter + " (max) which does not exist.");
-        // assertTrue(map.get(parameter.maximum.parameter).minimum.parameter.equals(parameter.id),
-        // "Parameter " + parameter.id + " has a maximum of " + parameter.maximum.parameter
-        // + " but that does not have " + parameter.id + " as minimum.");
-        // }
-        // for (DefaultValue value : parameter.defaultValue)
-        // {
-        // if (value instanceof Scalar)
-        // {
-        // double val = ((Scalar) value).value();
-        // if (parameter.minimum != null && parameter.minimum.value != null)
-        // {
-        // assertTrue(parameter.minimum.value <= val,
-        // "Parameter " + parameter.id + " default value is smaller than its minimum.");
-        // }
-        // if (parameter.maximum != null && parameter.maximum.value != null)
-        // {
-        // assertTrue(val <= parameter.maximum.value,
-        // "Parameter " + parameter.id + " default value is larger than its maximum.");
-        // }
-        // }
-        // }
-        // }
-        // }
+        for (ParameterGroup group : list)
+        {
+            for (Parameter parameter : group.parameters)
+            {
+                assertTrue(parameter.minimum != null && parameter.maximum != null,
+                        "Parameter " + parameter + " is missing minimum or maximum.");
+                if (parameter.minimum.value != null && parameter.maximum.value != null)
+                {
+                    assertTrue(parameter.minimum.value < parameter.maximum.value,
+                            "Limits of parameter " + parameter.id + " do not comply to min < max.");
+                }
+                if (parameter.minimum.parameter != null)
+                {
+                    assertTrue(map.containsKey(parameter.minimum.parameter), "Parameter " + parameter.id
+                            + " refers to parameter " + parameter.minimum.parameter + " (min) which does not exist.");
+                    assertTrue(map.get(parameter.minimum.parameter).maximum.parameter.equals(parameter.id),
+                            "Parameter " + parameter.id + " has a minimum of " + parameter.minimum.parameter
+                                    + " but that does not have " + parameter.id + " as maximum.");
+                }
+                if (parameter.maximum.parameter != null)
+                {
+                    assertTrue(map.containsKey(parameter.maximum.parameter), "Parameter " + parameter.id
+                            + " refers to parameter " + parameter.maximum.parameter + " (max) which does not exist.");
+                    assertTrue(map.get(parameter.maximum.parameter).minimum.parameter.equals(parameter.id),
+                            "Parameter " + parameter.id + " has a maximum of " + parameter.maximum.parameter
+                                    + " but that does not have " + parameter.id + " as minimum.");
+                }
+                for (DefaultValue value : parameter.defaultValue)
+                {
+                    if (value instanceof Scalar)
+                    {
+                        double val = ((Scalar) value).value();
+                        if (parameter.minimum.value != null)
+                        {
+                            assertTrue(parameter.minimum.value <= val,
+                                    "Parameter " + parameter.id + " default value is smaller than its minimum.");
+                        }
+                        if (parameter.maximum.value != null)
+                        {
+                            assertTrue(val <= parameter.maximum.value,
+                                    "Parameter " + parameter.id + " default value is larger than its maximum.");
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**
      * Test distribution validity. Distributions have unique types, parameters referred to in the limits exist (or are
-     * param.min/max/default), parameters must be unique by their id within the distribution, default values must be between the
-     * minimum and the maximum values (when given), parameters must obey ordinality: param.min &le; min &le; any other with
-     * {@code .param} field &le; max &le; param.max.
+     * param.minimum/maximum/defaultValue), parameters must be unique by their id within the distribution, default values must
+     * be between the minimum and the maximum values (when given), parameters must obey ordinality: param.minimum &le; min &le;
+     * any other with {@code .param} field &le; max &le; param.maximum.
      */
     @Test
     public void checkDistributions()
@@ -116,7 +118,7 @@ public class ParameterValidator
         }
 
         // check individual distributions
-        Set<String> allowedDefaultParams = Set.of("param.min", "param.max", "param.default");
+        Set<String> allowedDefaultParams = Set.of("param.minimum", "param.maximum", "param.defaultValue");
         for (Distribution distribution : list)
         {
             // gather all by id, check unique
