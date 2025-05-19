@@ -69,25 +69,25 @@ public class AccelerationChangeListener implements EventListener
         {
             Object[] payload = (Object[]) event.getContent();
             String id = (String) payload[0];
-            FloatAcceleration toA = FloatAcceleration.instantiateSI(((Acceleration) payload[4]).floatValue());
+            long toA10 = Math.round(((Acceleration) payload[4]).si * 10.0);
             String laneId = (String) payload[8];
             Integer tolane = OtsTransceiver.getLaneRowFromId(laneId);
             GtuStamp stamp = this.previousStamp.get(id);
             // Note: toLane != fromLane might just mean the GTU left a diagonal lane, so need to consider justChangedLane
-            if (stamp != null && (Math.round(stamp.acceleration().si) != Math.round(toA.si)
-                    || !Objects.equals(stamp.lane(), tolane) && this.justChangedLane.contains(id)))
+            if (stamp != null && (stamp.acceleration10() != toA10)
+                    || !Objects.equals(stamp.lane(), tolane) && this.justChangedLane.contains(id))
             {
                 // add row to data
                 LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(id);
                 FloatDuration t = FloatDuration.instantiateSI(this.network.getSimulator().getSimulatorAbsTime().floatValue());
                 int fromln = stamp.lane();
-                FloatAcceleration fromA = stamp.acceleration();
+                long fromA10 = stamp.acceleration10();
                 FloatLength pos = FloatLength.instantiateSI(((PositionVector) payload[1]).get(0).floatValue());
                 FloatSpeed v = FloatSpeed.instantiateSI(((Speed) payload[3]).floatValue());
                 int type = this.gtuTypes.indexOf(gtu.getType());
-                this.data.append(t, fromln, tolane, fromA, toA, pos, v, type, Integer.valueOf(id));
+                this.data.append(t, fromln, tolane, rounded(fromA10), rounded(toA10), pos, v, type, Integer.valueOf(id));
             }
-            this.previousStamp.put(id, new GtuStamp(toA, tolane));
+            this.previousStamp.put(id, new GtuStamp(toA10, tolane));
         }
         else if (event.getType().equals(Network.GTU_ADD_EVENT))
         {
@@ -110,11 +110,21 @@ public class AccelerationChangeListener implements EventListener
     }
 
     /**
+     * Returns the acceleration rounded to the nearest 0.1 m/s/s.
+     * @param acceleration10 acceleration * 10
+     * @return acceleration rounded to the nearest 0.1 m/s/s
+     */
+    private static FloatAcceleration rounded(long acceleration10)
+    {
+        return FloatAcceleration.instantiateSI(((float) acceleration10) / 10.0f);
+    }
+
+    /**
      * Stores previous data on GTU.
-     * @param acceleration acceleration
+     * @param acceleration10 acceleration * 10
      * @param lane lane number
      */
-    record GtuStamp(FloatAcceleration acceleration, Integer lane)
+    record GtuStamp(Long acceleration10, Integer lane)
     {
     };
 
