@@ -1,6 +1,7 @@
 package org.opentrafficsim.fosim.parameters;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.LinkedHashMap;
@@ -55,7 +56,10 @@ public class ParameterValidator
             for (Parameter parameter : group.parameters)
             {
                 assertTrue(parameter.minimum != null && parameter.maximum != null,
-                        "Parameter " + parameter + " is missing minimum or maximum.");
+                        "Parameter " + parameter.id + " is missing minimum or maximum.");
+            }
+            for (Parameter parameter : group.parameters)
+            {
                 if (parameter.minimum.value != null && parameter.maximum.value != null)
                 {
                     assertTrue(parameter.minimum.value < parameter.maximum.value,
@@ -65,7 +69,8 @@ public class ParameterValidator
                 {
                     assertTrue(map.containsKey(parameter.minimum.parameter), "Parameter " + parameter.id
                             + " refers to parameter " + parameter.minimum.parameter + " (min) which does not exist.");
-                    assertTrue(map.get(parameter.minimum.parameter).maximum.parameter.equals(parameter.id),
+                    Limit otherLimit = map.get(parameter.minimum.parameter).maximum;
+                    assertTrue(otherLimit.parameter != null && otherLimit.parameter.equals(parameter.id),
                             "Parameter " + parameter.id + " has a minimum of " + parameter.minimum.parameter
                                     + " but that does not have " + parameter.id + " as maximum.");
                 }
@@ -73,7 +78,8 @@ public class ParameterValidator
                 {
                     assertTrue(map.containsKey(parameter.maximum.parameter), "Parameter " + parameter.id
                             + " refers to parameter " + parameter.maximum.parameter + " (max) which does not exist.");
-                    assertTrue(map.get(parameter.maximum.parameter).minimum.parameter.equals(parameter.id),
+                    Limit otherLimit = map.get(parameter.maximum.parameter).minimum;
+                    assertTrue(otherLimit.parameter != null && otherLimit.parameter.equals(parameter.id),
                             "Parameter " + parameter.id + " has a maximum of " + parameter.maximum.parameter
                                     + " but that does not have " + parameter.id + " as minimum.");
                 }
@@ -94,6 +100,27 @@ public class ParameterValidator
                         }
                     }
                 }
+            }
+            // Note: the above checks guarantee that any dynamic (chained) limit ends up at a value. Each parameter must have a
+            // minimum and a maximum. Each dynamic limit must be an existing parameter. Only circular chains then allow no value
+            // to be found, which is checked below.
+            for (Parameter parameter : group.parameters)
+            {
+                Limit limit = parameter.minimum;
+                while (limit.parameter != null)
+                {
+                    assertNotEquals(parameter.id, limit.parameter, "Circular limit definition for parameter " + parameter.id);
+                    limit = map.get(limit.parameter).minimum;
+                }
+                // assertNotNull(limit.value, "Parameter " + parameter.id + " has a minimum that is never defined by a value.");
+
+                limit = parameter.maximum;
+                while (limit.parameter != null)
+                {
+                    assertNotEquals(parameter.id, limit.parameter, "Circular limit definition for parameter " + parameter.id);
+                    limit = map.get(limit.parameter).maximum;
+                }
+                // assertNotNull(limit.value, "Parameter " + parameter.id + " has a maximum that is never defined by a value.");
             }
         }
     }
