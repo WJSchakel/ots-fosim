@@ -1,5 +1,7 @@
 package org.opentrafficsim.fosim.parameters;
 
+import org.djutils.exceptions.Throw;
+
 /**
  * Class that defines parameter limits. 
  * <p>
@@ -25,6 +27,7 @@ public class MinMax<T extends MinMax<T>> extends BiLingual
     public MinMax(final String name)
     {
         super(name);
+        Throw.whenNull(name, "name");
     }
     
     /**

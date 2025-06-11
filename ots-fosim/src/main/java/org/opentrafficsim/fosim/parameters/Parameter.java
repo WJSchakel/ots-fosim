@@ -3,6 +3,7 @@ package org.opentrafficsim.fosim.parameters;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.djutils.exceptions.Throw;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionValue;
 
 /**
@@ -20,10 +21,10 @@ public class Parameter extends MinMax<Parameter>
     public String id;
 
     /** Dutch description. */
-    public String descriptionNl;
+    public String descriptionNl = "";
 
     /** English description. */
-    public String descriptionEn;
+    public String descriptionEn = "";
 
     /** Unit. */
     public String unit;
@@ -40,6 +41,8 @@ public class Parameter extends MinMax<Parameter>
     public Parameter(final String id, final String name, final String unit)
     {
         super(name);
+        Throw.whenNull(id, "id");
+        Throw.whenNull(unit, "unit");
         this.id = id;
         this.unit = unit;
     }
