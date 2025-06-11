@@ -98,6 +98,7 @@
         },
         {
           "id": "fSpeed",
+          "descriptionNl": "Factor gewenste snelheid/maximum snelheid.",
           "descriptionEn": "Factor desired speed/legal speed limit.",
           "unit": "-",
           "defaultValue": [

@@ -110,7 +110,8 @@ public class ParameterDefinitions
                 .setDescriptionEn("Minimum desired headway when changing lanes."));
         group.addParameter(new Parameter("fSpeed", it("f_speed"), "-").setMin(0.1).setMax(2.0)
                 .setDefault(DistributionValue.normal(1.0308, 0.1, 0.5, 2.0), DistributionValue.normal(1.0308, 0.1, 0.5, 2.0))
-                // .setDefault(1.0308, 1.0308).setDescriptionNl("Factor gewenste snelheid/maximum snelheid.")
+                // .setDefault(1.0308, 1.0308)
+                .setDescriptionNl("Factor gewenste snelheid/maximum snelheid.")
                 .setDescriptionEn("Factor desired speed/legal speed limit."));
         list.add(group);
 
