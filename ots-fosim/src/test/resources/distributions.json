@@ -14,7 +14,7 @@
           "nameEn": "<i>λ</i>"
         }
       ],
-      "validRange": "from_zero",
+      "support": "from_zero",
       "nameNl": "Exponentieel",
       "nameEn": "Exponential"
     },
@@ -47,7 +47,7 @@
           "nameEn": "<i>max</i>"
         }
       ],
-      "validRange": "all",
+      "support": "all",
       "nameNl": "Driehoek",
       "nameEn": "Triangular"
     },
@@ -87,7 +87,7 @@
           "nameEn": "<i>max</i>"
         }
       ],
-      "validRange": "all",
+      "support": "all",
       "nameNl": "Normaal",
       "nameEn": "Normal"
     },
@@ -125,7 +125,7 @@
           "nameEn": "<i>max</i>"
         }
       ],
-      "validRange": "positive",
+      "support": "positive",
       "nameNl": "LogNormaal",
       "nameEn": "LogNormal"
     },
@@ -150,7 +150,7 @@
           "nameEn": "<i>max</i>"
         }
       ],
-      "validRange": "all",
+      "support": "all",
       "nameNl": "Uniform",
       "nameEn": "Uniform"
     }
