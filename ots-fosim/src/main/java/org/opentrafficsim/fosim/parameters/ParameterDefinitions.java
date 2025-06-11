@@ -123,7 +123,7 @@ public class ParameterDefinitions
                         + "changing lane, and for braking for traffic lights.");
         group.addParameter(new Parameter("a", it("a"), sc("m/s^2")).setMin(0.0).setMax(8.0).setDefault(1.25, 0.4)
                 .setDescriptionNl("Maximale acceleratie.").setDescriptionEn("Maximum acceleration."));
-        group.addParameter(new Parameter("b0", it("b_0"), sc("m/s^2")).setMin(0.0).setMax("b").setDefault(0.5, 0.5)
+        group.addParameter(new Parameter("b0", it("b_0"), sc("m/s^2")).setMin(0.05).setMax("b").setDefault(0.5, 0.5)
                 .setDescriptionNl("Aanpassingsdeceleratie, bv. bij verlaging van maximum snelheid.")
                 .setDescriptionEn("Adjustment deceleration, e.g. at reduction of legal speed limit."));
         group.addParameter(new Parameter("b", it("b"), sc("m/s^2")).setMin("b0").setMax("bCrit").setDefault(2.09, 2.09)
@@ -144,7 +144,7 @@ public class ParameterDefinitions
                         + "op rijstrookwisselwens.")
                 .setDescriptionEn("Parameters of the Lane-change Model with Relaxation and Synchronization (LMRS) based on lane"
                         + " change desire.");
-        group.addParameter(new Parameter("dFree", it("d_free"), "-").setMin(0.0).setMax("dSync").setDefault(0.365, 0.365)
+        group.addParameter(new Parameter("dFree", it("d_free"), "-").setMin(0.05).setMax("dSync").setDefault(0.365, 0.365)
                 .setDescriptionNl("Drempelwaarde rijstrookwisselwens vrije wisseling.")
                 .setDescriptionEn("Lane change desire threshold for free lane changes."));
         group.addParameter(new Parameter("dSync", it("d_sync"), "-").setMin("dFree").setMax("dCoop").setDefault(0.577, 0.577)
@@ -197,14 +197,14 @@ public class ParameterDefinitions
                         "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.");
         group.addParameter(new Parameter("TC", it("TC"), "-").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
                 .setDescriptionNl("Taak capaciteit.").setDescriptionEn("Task capacity."));
-        group.addParameter(new Parameter("TScrit", it("TS_crit"), "-").setMin(0.0).setMax("TSmax").setDefault(0.8, 0.8)
+        group.addParameter(new Parameter("TScrit", it("TS_crit"), "-").setMin(0.5).setMax("TSmax").setDefault(0.8, 0.8)
                 .setDescriptionNl(
                         "Kritische taak saturatie, waarboven situationele aandacht afneemt en de reactietijd toeneemt.")
                 .setDescriptionEn(
                         "Critical task saturation, above which situational awareness reduces and reaction time increases."));
         group.addParameter(new Parameter("TSmax", it("TS_max"), "-").setMin("TScrit").setMax(3.0).setDefault(2.0, 2.0)
                 .setDescriptionNl("Maximale taak saturatie.").setDescriptionEn("Maximum task saturation."));
-        group.addParameter(new Parameter("SAmin", it("SA_min"), "-").setMin(0).setMax("SAmax").setDefault(0.5, 0.5)
+        group.addParameter(new Parameter("SAmin", it("SA_min"), "-").setMin(0.05).setMax("SAmax").setDefault(0.5, 0.5)
                 .setDescriptionNl("Minimale situationele aandacht.").setDescriptionEn("Minimum situational awareness."));
         group.addParameter(new Parameter("SAmax", it("SA_max"), "-").setMin("SAmin").setMax(1.0).setDefault(1.0, 1.0)
                 .setDescriptionNl("Maximale situationele aandacht.").setDescriptionEn("Maximum situational awareness."));

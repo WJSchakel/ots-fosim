@@ -113,6 +113,8 @@ public class ParameterValidator
                     limit = map.get(limit.parameter).minimum;
                 }
                 // assertNotNull(limit.value, "Parameter " + parameter.id + " has a minimum that is never defined by a value.");
+                assertTrue(limit.equals(parameter.minimum) || limit.value != 0.0, "Minimum bound for parameter " + parameter.id
+                        + " ends up at a parameter that might not have a 'max' value when distributed.");
 
                 limit = parameter.maximum;
                 while (limit.parameter != null)
@@ -121,6 +123,8 @@ public class ParameterValidator
                     limit = map.get(limit.parameter).maximum;
                 }
                 // assertNotNull(limit.value, "Parameter " + parameter.id + " has a maximum that is never defined by a value.");
+                assertTrue(limit.equals(parameter.maximum) || limit.value != 0.0, "Maximum bound for parameter " + parameter.id
+                        + " ends up at a parameter that might not have a 'min' value when distributed.");
             }
         }
     }
