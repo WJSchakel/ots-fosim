@@ -13,11 +13,11 @@ public enum Support
 
     /** Distribution applicable to all domains. */
     all,
-    
-    /** Distribution applicable if param.minimum == 0. */ 
+
+    /** Distribution applicable if param.minimum == 0 and fixed, and param.maximum is fixed (not another parameter). */
     from_zero,
-    
-    /** Distribution applicable if param.minimum >= 0. */ 
+
+    /** Distribution applicable if param.minimum > 0, or a referred parameter has param.minimum >= 0. */
     positive;
-    
+
 }
