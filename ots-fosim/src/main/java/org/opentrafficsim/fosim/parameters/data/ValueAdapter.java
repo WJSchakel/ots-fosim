@@ -64,7 +64,6 @@ public class ValueAdapter implements JsonSerializer<ValueData>, JsonDeserializer
         obj.remove("type");
         distribution.distributionParameters =
                 GSON.fromJson(obj, TypeToken.getParameterized(Map.class, String.class, Double.class).getType());
-        System.out.println("Parsed type " + distribution.type);
         return distribution;
     }
 
