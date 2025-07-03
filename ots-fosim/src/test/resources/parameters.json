@@ -157,7 +157,7 @@
             0.5,
             0.5
           ],
-          "minimum": 0.05,
+          "minimum": 0.0,
           "maximum": "b",
           "nameNl": "<i>b</i><sub>0</sub>",
           "nameEn": "<i>b</i><sub>0</sub>"
@@ -237,7 +237,7 @@
             0.365,
             0.365
           ],
-          "minimum": 0.05,
+          "minimum": 0.0,
           "maximum": "dSync",
           "nameNl": "<i>d<sub>free</sub></i>",
           "nameEn": "<i>d<sub>free</sub></i>"
@@ -431,7 +431,7 @@
             0.8,
             0.8
           ],
-          "minimum": 0.5,
+          "minimum": 0.0,
           "maximum": "TSmax",
           "nameNl": "<i>TS<sub>crit</sub></i>",
           "nameEn": "<i>TS<sub>crit</sub></i>"
@@ -459,7 +459,7 @@
             0.5,
             0.5
           ],
-          "minimum": 0.05,
+          "minimum": 0.0,
           "maximum": "SAmax",
           "nameNl": "<i>SA<sub>min</sub></i>",
           "nameEn": "<i>SA<sub>min</sub></i>"
