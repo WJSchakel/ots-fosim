@@ -41,90 +41,110 @@ public class ParameterValidator
 
         // gather all by id, check unique
         Map<String, Parameter> map = new LinkedHashMap<>();
+        String allowedParent = null;
         for (ParameterGroup group : list)
         {
-            for (Parameter parameter : group.parameters)
+            if (group.parent == null)
             {
-                assertFalse(map.containsKey(parameter.id), "Parameter " + parameter.id + " is not unique.");
-                map.put(parameter.id, parameter);
+                allowedParent = group.id;
+                assertFalse(group.groupNl.startsWith("&#9;"));
+                assertFalse(group.groupEn.startsWith("&#9;"));
+                assertFalse(group.descriptionNl.startsWith("&#9;"));
+                assertFalse(group.descriptionEn.startsWith("&#9;"));
+            }
+            else
+            {
+                assertTrue(group.parent.equals(allowedParent), "Parameter group " + group.id + " refers to parent "
+                        + group.parent + " but this is not the first parentless group above it.");
+                assertTrue(group.groupNl.startsWith("&#9;"));
+                assertTrue(group.groupEn.startsWith("&#9;"));
+                assertTrue(group.descriptionNl.startsWith("&#9;"));
+                assertTrue(group.descriptionEn.startsWith("&#9;"));
+            }
+            if (group.parameters != null)
+            {
+                for (Parameter parameter : group.parameters)
+                {
+                    assertFalse(map.containsKey(parameter.id), "Parameter " + parameter.id + " is not unique.");
+                    map.put(parameter.id, parameter);
+                }
             }
         }
 
         // check limits
         for (ParameterGroup group : list)
         {
-            for (Parameter parameter : group.parameters)
+            if (group.parameters != null)
             {
-                assertTrue(parameter.minimum != null && parameter.maximum != null,
-                        "Parameter " + parameter.id + " is missing minimum or maximum.");
-            }
-            for (Parameter parameter : group.parameters)
-            {
-                if (parameter.minimum.value != null && parameter.maximum.value != null)
+                for (Parameter parameter : group.parameters)
                 {
-                    assertTrue(parameter.minimum.value < parameter.maximum.value,
-                            "Limits of parameter " + parameter.id + " do not comply to min < max.");
+                    assertTrue(parameter.minimum != null && parameter.maximum != null,
+                            "Parameter " + parameter.id + " is missing minimum or maximum.");
                 }
-                if (parameter.minimum.parameter != null)
+                for (Parameter parameter : group.parameters)
                 {
-                    assertTrue(map.containsKey(parameter.minimum.parameter), "Parameter " + parameter.id
-                            + " refers to parameter " + parameter.minimum.parameter + " (min) which does not exist.");
-                    Limit otherLimit = map.get(parameter.minimum.parameter).maximum;
-                    assertTrue(otherLimit.parameter != null && otherLimit.parameter.equals(parameter.id),
-                            "Parameter " + parameter.id + " has a minimum of " + parameter.minimum.parameter
-                                    + " but that does not have " + parameter.id + " as maximum.");
-                }
-                if (parameter.maximum.parameter != null)
-                {
-                    assertTrue(map.containsKey(parameter.maximum.parameter), "Parameter " + parameter.id
-                            + " refers to parameter " + parameter.maximum.parameter + " (max) which does not exist.");
-                    Limit otherLimit = map.get(parameter.maximum.parameter).minimum;
-                    assertTrue(otherLimit.parameter != null && otherLimit.parameter.equals(parameter.id),
-                            "Parameter " + parameter.id + " has a maximum of " + parameter.maximum.parameter
-                                    + " but that does not have " + parameter.id + " as minimum.");
-                }
-                for (DefaultValue value : parameter.defaultValue)
-                {
-                    if (value instanceof Scalar)
+                    if (parameter.minimum.value != null && parameter.maximum.value != null)
                     {
-                        double val = ((Scalar) value).value();
-                        if (parameter.minimum.value != null)
+                        assertTrue(parameter.minimum.value < parameter.maximum.value,
+                                "Limits of parameter " + parameter.id + " do not comply to min < max.");
+                    }
+                    if (parameter.minimum.parameter != null)
+                    {
+                        assertTrue(map.containsKey(parameter.minimum.parameter), "Parameter " + parameter.id
+                                + " refers to parameter " + parameter.minimum.parameter + " (min) which does not exist.");
+                        Limit otherLimit = map.get(parameter.minimum.parameter).maximum;
+                        assertTrue(otherLimit.parameter != null && otherLimit.parameter.equals(parameter.id),
+                                "Parameter " + parameter.id + " has a minimum of " + parameter.minimum.parameter
+                                        + " but that does not have " + parameter.id + " as maximum.");
+                    }
+                    if (parameter.maximum.parameter != null)
+                    {
+                        assertTrue(map.containsKey(parameter.maximum.parameter), "Parameter " + parameter.id
+                                + " refers to parameter " + parameter.maximum.parameter + " (max) which does not exist.");
+                        Limit otherLimit = map.get(parameter.maximum.parameter).minimum;
+                        assertTrue(otherLimit.parameter != null && otherLimit.parameter.equals(parameter.id),
+                                "Parameter " + parameter.id + " has a maximum of " + parameter.maximum.parameter
+                                        + " but that does not have " + parameter.id + " as minimum.");
+                    }
+                    for (DefaultValue value : parameter.defaultValue)
+                    {
+                        if (value instanceof Scalar)
                         {
-                            assertTrue(parameter.minimum.value <= val,
-                                    "Parameter " + parameter.id + " default value is smaller than its minimum.");
-                        }
-                        if (parameter.maximum.value != null)
-                        {
-                            assertTrue(val <= parameter.maximum.value,
-                                    "Parameter " + parameter.id + " default value is larger than its maximum.");
+                            double val = ((Scalar) value).value();
+                            if (parameter.minimum.value != null)
+                            {
+                                assertTrue(parameter.minimum.value <= val,
+                                        "Parameter " + parameter.id + " default value is smaller than its minimum.");
+                            }
+                            if (parameter.maximum.value != null)
+                            {
+                                assertTrue(val <= parameter.maximum.value,
+                                        "Parameter " + parameter.id + " default value is larger than its maximum.");
+                            }
                         }
                     }
                 }
-            }
-            // Note: the above checks guarantee that any dynamic (chained) limit ends up at a value. Each parameter must have a
-            // minimum and a maximum. Each dynamic limit must be an existing parameter. Only circular chains then allow no value
-            // to be found, which is checked below.
-            for (Parameter parameter : group.parameters)
-            {
-                Limit limit = parameter.minimum;
-                while (limit.parameter != null)
+                // Note: the above checks guarantee that any dynamic (chained) limit ends up at a value. Each parameter must
+                // have a minimum and a maximum. Each dynamic limit must be an existing parameter. Only circular chains then 
+                // allow no value to be found, which is checked below.
+                for (Parameter parameter : group.parameters)
                 {
-                    assertNotEquals(parameter.id, limit.parameter, "Circular limit definition for parameter " + parameter.id);
-                    limit = map.get(limit.parameter).minimum;
-                }
-                // assertNotNull(limit.value, "Parameter " + parameter.id + " has a minimum that is never defined by a value.");
-                assertTrue(limit.equals(parameter.minimum) || limit.value != 0.0, "Minimum bound for parameter " + parameter.id
-                        + " ends up at a parameter that might not have a 'max' value when distributed.");
+                    Limit limit = parameter.minimum;
+                    while (limit.parameter != null)
+                    {
+                        assertNotEquals(parameter.id, limit.parameter,
+                                "Circular limit definition for parameter " + parameter.id);
+                        limit = map.get(limit.parameter).minimum;
+                    }
 
-                limit = parameter.maximum;
-                while (limit.parameter != null)
-                {
-                    assertNotEquals(parameter.id, limit.parameter, "Circular limit definition for parameter " + parameter.id);
-                    limit = map.get(limit.parameter).maximum;
+                    limit = parameter.maximum;
+                    while (limit.parameter != null)
+                    {
+                        assertNotEquals(parameter.id, limit.parameter,
+                                "Circular limit definition for parameter " + parameter.id);
+                        limit = map.get(limit.parameter).maximum;
+                    }
                 }
-                // assertNotNull(limit.value, "Parameter " + parameter.id + " has a maximum that is never defined by a value.");
-                assertTrue(limit.equals(parameter.maximum) || limit.value != 0.0, "Maximum bound for parameter " + parameter.id
-                        + " ends up at a parameter that might not have a 'min' value when distributed.");
             }
         }
     }

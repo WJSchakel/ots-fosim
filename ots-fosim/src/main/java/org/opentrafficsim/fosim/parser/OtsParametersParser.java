@@ -36,6 +36,7 @@ import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
 import org.opentrafficsim.fosim.parameters.data.ScalarData;
 import org.opentrafficsim.fosim.parameters.data.ValueData;
+import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
@@ -131,6 +132,7 @@ public class OtsParametersParser
         // figure out which components to use
         boolean social = false;
         boolean perception = false;
+        boolean estimation = false;
         if (this.otsParameters != null)
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
@@ -139,9 +141,15 @@ public class OtsParametersParser
                 {
                     social = true;
                 }
-                if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state != null && group.state.isActive())
+                else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state != null
+                        && group.state.isActive())
                 {
                     perception = true;
+                }
+                else if (group.id.equals(ParameterDefinitions.ESTIMATION_GROUP_ID) && group.state != null
+                        && group.state.isActive())
+                {
+                    estimation = true;
                 }
             }
         }
@@ -228,8 +236,78 @@ public class OtsParametersParser
                     vehicleTypeNumber);
             addParameter(parameterFactory, TaskManagerAr.BETA, ParameterDefinitions.PERCEPTION_GROUP_ID, "beta", stream,
                     vehicleTypeNumber);
+            if (estimation)
+            {
+                setEstimationFactor(vehicleTypeNumber, stream, parameterFactory);
+            }
         }
 
+    }
+
+    /**
+     * Sets the estimation factor as a random distribution based on fraction of over estimation.
+     * @param vehicleTypeNumber vehicle type number
+     * @param stream stream
+     * @param parameterFactory parameter factory
+     * @throws ParameterException if the parameter could not be found
+     */
+    private void setEstimationFactor(final int vehicleTypeNumber, final StreamInterface stream,
+            final ParameterFactoryByType parameterFactory) throws ParameterException
+    {
+        ValueData fractionOver = getParameterData(ParameterDefinitions.ESTIMATION_GROUP_ID, "est").value.get(vehicleTypeNumber);
+        double f;
+        if (fractionOver instanceof ScalarData scalarFractionOver)
+        {
+            f = scalarFractionOver.value();
+        }
+        else
+        {
+            DistributionData distributionFractionOver = (DistributionData) fractionOver;
+            switch (distributionFractionOver.type)
+            {
+                case Exponential:
+                    f = Math.max(0.0, Math.min(1.0, distributionFractionOver.distributionParameters.get("lambda")));
+                    break;
+                case Triangular:
+                    f = Math.max(0.0, Math.min(1.0, distributionFractionOver.distributionParameters.get("mode")));
+                    break;
+                case Normal:
+                    f = Math.max(0.0, Math.min(1.0, distributionFractionOver.distributionParameters.get("mu")));
+                    break;
+                case LogNormal:
+                    double mu = distributionFractionOver.distributionParameters.get("mu");
+                    double sigma = distributionFractionOver.distributionParameters.get("sigma");
+                    f = Math.max(0.0, Math.min(1.0, Math.exp(mu + sigma * sigma / 2.0)));
+                    break;
+                case Uniform:
+                    double min = distributionFractionOver.distributionParameters.get("min");
+                    double max = distributionFractionOver.distributionParameters.get("max");
+                    f = Math.max(0.0, Math.min(1.0, (min + max) / 2.0));
+                    break;
+                default:
+                    // ignore then
+                    f = 0.5;
+            }
+        }
+        parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), Estimation.OVER_EST, new DistContinuous(stream)
+        {
+            /** */
+            private static final long serialVersionUID = 20250703L;
+
+            @Override
+            public double getProbabilityDensity(final double x)
+            {
+                // this is not correct as we need to define a continuous probability distribution for what is actually a
+                // discrete value distribution
+                return x == 1.0 ? f : (f == -1.0 ? f - 1.0 : 0.0);
+            }
+
+            @Override
+            public double draw()
+            {
+                return getStream().nextDouble() < f ? 1.0 : -1.0;
+            }
+        });
     }
 
     /**

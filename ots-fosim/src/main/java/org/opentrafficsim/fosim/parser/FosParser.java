@@ -73,13 +73,9 @@ import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.model.CarFollowingTask;
 import org.opentrafficsim.fosim.model.LaneChangeTask;
 import org.opentrafficsim.fosim.model.TaskManagerAr;
-import org.opentrafficsim.fosim.parameters.Limit;
-import org.opentrafficsim.fosim.parameters.LimitAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
-import org.opentrafficsim.fosim.parameters.data.ParameterData;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
-import org.opentrafficsim.fosim.parameters.data.ScalarData;
 import org.opentrafficsim.fosim.parameters.data.ValueAdapter;
 import org.opentrafficsim.fosim.parameters.data.ValueData;
 import org.opentrafficsim.fosim.sim0mq.FosimModel;
@@ -1582,8 +1578,8 @@ public class FosParser
         boolean social = false;
         boolean courtesy = false;
         boolean perception = false;
-        Estimation estimation = null;
-        Anticipation anticipation = null;
+        boolean estimation = false;
+        boolean anticipation = false;
         if (this.otsParameters != null)
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
@@ -1591,39 +1587,32 @@ public class FosParser
                 if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state != null && group.state.isActive())
                 {
                     social = true;
-                    for (ParameterData parameterData : group.parameters)
-                    {
-                        if (parameterData.id.equals("courtesy"))
-                        {
-                            courtesy = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value() > 0.0;
-                        }
-                    }
+                }
+                else if (group.id.equals(ParameterDefinitions.COURTESY_GROUP_ID) && group.state != null
+                        && group.state.isActive())
+                {
+                    courtesy = true;
                 }
                 else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state != null
                         && group.state.isActive())
                 {
                     perception = true;
-                    for (ParameterData parameterData : group.parameters)
-                    {
-                        if (parameterData.id.equals("est"))
-                        {
-                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
-                            estimation = value < 0.0 ? Estimation.FACTOR_ESTIMATION
-                                    : (value > 0.0 ? Estimation.FACTOR_ESTIMATION : Estimation.NONE);
-                        }
-                        else if (parameterData.id.equals("ant"))
-                        {
-                            double value = ((ScalarData) parameterData.value.get(vehicleTypeNumber)).value();
-                            anticipation = value > 1.5 ? Anticipation.CONSTANT_ACCELERATION
-                                    : (value > 0.5 ? Anticipation.CONSTANT_SPEED : Anticipation.NONE);
-                        }
-                    }
+                }
+                else if (group.id.equals(ParameterDefinitions.ESTIMATION_GROUP_ID) && group.state != null
+                        && group.state.isActive())
+                {
+                    estimation = true;
+                }
+                else if (group.id.equals(ParameterDefinitions.ANTICIPATION_GROUP_ID) && group.state != null
+                        && group.state.isActive())
+                {
+                    anticipation = true;
                 }
             }
         }
         boolean isTruck = this.isTruck.get(vehicleTypeNumber);
-        Estimation estimation2 = estimation; // effectively final, for use in new PerceptionFactory() below
-        Anticipation anticipation2 = anticipation; // effectively final
+        Estimation estimation2 = perception && estimation ? Estimation.FACTOR_ESTIMATION : Estimation.NONE;
+        Anticipation anticipation2 = perception && anticipation ? Anticipation.CONSTANT_SPEED : Anticipation.NONE;
 
         // car-following
         DistContinuous fSpeed = new DistNormal(stream, 123.7 / 120.0, 0.1);

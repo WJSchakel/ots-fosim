@@ -35,8 +35,17 @@ public class ParameterDefinitions
     /** Social interactions group id. */
     public static final String SOCIAL_GROUP_ID = "Social interactions";
 
+    /** Courtesy group id. */
+    public static final String COURTESY_GROUP_ID = "Courtesy";
+
     /** Perception group id. */
     public static final String PERCEPTION_GROUP_ID = "Perception";
+
+    /** Estimation group id. */
+    public static final String ESTIMATION_GROUP_ID = "Estimation";
+
+    /** Anticipation group id. */
+    public static final String ANTICIPATION_GROUP_ID = "Anticipation";
 
     /** Version. */
     @SuppressWarnings("unused") // used to parse to json
@@ -185,9 +194,14 @@ public class ParameterDefinitions
                 .setDefault(DistributionValue.triangular(0.0, 0.25, 1.0), 1.0)
                 // .setDefault(0.25, 1.0)
                 .setDescriptionNl("Gevoeligheid voor gewenste snelheid anderen.").setDescriptionEn("Socio-speed sensitivity."));
-        group.addParameter(new Parameter("courtesy", it("courtesy"), "0|1").setMin(0.0).setMax(1.0).setDefault(1.0, 0.0)
+        // group.addParameter(new Parameter("courtesy", it("courtesy"), "0|1").setMin(0.0).setMax(1.0).setDefault(1.0, 0.0)
+        // .setDescriptionNl("Bereid rijstrook te wisselen voor anderen.")
+        // .setDescriptionEn("Willing to change lane for others."));
+        list.add(group);
+        // - courtesy
+        group = new ParameterGroup("Hoffelijkheid", COURTESY_GROUP_ID, DefaultState.ON).setParent(SOCIAL_GROUP_ID)
                 .setDescriptionNl("Bereid rijstrook te wisselen voor anderen.")
-                .setDescriptionEn("Willing to change lane for others."));
+                .setDescriptionEn("Willing to change lane for others.");
         list.add(group);
 
         // Perception
@@ -219,18 +233,30 @@ public class ParameterDefinitions
         group.addParameter(new Parameter("betav0", it("β_v0"), "-").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
                 .setDescriptionNl("Gevoeligheid aanpassing snelheid.")
                 .setDescriptionEn("Sensitivity behavioural adaptation of speed."));
-        group.addParameter(new Parameter("est", it("estimation"), "-1|0|1").setMin(-1.0).setMax(1.0).setDefault(1.0, 1.0)
-                .setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
-                .setDescriptionEn("Under- or overestimation of distance and relative speed."));
-        group.addParameter(new Parameter("ant", it("anticipation"), "0|1|2").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
-                .setDescriptionNl("Anticipatie (0=geen, 1=constante snelheid, 2=constante acceleratie).")
-                .setDescriptionEn("Anticipation (0=none, 1=constant speed, 2=constant acceleration)."));
+        // group.addParameter(new Parameter("est", it("estimation"), "-1|0|1").setMin(-1.0).setMax(1.0).setDefault(1.0, 1.0)
+        // .setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
+        // .setDescriptionEn("Under- or overestimation of distance and relative speed."));
+        // group.addParameter(new Parameter("ant", it("anticipation"), "0|1|2").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
+        // .setDescriptionNl("Anticipatie (0=geen, 1=constante snelheid, 2=constante acceleratie).")
+        // .setDescriptionEn("Anticipation (0=none, 1=constant speed, 2=constant acceleration)."));
         group.addParameter(new Parameter("alpha", it("α"), "-").setMin(0.0).setMax(1.0).setDefault(0.8, 0.8)
                 .setDescriptionNl("Maximale afname primaire taak last door anticipatie.")
                 .setDescriptionEn("Maximum reduction of primary task load due to anticipation."));
         group.addParameter(new Parameter("beta", it("β"), "-").setMin(0.0).setMax(1.0).setDefault(0.6, 0.6)
                 .setDescriptionNl("Maximale afname secundaire taak last door anticipatie.")
                 .setDescriptionEn("Maximum reduction of secondary task load due to anticipation."));
+        list.add(group);
+        // - estimation
+        group = new ParameterGroup("Inschatting", ESTIMATION_GROUP_ID, DefaultState.ON).setParent(PERCEPTION_GROUP_ID)
+                .setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
+                .setDescriptionEn("Under- or overestimation of distance and relative speed.");
+        group.addParameter(new Parameter("est", it("estimation"), "-").setMin(0.0).setMax(1.0).setDefault(0.5, 0.5)
+                .setDescriptionNl("Fractie bestuurders met overschatting (overige met onderschatting).")
+                .setDescriptionEn("Fraction of drivers with overestimation (others with underestimation)."));
+        list.add(group);
+        // - anticipation
+        group = new ParameterGroup("Anticipatie", ANTICIPATION_GROUP_ID, DefaultState.ON).setParent(PERCEPTION_GROUP_ID)
+                .setDescriptionNl("Constante snelheid anticipatie.").setDescriptionEn("Constant speed anticipation.");
         list.add(group);
 
         return list;

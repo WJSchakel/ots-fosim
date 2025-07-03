@@ -383,22 +383,17 @@
           "maximum": 1.0,
           "nameNl": "<i>σ</i>",
           "nameEn": "<i>σ</i>"
-        },
-        {
-          "id": "courtesy",
-          "descriptionNl": "Bereid rijstrook te wisselen voor anderen.",
-          "descriptionEn": "Willing to change lane for others.",
-          "unit": "0|1",
-          "defaultValue": [
-            1.0,
-            0.0
-          ],
-          "minimum": 0.0,
-          "maximum": 1.0,
-          "nameNl": "<i>courtesy</i>",
-          "nameEn": "<i>courtesy</i>"
         }
       ]
+    },
+    {
+      "id": "Courtesy",
+      "parent": "Social interactions",
+      "groupNl": "&#9;Hoffelijkheid",
+      "groupEn": "&#9;Courtesy",
+      "defaultState": "ON",
+      "descriptionNl": "&#9;Bereid rijstrook te wisselen voor anderen.",
+      "descriptionEn": "&#9;Willing to change lane for others."
     },
     {
       "id": "Perception",
@@ -535,34 +530,6 @@
           "nameEn": "<i>β<sub>v0</sub></i>"
         },
         {
-          "id": "est",
-          "descriptionNl": "Onder- of overschatting afstand en relatieve snelheid.",
-          "descriptionEn": "Under- or overestimation of distance and relative speed.",
-          "unit": "-1|0|1",
-          "defaultValue": [
-            1.0,
-            1.0
-          ],
-          "minimum": -1.0,
-          "maximum": 1.0,
-          "nameNl": "<i>estimation</i>",
-          "nameEn": "<i>estimation</i>"
-        },
-        {
-          "id": "ant",
-          "descriptionNl": "Anticipatie (0=geen, 1=constante snelheid, 2=constante acceleratie).",
-          "descriptionEn": "Anticipation (0=none, 1=constant speed, 2=constant acceleration).",
-          "unit": "0|1|2",
-          "defaultValue": [
-            1.0,
-            1.0
-          ],
-          "minimum": 0.0,
-          "maximum": 2.0,
-          "nameNl": "<i>anticipation</i>",
-          "nameEn": "<i>anticipation</i>"
-        },
-        {
           "id": "alpha",
           "descriptionNl": "Maximale afname primaire taak last door anticipatie.",
           "descriptionEn": "Maximum reduction of primary task load due to anticipation.",
@@ -591,6 +558,40 @@
           "nameEn": "<i>β</i>"
         }
       ]
+    },
+    {
+      "id": "Estimation",
+      "parent": "Perception",
+      "groupNl": "&#9;Inschatting",
+      "groupEn": "&#9;Estimation",
+      "defaultState": "ON",
+      "descriptionNl": "&#9;Onder- of overschatting afstand en relatieve snelheid.",
+      "descriptionEn": "&#9;Under- or overestimation of distance and relative speed.",
+      "parameters": [
+        {
+          "id": "est",
+          "descriptionNl": "Fractie bestuurders met overschatting (overige met onderschatting).",
+          "descriptionEn": "Fraction of drivers with overestimation (others with underestimation).",
+          "unit": "-",
+          "defaultValue": [
+            0.5,
+            0.5
+          ],
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "nameNl": "<i>estimation</i>",
+          "nameEn": "<i>estimation</i>"
+        }
+      ]
+    },
+    {
+      "id": "Anticipation",
+      "parent": "Perception",
+      "groupNl": "&#9;Anticipatie",
+      "groupEn": "&#9;Anticipation",
+      "defaultState": "ON",
+      "descriptionNl": "&#9;Constante snelheid anticipatie.",
+      "descriptionEn": "&#9;Constant speed anticipation."
     }
   ]
 }
