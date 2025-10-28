@@ -1580,6 +1580,7 @@ public class FosParser
         boolean perception = false;
         boolean estimation = false;
         boolean anticipation = false;
+        // consideration of parent group is implicit in evaluations later, e.g. 'perception && estimation' to use estimation 
         if (this.otsParameters != null)
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
@@ -1610,6 +1611,7 @@ public class FosParser
                 }
             }
         }
+        
         boolean isTruck = this.isTruck.get(vehicleTypeNumber);
         Estimation estimation2 = perception && estimation ? Estimation.FACTOR_ESTIMATION : Estimation.NONE;
         Anticipation anticipation2 = perception && anticipation ? Anticipation.CONSTANT_SPEED : Anticipation.NONE;

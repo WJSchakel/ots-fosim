@@ -27,7 +27,7 @@ public class ParameterGroup
     public String groupEn;
 
     /** Default state. */
-    public DefaultState defaultState;
+    public DefaultState[] defaultState;
 
     /** Dutch description. */
     public String descriptionNl;
@@ -44,7 +44,7 @@ public class ParameterGroup
      * @param groupEn English group name (doubles as id).
      * @param defaultState default state of the group.
      */
-    public ParameterGroup(final String groupNl, final String groupEn, final DefaultState defaultState)
+    public ParameterGroup(final String groupNl, final String groupEn, final DefaultState[] defaultState)
     {
         this.id = groupEn;
         this.groupNl = groupNl;
@@ -60,7 +60,7 @@ public class ParameterGroup
     public ParameterGroup setParent(final String parent)
     {
         this.parent = parent;
-        checkIndent();
+        // checkIndent();
         return this;
     }
 
@@ -72,7 +72,7 @@ public class ParameterGroup
     public ParameterGroup setDescriptionNl(final String descriptionNl)
     {
         this.descriptionNl = descriptionNl;
-        checkIndent();
+        // checkIndent();
         return this;
     }
 
@@ -84,7 +84,7 @@ public class ParameterGroup
     public ParameterGroup setDescriptionEn(final String descriptionEn)
     {
         this.descriptionEn = descriptionEn;
-        checkIndent();
+        // checkIndent();
         return this;
     }
 
@@ -92,47 +92,47 @@ public class ParameterGroup
      * Makes sure that the group names and descriptions start with a tab if this group has a parent, or do not start with a tab
      * when the group does not have a parent.
      */
-    private void checkIndent()
-    {
-        if (this.parent == null)
-        {
-            if (this.groupNl.startsWith("&#9;"))
-            {
-                this.groupNl = this.groupNl.substring(4);
-            }
-            if (this.groupEn.startsWith("&#9;"))
-            {
-                this.groupEn = this.groupEn.substring(4);
-            }
-            if (this.descriptionNl != null && this.descriptionNl.startsWith("&#9;"))
-            {
-                this.descriptionNl = this.descriptionNl.substring(4);
-            }
-            if (this.descriptionEn != null && this.descriptionEn.startsWith("&#9;"))
-            {
-                this.descriptionEn = this.descriptionEn.substring(4);
-            }
-        }
-        else
-        {
-            if (!this.groupNl.startsWith("&#9;"))
-            {
-                this.groupNl = "&#9;" + this.groupNl;
-            }
-            if (!this.groupEn.startsWith("&#9;"))
-            {
-                this.groupEn = "&#9;" + this.groupEn;
-            }
-            if (this.descriptionNl != null && !this.descriptionNl.startsWith("&#9;"))
-            {
-                this.descriptionNl = "&#9;" + this.descriptionNl;
-            }
-            if (this.descriptionEn != null && !this.descriptionEn.startsWith("&#9;"))
-            {
-                this.descriptionEn = "&#9;" + this.descriptionEn;
-            }
-        }
-    }
+    // private void checkIndent()
+    // {
+    // if (this.parent == null)
+    // {
+    // if (this.groupNl.startsWith("&#9;"))
+    // {
+    // this.groupNl = this.groupNl.substring(4);
+    // }
+    // if (this.groupEn.startsWith("&#9;"))
+    // {
+    // this.groupEn = this.groupEn.substring(4);
+    // }
+    // if (this.descriptionNl != null && this.descriptionNl.startsWith("&#9;"))
+    // {
+    // this.descriptionNl = this.descriptionNl.substring(4);
+    // }
+    // if (this.descriptionEn != null && this.descriptionEn.startsWith("&#9;"))
+    // {
+    // this.descriptionEn = this.descriptionEn.substring(4);
+    // }
+    // }
+    // else
+    // {
+    // if (!this.groupNl.startsWith("&#9;"))
+    // {
+    // this.groupNl = "&#9;" + this.groupNl;
+    // }
+    // if (!this.groupEn.startsWith("&#9;"))
+    // {
+    // this.groupEn = "&#9;" + this.groupEn;
+    // }
+    // if (this.descriptionNl != null && !this.descriptionNl.startsWith("&#9;"))
+    // {
+    // this.descriptionNl = "&#9;" + this.descriptionNl;
+    // }
+    // if (this.descriptionEn != null && !this.descriptionEn.startsWith("&#9;"))
+    // {
+    // this.descriptionEn = "&#9;" + this.descriptionEn;
+    // }
+    // }
+    // }
 
     /**
      * Add parameter to the parameter group.

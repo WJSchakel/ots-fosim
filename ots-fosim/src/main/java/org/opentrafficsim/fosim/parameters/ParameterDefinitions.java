@@ -46,6 +46,9 @@ public class ParameterDefinitions
 
     /** Anticipation group id. */
     public static final String ANTICIPATION_GROUP_ID = "Anticipation";
+    
+    /** Number of standard vehicle types. */
+    private static int N_TYPES = 2;
 
     /** Version. */
     @SuppressWarnings("unused") // used to parse to json
@@ -98,8 +101,8 @@ public class ParameterDefinitions
         ParameterGroup group;
 
         // Vehicle
-        group = new ParameterGroup("Voertuig", VEHICLE_GROUP_ID, DefaultState.ALWAYS).setDescriptionNl("Voertuig parameters.")
-                .setDescriptionEn("Vehicle parameters.");
+        group = new ParameterGroup("Voertuig", VEHICLE_GROUP_ID, DefaultState.ALWAYS.array(N_TYPES))
+                .setDescriptionNl("Voertuig parameters.").setDescriptionEn("Vehicle parameters.");
         group.addParameter(new Parameter("l", it("lengte"), it("length"), "m").setMin(3.0).setMax(26.0).setDefault(4.19, 12.0)
                 .setDescriptionNl("Voertuiglengte.").setDescriptionEn("Vehicle length."));
         group.addParameter(new Parameter("w", it("breedte"), it("width"), "m").setMin(1.5).setMax(2.6).setDefault(1.7, 2.55)
@@ -110,7 +113,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Driver
-        group = new ParameterGroup("Bestuurder", DRIVER_GROUP_ID, DefaultState.ALWAYS)
+        group = new ParameterGroup("Bestuurder", DRIVER_GROUP_ID, DefaultState.ALWAYS.array(N_TYPES))
                 .setDescriptionNl("Algemene bestuurder parameters.").setDescriptionEn("General driver parameters.");
         group.addParameter(new Parameter("Tmax", it("T_max"), "s").setMin("Tmin").setMax(10.0).setDefault(1.2, 1.2)
                 .setDescriptionNl("Normale volgtijd.").setDescriptionEn("Regular desired headway."));
@@ -125,7 +128,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Car-following model
-        group = new ParameterGroup("Voertuig-volg model", FOLLOWING_GROUP_ID, DefaultState.ALWAYS)
+        group = new ParameterGroup("Voertuig-volg model", FOLLOWING_GROUP_ID, DefaultState.ALWAYS.array(N_TYPES))
                 .setDescriptionNl("Parameters van het IDM+ voertuig-volg model. Dit wordt ook gebruikt voor het accepteren van "
                         + "gaten bij rijstrookwisselen en het remmen voor verkeerslichten.")
                 .setDescriptionEn("Parameters of the IDM+ car-following model. This is also used for gap-acceptance when "
@@ -148,7 +151,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Lane-change model
-        group = new ParameterGroup("Rijstrookwisselmodel", LC_GROUP_ID, DefaultState.ALWAYS)
+        group = new ParameterGroup("Rijstrookwisselmodel", LC_GROUP_ID, DefaultState.ALWAYS.array(N_TYPES))
                 .setDescriptionNl("Parameters van het 'Lane-change Model with Relaxation and Synchronization' (LMRS) gebaseerd "
                         + "op rijstrookwisselwens.")
                 .setDescriptionEn("Parameters of the Lane-change Model with Relaxation and Synchronization (LMRS) based on lane"
@@ -181,7 +184,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Social interactions
-        group = new ParameterGroup("Sociale interacties", SOCIAL_GROUP_ID, DefaultState.ON)
+        group = new ParameterGroup("Sociale interacties", SOCIAL_GROUP_ID, DefaultState.ON.array(N_TYPES))
                 .setDescriptionNl("Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale "
                         + "druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. "
                         + "Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s"
@@ -194,18 +197,19 @@ public class ParameterDefinitions
                 .setDefault(DistributionValue.triangular(0.0, 0.25, 1.0), 1.0)
                 // .setDefault(0.25, 1.0)
                 .setDescriptionNl("Gevoeligheid voor gewenste snelheid anderen.").setDescriptionEn("Socio-speed sensitivity."));
-        // group.addParameter(new Parameter("courtesy", it("courtesy"), "0|1").setMin(0.0).setMax(1.0).setDefault(1.0, 0.0)
+        // group.addParameter(new Parameter("courtesy", it("courtesy"),
+        // "0|1").setMin(0.0).setMax(1.0).setDefault(1.0, 0.0)
         // .setDescriptionNl("Bereid rijstrook te wisselen voor anderen.")
         // .setDescriptionEn("Willing to change lane for others."));
         list.add(group);
         // - courtesy
-        group = new ParameterGroup("Hoffelijkheid", COURTESY_GROUP_ID, DefaultState.ON).setParent(SOCIAL_GROUP_ID)
+        group = new ParameterGroup("Hoffelijkheid", COURTESY_GROUP_ID, DefaultState.ON.array(N_TYPES)).setParent(SOCIAL_GROUP_ID)
                 .setDescriptionNl("Bereid rijstrook te wisselen voor anderen.")
                 .setDescriptionEn("Willing to change lane for others.");
         list.add(group);
 
         // Perception
-        group = new ParameterGroup("Perceptie", PERCEPTION_GROUP_ID, DefaultState.OFF)
+        group = new ParameterGroup("Perceptie", PERCEPTION_GROUP_ID, DefaultState.OFF.array(N_TYPES))
                 .setDescriptionNl("Endogene processen voor imperfecte perceptie, afhankelijk van mentale druk door rijtaken.")
                 .setDescriptionEn(
                         "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.");
@@ -233,12 +237,17 @@ public class ParameterDefinitions
         group.addParameter(new Parameter("betav0", it("β_v0"), "-").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
                 .setDescriptionNl("Gevoeligheid aanpassing snelheid.")
                 .setDescriptionEn("Sensitivity behavioural adaptation of speed."));
-        // group.addParameter(new Parameter("est", it("estimation"), "-1|0|1").setMin(-1.0).setMax(1.0).setDefault(1.0, 1.0)
+        // group.addParameter(new Parameter("est", it("estimation"),
+        // "-1|0|1").setMin(-1.0).setMax(1.0).setDefault(1.0, 1.0)
         // .setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
-        // .setDescriptionEn("Under- or overestimation of distance and relative speed."));
-        // group.addParameter(new Parameter("ant", it("anticipation"), "0|1|2").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
-        // .setDescriptionNl("Anticipatie (0=geen, 1=constante snelheid, 2=constante acceleratie).")
-        // .setDescriptionEn("Anticipation (0=none, 1=constant speed, 2=constant acceleration)."));
+        // .setDescriptionEn("Under- or overestimation of distance and relative
+        // speed."));
+        // group.addParameter(new Parameter("ant", it("anticipation"),
+        // "0|1|2").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
+        // .setDescriptionNl("Anticipatie (0=geen, 1=constante snelheid, 2=constante
+        // acceleratie).")
+        // .setDescriptionEn("Anticipation (0=none, 1=constant speed, 2=constant
+        // acceleration)."));
         group.addParameter(new Parameter("alpha", it("α"), "-").setMin(0.0).setMax(1.0).setDefault(0.8, 0.8)
                 .setDescriptionNl("Maximale afname primaire taak last door anticipatie.")
                 .setDescriptionEn("Maximum reduction of primary task load due to anticipation."));
@@ -247,7 +256,7 @@ public class ParameterDefinitions
                 .setDescriptionEn("Maximum reduction of secondary task load due to anticipation."));
         list.add(group);
         // - estimation
-        group = new ParameterGroup("Inschatting", ESTIMATION_GROUP_ID, DefaultState.ON).setParent(PERCEPTION_GROUP_ID)
+        group = new ParameterGroup("Inschatting", ESTIMATION_GROUP_ID, DefaultState.ON.array(N_TYPES)).setParent(PERCEPTION_GROUP_ID)
                 .setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
                 .setDescriptionEn("Under- or overestimation of distance and relative speed.");
         group.addParameter(new Parameter("est", it("estimation"), "-").setMin(0.0).setMax(1.0).setDefault(0.5, 0.5)
@@ -255,8 +264,9 @@ public class ParameterDefinitions
                 .setDescriptionEn("Fraction of drivers with overestimation (others with underestimation)."));
         list.add(group);
         // - anticipation
-        group = new ParameterGroup("Anticipatie", ANTICIPATION_GROUP_ID, DefaultState.ON).setParent(PERCEPTION_GROUP_ID)
-                .setDescriptionNl("Constante snelheid anticipatie.").setDescriptionEn("Constant speed anticipation.");
+        group = new ParameterGroup("Anticipatie", ANTICIPATION_GROUP_ID, DefaultState.ON.array(N_TYPES))
+                .setParent(PERCEPTION_GROUP_ID).setDescriptionNl("Constante snelheid anticipatie.")
+                .setDescriptionEn("Constant speed anticipation.");
         list.add(group);
 
         return list;

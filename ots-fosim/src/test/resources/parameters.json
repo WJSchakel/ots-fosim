@@ -1,11 +1,14 @@
 {
-  "version": "v0.0.1",
+  "version": "v0.0.2",
   "parameterGroups": [
     {
       "id": "Vehicle",
       "groupNl": "Voertuig",
       "groupEn": "Vehicle",
-      "defaultState": "ALWAYS",
+      "defaultState": [
+        "ALWAYS",
+        "ALWAYS"
+      ],
       "descriptionNl": "Voertuig parameters.",
       "descriptionEn": "Vehicle parameters.",
       "parameters": [
@@ -64,7 +67,10 @@
       "id": "Driver",
       "groupNl": "Bestuurder",
       "groupEn": "Driver",
-      "defaultState": "ALWAYS",
+      "defaultState": [
+        "ALWAYS",
+        "ALWAYS"
+      ],
       "descriptionNl": "Algemene bestuurder parameters.",
       "descriptionEn": "General driver parameters.",
       "parameters": [
@@ -130,7 +136,10 @@
       "id": "Car-following model",
       "groupNl": "Voertuig-volg model",
       "groupEn": "Car-following model",
-      "defaultState": "ALWAYS",
+      "defaultState": [
+        "ALWAYS",
+        "ALWAYS"
+      ],
       "descriptionNl": "Parameters van het IDM+ voertuig-volg model. Dit wordt ook gebruikt voor het accepteren van gaten bij rijstrookwisselen en het remmen voor verkeerslichten.",
       "descriptionEn": "Parameters of the IDM+ car-following model. This is also used for gap-acceptance when changing lane, and for braking for traffic lights.",
       "parameters": [
@@ -224,7 +233,10 @@
       "id": "Lane-change model",
       "groupNl": "Rijstrookwisselmodel",
       "groupEn": "Lane-change model",
-      "defaultState": "ALWAYS",
+      "defaultState": [
+        "ALWAYS",
+        "ALWAYS"
+      ],
       "descriptionNl": "Parameters van het 'Lane-change Model with Relaxation and Synchronization' (LMRS) gebaseerd op rijstrookwisselwens.",
       "descriptionEn": "Parameters of the Lane-change Model with Relaxation and Synchronization (LMRS) based on lane change desire.",
       "parameters": [
@@ -360,7 +372,10 @@
       "id": "Social interactions",
       "groupNl": "Sociale interacties",
       "groupEn": "Social interactions",
-      "defaultState": "ON",
+      "defaultState": [
+        "ON",
+        "ON"
+      ],
       "descriptionNl": "Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.",
       "descriptionEn": "Endogenous influence on desired speed, desired headway and lane change desire from social pressure. This mostly influences the number of lane changes and the headway distribution. It is important to use a different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.",
       "parameters": [
@@ -391,7 +406,10 @@
       "parent": "Social interactions",
       "groupNl": "&#9;Hoffelijkheid",
       "groupEn": "&#9;Courtesy",
-      "defaultState": "ON",
+      "defaultState": [
+        "ON",
+        "ON"
+      ],
       "descriptionNl": "&#9;Bereid rijstrook te wisselen voor anderen.",
       "descriptionEn": "&#9;Willing to change lane for others."
     },
@@ -399,7 +417,10 @@
       "id": "Perception",
       "groupNl": "Perceptie",
       "groupEn": "Perception",
-      "defaultState": "OFF",
+      "defaultState": [
+        "OFF",
+        "OFF"
+      ],
       "descriptionNl": "Endogene processen voor imperfecte perceptie, afhankelijk van mentale druk door rijtaken.",
       "descriptionEn": "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.",
       "parameters": [
@@ -564,7 +585,10 @@
       "parent": "Perception",
       "groupNl": "&#9;Inschatting",
       "groupEn": "&#9;Estimation",
-      "defaultState": "ON",
+      "defaultState": [
+        "ON",
+        "ON"
+      ],
       "descriptionNl": "&#9;Onder- of overschatting afstand en relatieve snelheid.",
       "descriptionEn": "&#9;Under- or overestimation of distance and relative speed.",
       "parameters": [
@@ -589,7 +613,10 @@
       "parent": "Perception",
       "groupNl": "&#9;Anticipatie",
       "groupEn": "&#9;Anticipation",
-      "defaultState": "ON",
+      "defaultState": [
+        "ON",
+        "ON"
+      ],
       "descriptionNl": "&#9;Constante snelheid anticipatie.",
       "descriptionEn": "&#9;Constant speed anticipation."
     }

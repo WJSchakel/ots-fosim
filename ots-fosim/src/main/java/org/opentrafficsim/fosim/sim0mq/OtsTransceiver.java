@@ -116,7 +116,7 @@ public class OtsTransceiver
 {
 
     /** Parameter and distribution version so Fosim can check versions. */
-    public static final String VERSION = "v0.0.1";
+    public static final String VERSION = "v0.0.2";
 
     /** Federation id to receive/sent messages. */
     @Option(names = "--federationId", description = "Federation id to receive/sent messages", defaultValue = "Ots_Fosim")
