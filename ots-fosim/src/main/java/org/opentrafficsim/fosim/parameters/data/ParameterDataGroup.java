@@ -19,7 +19,7 @@ public class ParameterDataGroup
     public String id;
     
     /** Group state. */
-    public DefaultState state;
+    public DefaultState[] state;
     
     /** List of parameters in the group. */
     public List<ParameterData> parameters;

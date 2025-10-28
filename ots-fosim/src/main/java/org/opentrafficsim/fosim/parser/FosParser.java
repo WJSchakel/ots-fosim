@@ -1580,38 +1580,39 @@ public class FosParser
         boolean perception = false;
         boolean estimation = false;
         boolean anticipation = false;
-        // consideration of parent group is implicit in evaluations later, e.g. 'perception && estimation' to use estimation 
+        // consideration of parent group is implicit in evaluations later, e.g. 'perception && estimation' to use estimation
         if (this.otsParameters != null)
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
             {
-                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state != null && group.state.isActive())
+                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state != null
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     social = true;
                 }
                 else if (group.id.equals(ParameterDefinitions.COURTESY_GROUP_ID) && group.state != null
-                        && group.state.isActive())
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     courtesy = true;
                 }
                 else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state != null
-                        && group.state.isActive())
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     perception = true;
                 }
                 else if (group.id.equals(ParameterDefinitions.ESTIMATION_GROUP_ID) && group.state != null
-                        && group.state.isActive())
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     estimation = true;
                 }
                 else if (group.id.equals(ParameterDefinitions.ANTICIPATION_GROUP_ID) && group.state != null
-                        && group.state.isActive())
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     anticipation = true;
                 }
             }
         }
-        
+
         boolean isTruck = this.isTruck.get(vehicleTypeNumber);
         Estimation estimation2 = perception && estimation ? Estimation.FACTOR_ESTIMATION : Estimation.NONE;
         Anticipation anticipation2 = perception && anticipation ? Anticipation.CONSTANT_SPEED : Anticipation.NONE;

@@ -137,17 +137,18 @@ public class OtsParametersParser
         {
             for (ParameterDataGroup group : this.otsParameters.parameterGroups)
             {
-                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state != null && group.state.isActive())
+                if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state != null
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     social = true;
                 }
                 else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state != null
-                        && group.state.isActive())
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     perception = true;
                 }
                 else if (group.id.equals(ParameterDefinitions.ESTIMATION_GROUP_ID) && group.state != null
-                        && group.state.isActive())
+                        && group.state[vehicleTypeNumber].isActive())
                 {
                     estimation = true;
                 }
