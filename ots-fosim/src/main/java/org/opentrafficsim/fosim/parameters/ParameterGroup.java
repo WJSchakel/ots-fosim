@@ -42,7 +42,7 @@ public class ParameterGroup
      * Constructor.
      * @param groupNl Dutch group name.
      * @param groupEn English group name (doubles as id).
-     * @param defaultState default state of the group.
+     * @param defaultState default state of the group; two values for car types and truck types.
      */
     public ParameterGroup(final String groupNl, final String groupEn, final DefaultState[] defaultState)
     {

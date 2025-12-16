@@ -404,14 +404,14 @@
     {
       "id": "Courtesy",
       "parent": "Social interactions",
-      "groupNl": "&#9;Hoffelijkheid",
-      "groupEn": "&#9;Courtesy",
+      "groupNl": "Hoffelijkheid",
+      "groupEn": "Courtesy",
       "defaultState": [
         "ON",
         "ON"
       ],
-      "descriptionNl": "&#9;Bereid rijstrook te wisselen voor anderen.",
-      "descriptionEn": "&#9;Willing to change lane for others."
+      "descriptionNl": "Bereid rijstrook te wisselen voor anderen.",
+      "descriptionEn": "Willing to change lane for others."
     },
     {
       "id": "Perception",
@@ -583,14 +583,14 @@
     {
       "id": "Estimation",
       "parent": "Perception",
-      "groupNl": "&#9;Inschatting",
-      "groupEn": "&#9;Estimation",
+      "groupNl": "Inschatting",
+      "groupEn": "Estimation",
       "defaultState": [
         "ON",
         "ON"
       ],
-      "descriptionNl": "&#9;Onder- of overschatting afstand en relatieve snelheid.",
-      "descriptionEn": "&#9;Under- or overestimation of distance and relative speed.",
+      "descriptionNl": "Onder- of overschatting afstand en relatieve snelheid.",
+      "descriptionEn": "Under- or overestimation of distance and relative speed.",
       "parameters": [
         {
           "id": "est",
@@ -611,14 +611,14 @@
     {
       "id": "Anticipation",
       "parent": "Perception",
-      "groupNl": "&#9;Anticipatie",
-      "groupEn": "&#9;Anticipation",
+      "groupNl": "Anticipatie",
+      "groupEn": "Anticipation",
       "defaultState": [
         "ON",
         "ON"
       ],
-      "descriptionNl": "&#9;Constante snelheid anticipatie.",
-      "descriptionEn": "&#9;Constant speed anticipation."
+      "descriptionNl": "Constante snelheid anticipatie.",
+      "descriptionEn": "Constant speed anticipation."
     }
   ]
 }
