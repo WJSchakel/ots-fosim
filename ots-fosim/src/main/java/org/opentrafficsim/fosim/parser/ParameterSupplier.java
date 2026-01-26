@@ -4,12 +4,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.function.Supplier;
 
 import org.djunits.unit.Unit;
 import org.djunits.value.vdouble.scalar.base.DoubleScalarRel;
 import org.opentrafficsim.base.parameters.ParameterType;
 import org.opentrafficsim.base.parameters.ParameterTypeNumeric;
-import org.opentrafficsim.core.distributions.Generator;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
 import org.opentrafficsim.core.units.distributions.ContinuousDistDoubleScalar;
@@ -115,7 +115,6 @@ public class ParameterSupplier
         }
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {
@@ -124,16 +123,10 @@ public class ParameterSupplier
 
     /**
      * Local storage interface for parameters.
-     * <p>
-     * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
-     * <br>
-     * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
-     * </p>
-     * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
      * @param <P> parameter type
      * @param <T> value type
      */
-    private abstract class ParameterEntry<P extends ParameterType<T>, T> implements Generator<T>
+    private abstract class ParameterEntry<P extends ParameterType<T>, T> implements Supplier<T>
     {
         /** Parameter type. */
         private final P parameterType;
@@ -166,12 +159,6 @@ public class ParameterSupplier
 
     /**
      * Fixed parameter.
-     * <p>
-     * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
-     * <br>
-     * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
-     * </p>
-     * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
      * @param <T> value type
      */
     public final class ScalarEntry<T> extends ParameterEntry<ParameterType<T>, T>
@@ -189,21 +176,18 @@ public class ParameterSupplier
             this.value = value;
         }
 
-        /** {@inheritDoc} */
         @Override
-        public T draw()
+        public T get()
         {
             return this.value;
         }
 
-        /** {@inheritDoc} */
         @Override
         public void setInParameterFactory(final GtuType gtuType, final ParameterFactoryByType factory)
         {
             factory.addParameter(gtuType, getParameterType(), this.value);
         }
 
-        /** {@inheritDoc} */
         @Override
         public String toString()
         {
@@ -213,12 +197,6 @@ public class ParameterSupplier
 
     /**
      * Distributed parameter.
-     * <p>
-     * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
-     * <br>
-     * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
-     * </p>
-     * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
      * @param <U> unit type
      * @param <T> value type
      */
@@ -238,21 +216,18 @@ public class ParameterSupplier
             this.distribution = distribution;
         }
 
-        /** {@inheritDoc} */
         @Override
-        public T draw()
+        public T get()
         {
-            return this.distribution.draw();
+            return this.distribution.get();
         }
 
-        /** {@inheritDoc} */
         @Override
         public void setInParameterFactory(final GtuType gtuType, final ParameterFactoryByType factory)
         {
             factory.addParameter(gtuType, getParameterType(), this.distribution);
         }
 
-        /** {@inheritDoc} */
         @Override
         public String toString()
         {
@@ -262,14 +237,6 @@ public class ParameterSupplier
 
     /**
      * Distributed double value.
-     * <p>
-     * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
-     * <br>
-     * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
-     * </p>
-     * @author <a href="https://github.com/averbraeck">Alexander Verbraeck</a>
-     * @author <a href="https://tudelft.nl/staff/p.knoppers-1">Peter Knoppers</a>
-     * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
      */
     public final class DistributedEntryDouble extends ParameterEntry<ParameterType<Double>, Double>
     {
@@ -286,21 +253,18 @@ public class ParameterSupplier
             this.distribution = distribution;
         }
 
-        /** {@inheritDoc} */
         @Override
-        public Double draw()
+        public Double get()
         {
             return this.distribution.draw();
         }
 
-        /** {@inheritDoc} */
         @Override
         void setInParameterFactory(final GtuType gtuType, final ParameterFactoryByType factory)
         {
             factory.addParameter(gtuType, getParameterType(), this.distribution);
         }
 
-        /** {@inheritDoc} */
         @Override
         public String toString()
         {
@@ -310,12 +274,6 @@ public class ParameterSupplier
 
     /**
      * Distributed integer value.
-     * <p>
-     * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved.
-     * <br>
-     * BSD-style license. See <a href="https://opentrafficsim.org/docs/license.html">OpenTrafficSim License</a>.
-     * </p>
-     * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
      */
     public final class DistributedEntryInteger extends ParameterEntry<ParameterType<Integer>, Integer>
     {
@@ -332,21 +290,18 @@ public class ParameterSupplier
             this.distribution = distribution;
         }
 
-        /** {@inheritDoc} */
         @Override
-        public Integer draw()
+        public Integer get()
         {
             return (int) this.distribution.draw();
         }
 
-        /** {@inheritDoc} */
         @Override
         void setInParameterFactory(final GtuType gtuType, final ParameterFactoryByType factory)
         {
             factory.addParameter(gtuType, getParameterType(), this.distribution);
         }
 
-        /** {@inheritDoc} */
         @Override
         public String toString()
         {

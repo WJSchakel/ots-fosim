@@ -30,7 +30,6 @@ public class ValueAdapter implements JsonSerializer<ValueData>, JsonDeserializer
     /** Delegate Gson for default deserialization of a {@code DistributionValue}. */
     private final static Gson GSON = new Gson();
 
-    /** {@inheritDoc} */
     @Override
     public JsonElement serialize(final ValueData src, final Type typeOfSrc, final JsonSerializationContext context)
     {
@@ -49,7 +48,6 @@ public class ValueAdapter implements JsonSerializer<ValueData>, JsonDeserializer
         return obj;
     }
 
-    /** {@inheritDoc} */
     @Override
     public ValueData deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
             throws JsonParseException

@@ -58,7 +58,6 @@ public class Sim0mqTesterOts
         {
         }
 
-        /** {@inheritDoc} */
         @Override
         public void run()
         {
@@ -81,7 +80,7 @@ public class Sim0mqTesterOts
                     }
                     else
                     {
-                        payload[0] = Length.instantiateSI(Math.random() * 10.0);
+                        payload[0] = Length.ofSI(Math.random() * 10.0);
                     }
                     Sim0mqTesterOts.this.responder.send(Sim0MQMessage.encodeUTF8(true, "OTS_Fosim", "OTS", "Fosim",
                             "STEP_REPLY", messageId++, payload), 0);

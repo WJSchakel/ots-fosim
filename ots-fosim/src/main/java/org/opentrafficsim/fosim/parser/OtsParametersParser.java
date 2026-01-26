@@ -2,6 +2,7 @@ package org.opentrafficsim.fosim.parser;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.djunits.unit.AccelerationUnit;
 import org.djunits.unit.DurationUnit;
@@ -17,7 +18,6 @@ import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypeNumeric;
 import org.opentrafficsim.base.parameters.ParameterTypes;
-import org.opentrafficsim.core.distributions.Generator;
 import org.opentrafficsim.core.gtu.GtuTemplate;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.parameters.ParameterFactoryByType;
@@ -27,8 +27,6 @@ import org.opentrafficsim.core.units.distributions.ContinuousDistDoubleScalar.Re
 import org.opentrafficsim.core.units.distributions.ContinuousDistDuration;
 import org.opentrafficsim.core.units.distributions.ContinuousDistLength;
 import org.opentrafficsim.core.units.distributions.ContinuousDistSpeed;
-import org.opentrafficsim.fosim.model.CarFollowingTask;
-import org.opentrafficsim.fosim.model.TaskManagerAr;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.data.DistributionData;
 import org.opentrafficsim.fosim.parameters.data.ParameterData;
@@ -36,11 +34,13 @@ import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
 import org.opentrafficsim.fosim.parameters.data.ScalarData;
 import org.opentrafficsim.fosim.parameters.data.ValueData;
-import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
-import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSituationalAwareness;
-import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationSpeed;
 import org.opentrafficsim.road.gtu.lane.perception.mental.Fuller;
+import org.opentrafficsim.road.gtu.lane.perception.mental.ar.ArTaskCarFollowingExp;
+import org.opentrafficsim.road.gtu.lane.perception.mental.channel.AdaptationSpeedChannel;
+import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelFuller;
+import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskScan;
+import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskSignal;
 import org.opentrafficsim.road.gtu.lane.tactical.following.AbstractIdm;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.Tailgating;
@@ -115,15 +115,15 @@ public class OtsParametersParser
         // GTU templates
         GtuType gtuType = this.gtuTypes.get(vehicleTypeNumber);
         ValueData valueLength = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "l").value.get(vehicleTypeNumber);
-        Generator<Length> length =
-                (valueLength instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueLength).value())
+        Supplier<Length> length =
+                (valueLength instanceof ScalarData) ? () -> Length.ofSI(((ScalarData) valueLength).value())
                         : getDistribution((DistributionData) valueLength, stream, Length.class, LengthUnit.SI);
         ValueData valueWidth = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "w").value.get(vehicleTypeNumber);
-        Generator<Length> width =
-                (valueWidth instanceof ScalarData) ? () -> Length.instantiateSI(((ScalarData) valueWidth).value())
+        Supplier<Length> width =
+                (valueWidth instanceof ScalarData) ? () -> Length.ofSI(((ScalarData) valueWidth).value())
                         : getDistribution((DistributionData) valueWidth, stream, Length.class, LengthUnit.SI);
         ValueData valueMaxV = getParameterData(ParameterDefinitions.VEHICLE_GROUP_ID, "vMax").value.get(vehicleTypeNumber);
-        Generator<Speed> speed =
+        Supplier<Speed> speed =
                 (valueMaxV instanceof ScalarData) ? () -> new Speed(((ScalarData) valueMaxV).value(), SpeedUnit.KM_PER_HOUR)
                         : getDistribution((DistributionData) valueMaxV, stream, Speed.class, SpeedUnit.KM_PER_HOUR);
 
@@ -160,7 +160,7 @@ public class OtsParametersParser
                 DurationUnit.SI, stream, vehicleTypeNumber);
         // T = Tmax
         ValueData valueData = getParameterData(ParameterDefinitions.DRIVER_GROUP_ID, "Tmax").value.get(vehicleTypeNumber);
-        Duration t = Duration.instantiateSI(valueData instanceof ScalarData ? ((ScalarData) valueData).value()
+        Duration t = Duration.ofSI(valueData instanceof ScalarData ? ((ScalarData) valueData).value()
                 : getTypicalValue((DistributionData) valueData));
 
         parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), ParameterTypes.T, t);
@@ -183,7 +183,7 @@ public class OtsParametersParser
         addParameter(parameterFactory, AbstractIdm.DELTA, ParameterDefinitions.FOLLOWING_GROUP_ID, "delta", stream,
                 vehicleTypeNumber);
 
-        // Lane-changing: dFree, dSyn, dCoop, tau, x0, t0, vGain, vCong, LCdur
+        // Lane-changing: dFree, dSyn, dCoop, tau, x0, t0, vGain, vCong
         addParameter(parameterFactory, LmrsParameters.DFREE, ParameterDefinitions.LC_GROUP_ID, "dFree", stream,
                 vehicleTypeNumber);
         addParameter(parameterFactory, LmrsParameters.DSYNC, ParameterDefinitions.LC_GROUP_ID, "dSync", stream,
@@ -200,8 +200,6 @@ public class OtsParametersParser
                 SpeedUnit.KM_PER_HOUR, stream, vehicleTypeNumber);
         addParameter(parameterFactory, ParameterTypes.VCONG, ParameterDefinitions.LC_GROUP_ID, "vCong", Speed.class,
                 SpeedUnit.KM_PER_HOUR, stream, vehicleTypeNumber);
-        addParameter(parameterFactory, ParameterTypes.LCDUR, ParameterDefinitions.LC_GROUP_ID, "LCdur", Duration.class,
-                DurationUnit.SI, stream, vehicleTypeNumber);
 
         // Social interactions: sigma, (courtesy)
         if (social)
@@ -212,31 +210,27 @@ public class OtsParametersParser
             parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), Tailgating.RHO, 0.0);
         }
 
-        // Perception: TC, TScrit, TSmax, SAmin, SAmax, Trmax, hexp, betaT, betav0, (est), (ant), alpha, beta
+        // Perception: tau_min, tau_max, TC, td_scan, td_signal, x0_d, h_exp, beta_T, beta_v0, f_over (as estimation factor)
         if (perception)
         {
+            addParameter(parameterFactory, ChannelFuller.TAU_MIN, ParameterDefinitions.PERCEPTION_GROUP_ID, "tau_min",
+                    Duration.class, DurationUnit.SI, stream, vehicleTypeNumber);
+            addParameter(parameterFactory, ChannelFuller.TAU_MAX, ParameterDefinitions.PERCEPTION_GROUP_ID, "tau_max",
+                    Duration.class, DurationUnit.SI, stream, vehicleTypeNumber);
             addParameter(parameterFactory, Fuller.TC, ParameterDefinitions.PERCEPTION_GROUP_ID, "TC", stream,
                     vehicleTypeNumber);
-            addParameter(parameterFactory, Fuller.TS_CRIT, ParameterDefinitions.PERCEPTION_GROUP_ID, "TScrit", stream,
+            addParameter(parameterFactory, ChannelTaskScan.TDSCAN, ParameterDefinitions.PERCEPTION_GROUP_ID, "td_scan", stream,
                     vehicleTypeNumber);
-            addParameter(parameterFactory, Fuller.TS_MAX, ParameterDefinitions.PERCEPTION_GROUP_ID, "TSmax", stream,
-                    vehicleTypeNumber);
-            addParameter(parameterFactory, AdaptationSituationalAwareness.SA_MIN, ParameterDefinitions.PERCEPTION_GROUP_ID,
-                    "SAmin", stream, vehicleTypeNumber);
-            addParameter(parameterFactory, AdaptationSituationalAwareness.SA_MAX, ParameterDefinitions.PERCEPTION_GROUP_ID,
-                    "SAmax", stream, vehicleTypeNumber);
-            addParameter(parameterFactory, AdaptationSituationalAwareness.TR_MAX, ParameterDefinitions.PERCEPTION_GROUP_ID,
-                    "Trmax", Duration.class, DurationUnit.SI, stream, vehicleTypeNumber);
-            addParameter(parameterFactory, CarFollowingTask.HEXP, ParameterDefinitions.PERCEPTION_GROUP_ID, "hexp",
+            addParameter(parameterFactory, ChannelTaskSignal.TDSIGNAL, ParameterDefinitions.PERCEPTION_GROUP_ID, "td_signal",
+                    stream, vehicleTypeNumber);
+            addParameter(parameterFactory, ChannelTaskSignal.X0_D, ParameterDefinitions.PERCEPTION_GROUP_ID, "x0_d",
+                    Length.class, LengthUnit.SI, stream, vehicleTypeNumber);
+            addParameter(parameterFactory, ArTaskCarFollowingExp.HEXP, ParameterDefinitions.PERCEPTION_GROUP_ID, "h_exp",
                     Duration.class, DurationUnit.SI, stream, vehicleTypeNumber);
-            addParameter(parameterFactory, AdaptationHeadway.BETA_T, ParameterDefinitions.PERCEPTION_GROUP_ID, "betaT", stream,
+            addParameter(parameterFactory, AdaptationHeadway.BETA_T, ParameterDefinitions.PERCEPTION_GROUP_ID, "beta_T", stream,
                     vehicleTypeNumber);
-            addParameter(parameterFactory, AdaptationSpeed.BETA_V0, ParameterDefinitions.PERCEPTION_GROUP_ID, "betav0", stream,
-                    vehicleTypeNumber);
-            addParameter(parameterFactory, TaskManagerAr.ALPHA, ParameterDefinitions.PERCEPTION_GROUP_ID, "alpha", stream,
-                    vehicleTypeNumber);
-            addParameter(parameterFactory, TaskManagerAr.BETA, ParameterDefinitions.PERCEPTION_GROUP_ID, "beta", stream,
-                    vehicleTypeNumber);
+            addParameter(parameterFactory, AdaptationSpeedChannel.BETA_V0, ParameterDefinitions.PERCEPTION_GROUP_ID, "beta_v0",
+                    stream, vehicleTypeNumber);
             if (estimation)
             {
                 setEstimationFactor(vehicleTypeNumber, stream, parameterFactory);
@@ -255,7 +249,8 @@ public class OtsParametersParser
     private void setEstimationFactor(final int vehicleTypeNumber, final StreamInterface stream,
             final ParameterFactoryByType parameterFactory) throws ParameterException
     {
-        ValueData fractionOver = getParameterData(ParameterDefinitions.ESTIMATION_GROUP_ID, "est").value.get(vehicleTypeNumber);
+        ValueData fractionOver =
+                getParameterData(ParameterDefinitions.ESTIMATION_GROUP_ID, "f_over").value.get(vehicleTypeNumber);
         double f;
         if (fractionOver instanceof ScalarData scalarFractionOver)
         {
@@ -290,17 +285,14 @@ public class OtsParametersParser
                     f = 0.5;
             }
         }
-        parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), Estimation.OVER_EST, new DistContinuous(stream)
+        parameterFactory.addParameter(this.gtuTypes.get(vehicleTypeNumber), Fuller.OVER_EST, new DistContinuous(stream)
         {
-            /** */
-            private static final long serialVersionUID = 20250703L;
-
             @Override
             public double getProbabilityDensity(final double x)
             {
                 // this is not correct as we need to define a continuous probability distribution for what is actually a
                 // discrete value distribution
-                return x == 1.0 ? f : (f == -1.0 ? f - 1.0 : 0.0);
+                return x == 1.0 ? f : (f == -1.0 ? 1.0 - f : 0.0);
             }
 
             @Override

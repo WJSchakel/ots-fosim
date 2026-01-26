@@ -30,7 +30,6 @@ public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDe
     /** Delegate Gson for default deserialization of a {@code DistributionValue}. */
     private final static Gson GSON = new Gson();
 
-    /** {@inheritDoc} */
     @Override
     public JsonElement serialize(final DefaultValue src, final Type typeOfSrc, final JsonSerializationContext context)
     {
@@ -46,7 +45,6 @@ public class DefaultValueAdapter implements JsonSerializer<DefaultValue>, JsonDe
         return obj;
     }
 
-    /** {@inheritDoc} */
     @Override
     public DefaultValue deserialize(final JsonElement json, final Type typeOfT, final JsonDeserializationContext context)
             throws JsonParseException

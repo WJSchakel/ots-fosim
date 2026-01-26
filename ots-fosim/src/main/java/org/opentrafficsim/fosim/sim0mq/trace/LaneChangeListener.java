@@ -1,6 +1,5 @@
 package org.opentrafficsim.fosim.sim0mq.trace;
 
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -26,9 +25,6 @@ import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
  */
 public class LaneChangeListener implements EventListener
 {
-
-    /** */
-    private static final long serialVersionUID = 1L;
 
     /** Network. */
     private final Network network;
@@ -61,7 +57,7 @@ public class LaneChangeListener implements EventListener
     }
 
     @Override
-    public void notify(final Event event) throws RemoteException
+    public void notify(final Event event)
     {
         if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))
         {
@@ -74,9 +70,9 @@ public class LaneChangeListener implements EventListener
             if (fromln != null && !Objects.equals(fromln, tolane) && this.justChangedLane.contains(id))
             {
                 // add row to data
-                LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(id);
-                FloatDuration t = FloatDuration.instantiateSI(this.network.getSimulator().getSimulatorAbsTime().floatValue());
-                FloatLength pos = FloatLength.instantiateSI(((PositionVector) payload[1]).get(0).floatValue());
+                LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(id).get();
+                FloatDuration t = FloatDuration.ofSI(this.network.getSimulator().getSimulatorTime().floatValue());
+                FloatLength pos = FloatLength.ofSI(((PositionVector) payload[1]).get(0).floatValue());
                 int type = this.gtuTypes.indexOf(gtu.getType());
                 this.data.append(t, fromln, tolane, pos, type, Integer.valueOf(id));
             }
@@ -85,13 +81,13 @@ public class LaneChangeListener implements EventListener
         }
         else if (event.getType().equals(Network.GTU_ADD_EVENT))
         {
-            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent());
+            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent()).get();
             gtu.addListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
             gtu.addListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
         }
         else if (event.getType().equals(Network.GTU_REMOVE_EVENT))
         {
-            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent());
+            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent()).get();
             gtu.removeListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
             gtu.removeListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
             this.previousStamp.remove(gtu.getId());

@@ -7,7 +7,6 @@ import java.util.Set;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Speed;
-import org.djunits.value.vdouble.scalar.Time;
 import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.road.network.RoadNetwork;
 
@@ -19,7 +18,7 @@ public class StopCriterion
 {
 
     /** Additional time in QDC method. */
-    private static final Duration QDC_TIME = Duration.instantiateSI(600.0);
+    private static final Duration QDC_TIME = Duration.ofSI(600.0);
 
     /** Network. */
     private final RoadNetwork network;
@@ -40,7 +39,7 @@ public class StopCriterion
     private int initialTriggerPeriod = Integer.MAX_VALUE;
 
     /** Initial time when speed dropped below threshold. */
-    private Time initialTriggerTime = null;
+    private Duration initialTriggerTime = null;
 
     /**
      * Constructor.
@@ -144,9 +143,9 @@ public class StopCriterion
                     if (this.initialTriggerTime == null)
                     {
                         // need more time and an additional period to check whether congestion is robust
-                        this.initialTriggerTime = this.network.getSimulator().getSimulatorAbsTime();
+                        this.initialTriggerTime = this.network.getSimulator().getSimulatorTime();
                     }
-                    else if (this.network.getSimulator().getSimulatorAbsTime().si - this.initialTriggerTime.si >= QDC_TIME.si)
+                    else if (this.network.getSimulator().getSimulatorTime().si - this.initialTriggerTime.si >= QDC_TIME.si)
                     {
                         return BatchStatus.TRIGGERED;
                     }

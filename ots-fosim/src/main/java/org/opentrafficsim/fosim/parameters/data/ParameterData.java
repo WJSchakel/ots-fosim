@@ -19,7 +19,6 @@ public class ParameterData
     /** Values per vehicle type. */
     public List<ValueData> value;
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

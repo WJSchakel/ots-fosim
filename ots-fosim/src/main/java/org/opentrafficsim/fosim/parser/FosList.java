@@ -81,7 +81,6 @@ class FosList<T> implements Iterable<T>
         return !this.list.contains(null);
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

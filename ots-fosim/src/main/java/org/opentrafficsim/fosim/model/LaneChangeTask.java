@@ -2,8 +2,6 @@ package org.opentrafficsim.fosim.model;
 
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.base.parameters.Parameters;
-import org.opentrafficsim.core.gtu.GtuException;
-import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.perception.LanePerception;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AbstractTask;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
@@ -16,10 +14,11 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
+@Deprecated
 public class LaneChangeTask extends AbstractTask
 {
 
-    /** 
+    /**
      * Constructor.
      */
     public LaneChangeTask()
@@ -27,11 +26,10 @@ public class LaneChangeTask extends AbstractTask
         super("lane-changing");
     }
 
-    /** {@inheritDoc} */
     @Override
-    public double calculateTaskDemand(final LanePerception perception, final LaneBasedGtu gtu,
-            final Parameters parameters) throws ParameterException, GtuException
+    public double calculateTaskDemand(final LanePerception perception) throws ParameterException
     {
+        Parameters parameters = perception.getGtu().getParameters();
         return Math.max(0.0,
                 Math.max(parameters.getParameter(LmrsParameters.DLEFT), parameters.getParameter(LmrsParameters.DRIGHT)));
     }

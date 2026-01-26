@@ -1,6 +1,5 @@
 package org.opentrafficsim.fosim.sim0mq.trace;
 
-import java.rmi.RemoteException;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,9 +27,6 @@ import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
  */
 public class AccelerationChangeListener implements EventListener
 {
-
-    /** */
-    private static final long serialVersionUID = 1L;
 
     /** Network. */
     private final Network network;
@@ -63,7 +59,7 @@ public class AccelerationChangeListener implements EventListener
     }
 
     @Override
-    public void notify(final Event event) throws RemoteException
+    public void notify(final Event event)
     {
         if (event.getType().equals(LaneBasedGtu.LANEBASED_MOVE_EVENT))
         {
@@ -78,12 +74,12 @@ public class AccelerationChangeListener implements EventListener
                     || !Objects.equals(stamp.lane(), tolane) && this.justChangedLane.contains(id))
             {
                 // add row to data
-                LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(id);
-                FloatDuration t = FloatDuration.instantiateSI(this.network.getSimulator().getSimulatorAbsTime().floatValue());
+                LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(id).get();
+                FloatDuration t = FloatDuration.ofSI(this.network.getSimulator().getSimulatorTime().floatValue());
                 int fromln = stamp.lane();
                 long fromA10 = stamp.acceleration10();
-                FloatLength pos = FloatLength.instantiateSI(((PositionVector) payload[1]).get(0).floatValue());
-                FloatSpeed v = FloatSpeed.instantiateSI(((Speed) payload[3]).floatValue());
+                FloatLength pos = FloatLength.ofSI(((PositionVector) payload[1]).get(0).floatValue());
+                FloatSpeed v = FloatSpeed.ofSI(((Speed) payload[3]).floatValue());
                 int type = this.gtuTypes.indexOf(gtu.getType());
                 this.data.append(t, fromln, tolane, rounded(fromA10), rounded(toA10), pos, v, type, Integer.valueOf(id));
             }
@@ -91,13 +87,13 @@ public class AccelerationChangeListener implements EventListener
         }
         else if (event.getType().equals(Network.GTU_ADD_EVENT))
         {
-            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent());
+            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent()).get();
             gtu.addListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
             gtu.addListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
         }
         else if (event.getType().equals(Network.GTU_REMOVE_EVENT))
         {
-            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent());
+            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU((String) event.getContent()).get();
             gtu.removeListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
             gtu.removeListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
             this.previousStamp.remove(gtu.getId());
@@ -116,7 +112,7 @@ public class AccelerationChangeListener implements EventListener
      */
     private static FloatAcceleration rounded(long acceleration10)
     {
-        return FloatAcceleration.instantiateSI(((float) acceleration10) / 10.0f);
+        return FloatAcceleration.ofSI(((float) acceleration10) / 10.0f);
     }
 
     /**

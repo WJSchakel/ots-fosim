@@ -46,18 +46,14 @@ public class ParserTestSingle
     {
         OtsSimulator simulator = new OtsSimulator("FOSIM parser test");
         RoadNetwork network = new RoadNetwork("FOSIM parser test", simulator);
-        simulator.initialize(Time.ZERO, Duration.ZERO, Duration.instantiateSI(3600.0), new AbstractOtsModel(simulator)
+        simulator.initialize(Time.ZERO, Duration.ZERO, Duration.ofSI(3600.0), new AbstractOtsModel(simulator)
         {
-            private static final long serialVersionUID = 1L;
-
-            /** {@inheritDoc} */
             @Override
             public Network getNetwork()
             {
                 return network;
             }
 
-            /** {@inheritDoc} */
             @Override
             public void constructModel() throws SimRuntimeException
             {

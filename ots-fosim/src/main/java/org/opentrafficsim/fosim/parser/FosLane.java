@@ -103,7 +103,7 @@ public class FosLane
         this.speedLimit = Speed.of(Double.parseDouble(fields[5]), "km/h");
         this.slope = Double.parseDouble(fields[6]);
         this.allLaneChangeRequired = fields[7].equals("1"); // "0" otherwise
-        this.laneWidth = Length.instantiateSI(Double.parseDouble(fields[8]));
+        this.laneWidth = Length.ofSI(Double.parseDouble(fields[8]));
         this.roadWorks = fields[9].equals("1"); // "0" otherwise
         this.trajectoryControl = fields[10].equals("1"); // "0" otherwise
         this.switchedLane = fields.length > 11 ? Integer.parseInt(fields[11]) : 0;
@@ -176,7 +176,6 @@ public class FosLane
         this.lane = lane;
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

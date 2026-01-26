@@ -149,7 +149,7 @@ public class FosimEmulator
                 }
             }
             encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TRACE_VEHICLES_STEP", messageId++,
-                    new Object[] {Duration.instantiateSI(0.5)});
+                    new Object[] {Duration.ofSI(0.5)});
             requester.send(encodedMessage, 0);
             reply = requester.recv(0);
             message = Sim0MQMessage.decode(reply);
@@ -188,7 +188,7 @@ public class FosimEmulator
                 int fromLane = 0;
                 int toLane = 12;
                 int detector = -1;
-                Duration additionalTime = Duration.instantiateSI(600.0);
+                Duration additionalTime = Duration.ofSI(600.0);
                 encodedMessage =
                         Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "BATCH", messageId++, new Object[] {"PLM",
                                 fromLane, toLane, detector, new Speed(50.0, SpeedUnit.KM_PER_HOUR), additionalTime});
@@ -289,8 +289,8 @@ public class FosimEmulator
                     messageId = getTraceData(requester, messageId);
 
                     encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "CONTOUR", messageId++,
-                            new Object[] {Duration.ZERO, Duration.instantiateSI(60.0), Duration.instantiateSI(300.0),
-                                    Length.ZERO, Length.instantiateSI(100.0), Length.instantiateSI(3500.0)});
+                            new Object[] {Duration.ZERO, Duration.ofSI(60.0), Duration.ofSI(300.0),
+                                    Length.ZERO, Length.ofSI(100.0), Length.ofSI(3500.0)});
                     long t = System.currentTimeMillis();
                     requester.send(encodedMessage, 0);
                     reply = requester.recv(0);
@@ -311,8 +311,8 @@ public class FosimEmulator
                     }
 
                     encodedMessage = Sim0MQMessage.encodeUTF8(BIG_ENDIAN, FEDERATION, FOSIM, OTS, "TRAJECTORIES", messageId++,
-                            new Object[] {Duration.ZERO, Duration.instantiateSI(541.0), Length.ZERO,
-                                    Length.instantiateSI(3500.0), 20});
+                            new Object[] {Duration.ZERO, Duration.ofSI(541.0), Length.ZERO,
+                                    Length.ofSI(3500.0), 20});
                     t = System.currentTimeMillis();
                     requester.send(encodedMessage, 0);
                     reply = requester.recv(0);

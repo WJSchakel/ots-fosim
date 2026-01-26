@@ -40,7 +40,6 @@ class FosSourceSink
         this.name = fields[3];
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

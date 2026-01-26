@@ -21,7 +21,6 @@ public class DistributionData implements ValueData
     /** List of parameters that define the distribution. */
     public Map<String, Double> distributionParameters;
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

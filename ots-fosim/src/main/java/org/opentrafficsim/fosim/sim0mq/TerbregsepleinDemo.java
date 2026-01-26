@@ -2,7 +2,7 @@ package org.opentrafficsim.fosim.sim0mq;
 
 import java.io.IOException;
 
-import org.opentrafficsim.base.Resource;
+import org.djutils.io.ResourceResolver;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.network.NetworkException;
@@ -42,13 +42,12 @@ public class TerbregsepleinDemo extends DemoTransceiver
         new TerbregsepleinDemo(args);
     }
 
-    /** {@inheritDoc} */
     @Override
     protected RoadNetwork setupSimulation(final OtsSimulatorInterface sim)
             throws NetworkException, SimRuntimeException, ParameterException, IOException
     {
         FosParser parser = new FosParser().setSimulator(sim);
-        parser.parseFromStream(Resource.getResourceAsStream("/Terbregseplein_6.5_aangepast_param.fos"));
+        parser.parseFromStream(ResourceResolver.resolve("/Terbregseplein_6.5_aangepast_param.fos").openStream());
         return parser.getNetwork();
     }
 

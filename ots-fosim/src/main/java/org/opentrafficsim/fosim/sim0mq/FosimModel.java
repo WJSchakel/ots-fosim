@@ -17,8 +17,6 @@ import nl.tudelft.simulation.jstats.streams.MersenneTwister;
  */
 public class FosimModel extends AbstractOtsModel
 {
-    /** */
-    private static final long serialVersionUID = 20231123L;
 
     /** Network. */
     private RoadNetwork network;
@@ -37,7 +35,6 @@ public class FosimModel extends AbstractOtsModel
         this.seed = seed;
     }
 
-    /** {@inheritDoc} */
     @Override
     public void constructModel() throws SimRuntimeException
     {
@@ -54,7 +51,6 @@ public class FosimModel extends AbstractOtsModel
         this.network = network;
     }
 
-    /** {@inheritDoc} */
     @Override
     public RoadNetwork getNetwork()
     {

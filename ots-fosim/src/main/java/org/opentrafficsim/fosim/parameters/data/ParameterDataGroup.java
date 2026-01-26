@@ -24,7 +24,6 @@ public class ParameterDataGroup
     /** List of parameters in the group. */
     public List<ParameterData> parameters;
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

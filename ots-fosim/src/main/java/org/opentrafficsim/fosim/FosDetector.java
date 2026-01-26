@@ -11,7 +11,6 @@ import java.util.TreeMap;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
-import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Throw;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
@@ -34,14 +33,11 @@ import org.opentrafficsim.road.network.lane.object.detector.LaneDetector;
 public class FosDetector extends LaneDetector
 {
 
-    /** */
-    private static final long serialVersionUID = 20240823L;
-
     /** Registered passing times in previous detector cross-section. */
-    private final Map<String, Time> prevTime;
+    private final Map<String, Duration> prevTime;
 
     /** Registered passing times in this detector cross-section. */
-    private final Map<String, Time> thisTime;
+    private final Map<String, Duration> thisTime;
 
     /** Vehicle count. */
     private final List<Integer> count = new ArrayList<>();
@@ -56,13 +52,13 @@ public class FosDetector extends LaneDetector
     private final List<Double> sumTravelTime = new ArrayList<>();
 
     /** GTU passings. */
-    private NavigableMap<Time, Passing> passings = new TreeMap<>();
+    private NavigableMap<Duration, Passing> passings = new TreeMap<>();
 
     /** Current period index. */
     private int index = -1;
 
     /** Time of first aggregation. */
-    private final Time firstAggregation;
+    private final Duration firstAggregation;
 
     /** Aggregation period. */
     private final Duration aggregationTime;
@@ -80,8 +76,8 @@ public class FosDetector extends LaneDetector
      * @throws NetworkException when the position on the lane is out of bounds
      */
     public FosDetector(final String id, final Lane lane, final Length longitudinalPosition,
-            final OtsSimulatorInterface simulator, final Map<String, Time> prevTime, final Map<String, Time> thisTime,
-            final Time firstAggregation, final Duration aggregationTime) throws NetworkException
+            final OtsSimulatorInterface simulator, final Map<String, Duration> prevTime, final Map<String, Duration> thisTime,
+            final Duration firstAggregation, final Duration aggregationTime) throws NetworkException
     {
         super(id, lane, longitudinalPosition, RelativePosition.FRONT, LaneBasedObject.makeLine(lane, longitudinalPosition, 1.0),
                 DefaultsNl.LOOP_DETECTOR);
@@ -102,31 +98,30 @@ public class FosDetector extends LaneDetector
         this.sumReciprocalSpeed.add(0.0);
         this.travelTimeCount.add(0);
         this.sumTravelTime.add(0.0);
-        Duration time = Duration.instantiateSI(this.firstAggregation.si + this.index * this.aggregationTime.si);
+        Duration time = Duration.ofSI(this.firstAggregation.si + this.index * this.aggregationTime.si);
         getSimulator().scheduleEventAbs(time, this, "increasePeriod", null);
     }
 
-    /** {@inheritDoc} */
     @Override
     protected void triggerResponse(final LaneBasedGtu gtu)
     {
         this.count.set(this.index, this.count.get(this.index) + 1);
         this.sumReciprocalSpeed.set(this.index,
                 this.sumReciprocalSpeed.get(this.index) + (1.0 / Math.max(gtu.getSpeed().si, 0.05)));
-        Time now = getSimulator().getSimulatorAbsTime();
-        Time prev = this.prevTime.remove(gtu.getId());
+        Duration now = getSimulator().getSimulatorTime();
+        Duration prev = this.prevTime.remove(gtu.getId());
         if (prev != null)
         {
             Duration travelTime = now.minus(prev);
             this.travelTimeCount.set(this.index, this.travelTimeCount.get(this.index) + 1);
             this.sumTravelTime.set(this.index, this.sumTravelTime.get(this.index) + travelTime.si);
             this.passings.put(now, new Passing(now, travelTime, gtu.getSpeed(), gtu.getType(), gtu.getId(),
-                    gtu.getStrategicalPlanner().getDestination().getId()));
+                    gtu.getStrategicalPlanner().getDestination().get().getId()));
         }
         else
         {
             this.passings.put(now, new Passing(now, null, gtu.getSpeed(), gtu.getType(), gtu.getId(),
-                    gtu.getStrategicalPlanner().getDestination().getId()));
+                    gtu.getStrategicalPlanner().getDestination().get().getId()));
         }
         this.thisTime.put(gtu.getId(), now);
     }
@@ -199,16 +194,16 @@ public class FosDetector extends LaneDetector
      * @param startTime start time (exclusive)
      * @return passings since given time
      */
-    public Set<Passing> getPassings(final Time startTime)
+    public Set<Passing> getPassings(final Duration startTime)
     {
         return new LinkedHashSet<>(this.passings.tailMap(startTime, false).values());
     }
-    
+
     /**
      * Clear passings up to given time.
      * @param time time (inclusive)
      */
-    public void clearPassingsUpTo(final Time time)
+    public void clearPassingsUpTo(final Duration time)
     {
         this.passings.headMap(time, true).clear();
     }
@@ -222,7 +217,7 @@ public class FosDetector extends LaneDetector
      * @param id id
      * @param destination destination node id
      */
-    public record Passing(Time time, Duration travelTimeSinceDetector, Speed speed, GtuType gtuType, String id,
+    public record Passing(Duration time, Duration travelTimeSinceDetector, Speed speed, GtuType gtuType, String id,
             String destination)
     {
     };

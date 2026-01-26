@@ -32,7 +32,6 @@ public class ScalarData implements ValueData
         return this.value;
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

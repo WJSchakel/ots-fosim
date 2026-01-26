@@ -45,16 +45,15 @@ class FosTrafficLight
     {
         String[] fields = FosParser.splitStringByBlank(string, 8);
         this.controller = fields[0];
-        this.position = Length.instantiateSI(Double.parseDouble(fields[1]));
+        this.position = Length.ofSI(Double.parseDouble(fields[1]));
         this.lane = Integer.parseInt(fields[2]);
         this.number = Integer.parseInt(fields[3]);
-        this.cycleTime = Duration.instantiateSI(Double.parseDouble(fields[4]));
-        this.greenTime = Duration.instantiateSI(Double.parseDouble(fields[5]));
-        this.yellowTime = Duration.instantiateSI(Double.parseDouble(fields[6]));
-        this.startOffset = Duration.instantiateSI(Double.parseDouble(fields[7]));
+        this.cycleTime = Duration.ofSI(Double.parseDouble(fields[4]));
+        this.greenTime = Duration.ofSI(Double.parseDouble(fields[5]));
+        this.yellowTime = Duration.ofSI(Double.parseDouble(fields[6]));
+        this.startOffset = Duration.ofSI(Double.parseDouble(fields[7]));
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

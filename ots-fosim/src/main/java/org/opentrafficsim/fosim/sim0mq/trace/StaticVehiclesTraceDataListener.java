@@ -1,6 +1,5 @@
 package org.opentrafficsim.fosim.sim0mq.trace;
 
-import java.rmi.RemoteException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -16,9 +15,6 @@ import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
  */
 public class StaticVehiclesTraceDataListener implements EventListener
 {
-
-    /** */
-    private static final long serialVersionUID = 1L;
 
     /** Network. */
     private final Network network;
@@ -73,20 +69,20 @@ public class StaticVehiclesTraceDataListener implements EventListener
     }
 
     @Override
-    public void notify(final Event event) throws RemoteException
+    public void notify(final Event event)
     {
         if (event.getType().equals(Network.GTU_ADD_EVENT))
         {
-            // At this stage the GTU has not strategic planner yet, get that at first LANEBASED_MOVE_EVENT
-            this.network.getGTU((String) event.getContent()).addListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
+            // At this stage the GTU has no strategic planner yet, get that at first LANEBASED_MOVE_EVENT
+            this.network.getGTU((String) event.getContent()).get().addListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
         }
         else
         {
             String gtuId = (String) ((Object[]) event.getContent())[0];
-            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(gtuId);
+            LaneBasedGtu gtu = (LaneBasedGtu) this.network.getGTU(gtuId).get();
             this.gtuTypes.put(gtuId, gtu.getType());
-            this.origins.put(gtuId, gtu.getStrategicalPlanner().getOrigin().getId());
-            this.destinations.put(gtuId, gtu.getStrategicalPlanner().getDestination().getId());
+            this.origins.put(gtuId, gtu.getStrategicalPlanner().getOrigin().get().getId());
+            this.destinations.put(gtuId, gtu.getStrategicalPlanner().getDestination().get().getId());
             this.network.removeListener(this, LaneBasedGtu.LANEBASED_MOVE_EVENT);
         }
     }

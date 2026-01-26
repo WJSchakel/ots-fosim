@@ -23,9 +23,6 @@ import nl.tudelft.simulation.dsol.simulators.SimulatorInterface;
 public class OtsAnimatorStep extends OtsAnimator implements OtsSimulatorInterfaceStep
 {
 
-    /** */
-    private static final long serialVersionUID = 20240315L;
-
     /** Animation thread. */
     private AnimationThread animationThread = null;
 
@@ -47,7 +44,6 @@ public class OtsAnimatorStep extends OtsAnimator implements OtsSimulatorInterfac
         return this.worker;
     }
 
-    /** {@inheritDoc} */
     @Override
     public void run()
     {

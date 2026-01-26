@@ -42,10 +42,10 @@ public class ParserTestBatch
 {
 
     /** Manual test or not. Should be false, unless you are performing a manual test. */
-    private final static boolean MANUAL = true;
+    private final static boolean MANUAL = false;
 
     /** Skips all fos files up to this number. Should be 0, unless you are performing a manual test. */
-    private final static int FIRST = 5;
+    private final static int FIRST = 0;
     
     /** Skips all fos files after this number. Should be Integer.MAX_VALUE, unless you are performing a manual test. */
     private final static int LAST = Integer.MAX_VALUE;
@@ -80,18 +80,14 @@ public class ParserTestBatch
             i++;
             OtsSimulator simulator = new OtsSimulator("FOSIM parser test");
             RoadNetwork network = new RoadNetwork("FOSIM parser test", simulator);
-            simulator.initialize(Time.ZERO, Duration.ZERO, Duration.instantiateSI(3600.0), new AbstractOtsModel(simulator)
+            simulator.initialize(Time.ZERO, Duration.ZERO, Duration.ofSI(3600.0), new AbstractOtsModel(simulator)
             {
-                private static final long serialVersionUID = 1L;
-
-                /** {@inheritDoc} */
                 @Override
                 public Network getNetwork()
                 {
                     return network;
                 }
 
-                /** {@inheritDoc} */
                 @Override
                 public void constructModel() throws SimRuntimeException
                 {
@@ -101,7 +97,6 @@ public class ParserTestBatch
             Map<ParserSetting, Boolean> parserSettings = new LinkedHashMap<>();
             parserSettings.put(ParserSetting.STRIPED_AREAS, true);
             parserSettings.put(ParserSetting.GUI, MANUAL);
-            parserSettings.put(ParserSetting.INSTANT_LC, true);
             parserSettings.put(ParserSetting.FOS_DETECTORS, true);
 
             String fileName = "/fos/" + file;

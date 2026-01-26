@@ -6,7 +6,6 @@ import java.util.List;
 
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Length;
-import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.logger.CategoryLogger;
 import org.opentrafficsim.draw.graphs.ContourDataSource;
 import org.opentrafficsim.draw.graphs.GraphPath;
@@ -113,14 +112,14 @@ public class FosContourDataSource
         // loop cells to update data
         for (int j = 0; j < nTime; j++)
         {
-            Time tFrom = Time.instantiateSI(timeTicks[j]);
-            Time tTo = Time.instantiateSI(timeTicks[j + 1]);
+            Duration tFrom = Duration.ofSI(timeTicks[j]);
+            Duration tTo = Duration.ofSI(timeTicks[j + 1]);
             // we never filter time, time always spans the entire simulation, it will contain tFrom till tTo
             for (int i = 0; i < nSpace; i++)
             {
                 // only first loop with offset, later in time, none of the space was done in the previous update
-                Length xFrom = Length.instantiateSI(spaceTicks[i]);
-                Length xTo = Length.instantiateSI(Math.min(spaceTicks[i + 1], this.path.getTotalLength().si));
+                Length xFrom = Length.ofSI(spaceTicks[i]);
+                Length xTo = Length.ofSI(Math.min(spaceTicks[i + 1], this.path.getTotalLength().si));
 
                 // init cell data
                 double totalDistance = 0.0;
@@ -133,7 +132,8 @@ public class FosContourDataSource
                     List<TrajectoryGroup<?>> trajectories = new ArrayList<>();
                     for (Section<? extends LaneData<?>> section : getPath().getSections())
                     {
-                        TrajectoryGroup<?> trajectoryGroup = this.samplerData.getTrajectoryGroup(section.getSource(series));
+                        TrajectoryGroup<?> trajectoryGroup =
+                                this.samplerData.getTrajectoryGroup(section.getSource(series)).get();
                         // when null, this is created by OtsTransceiver.Worker.dummyLaneData()
                         if (null != trajectoryGroup)
                         {
@@ -219,7 +219,6 @@ public class FosContourDataSource
         return this.time;
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {
@@ -330,7 +329,6 @@ public class FosContourDataSource
             return (int) Math.ceil((this.maxValue - this.minValue) / this.granularity);
         }
 
-        /** {@inheritDoc} */
         @Override
         public String toString()
         {

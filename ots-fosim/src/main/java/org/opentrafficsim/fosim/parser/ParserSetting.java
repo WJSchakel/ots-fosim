@@ -29,10 +29,7 @@ public enum ParserSetting
     STRIPED_AREAS(false),
     
     /** Whether to build a GUI, or just a simulator. Ignored when a simulator is set in the parser. */
-    GUI(true),
-    
-    /** Instant lane changes. */
-    INSTANT_LC(false);
+    GUI(true);
 
     /** Default value. */
     private final boolean defaultValue;

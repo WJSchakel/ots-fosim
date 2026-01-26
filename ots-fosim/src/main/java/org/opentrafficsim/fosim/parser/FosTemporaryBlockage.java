@@ -35,14 +35,13 @@ class FosTemporaryBlockage
     public FosTemporaryBlockage(final String string)
     {
         String[] fields = FosParser.splitStringByBlank(string, 5);
-        this.position = Length.instantiateSI(Double.parseDouble(fields[0]));
+        this.position = Length.ofSI(Double.parseDouble(fields[0]));
         this.fromLane = Integer.parseInt(fields[1]);
         this.toLane = Integer.parseInt(fields[2]);
-        this.fromTime = Duration.instantiateSI(Double.parseDouble(fields[3]));
-        this.toTime = Duration.instantiateSI(Double.parseDouble(fields[4]));
+        this.fromTime = Duration.ofSI(Double.parseDouble(fields[3]));
+        this.toTime = Duration.ofSI(Double.parseDouble(fields[4]));
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

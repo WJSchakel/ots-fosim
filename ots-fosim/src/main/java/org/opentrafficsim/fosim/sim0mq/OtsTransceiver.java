@@ -2,8 +2,6 @@ package org.opentrafficsim.fosim.sim0mq;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.lang.reflect.Field;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -20,7 +18,6 @@ import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Frequency;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
-import org.djunits.value.vdouble.scalar.Time;
 import org.djunits.value.vfloat.matrix.FloatDurationMatrix;
 import org.djunits.value.vfloat.matrix.FloatLengthMatrix;
 import org.djunits.value.vfloat.scalar.FloatDuration;
@@ -31,6 +28,7 @@ import org.djunits.value.vfloat.vector.FloatLengthVector;
 import org.djutils.cli.CliUtil;
 import org.djutils.data.Column;
 import org.djutils.data.Row;
+import org.djutils.draw.function.ContinuousPiecewiseLinearFunction;
 import org.djutils.draw.line.PolyLine2d;
 import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.Point2d;
@@ -42,7 +40,6 @@ import org.opentrafficsim.base.geometry.OtsLine2d;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsAnimator;
-import org.opentrafficsim.core.geometry.FractionalLengthData;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuType;
@@ -80,15 +77,14 @@ import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
 import org.opentrafficsim.kpi.sampling.Trajectory;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
-import org.opentrafficsim.road.gtu.lane.plan.operational.LaneChange;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
+import org.opentrafficsim.road.network.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionGeometry;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LanePosition;
-import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.sampling.LaneDataRoad;
 import org.opentrafficsim.road.network.sampling.RoadSampler;
 import org.opentrafficsim.swing.gui.OtsSimulationApplication;
@@ -140,15 +136,11 @@ public class OtsTransceiver
 
     /** Simulation step. */
     @Option(names = "--step", description = "Simulation step") // Locale bug: , defaultValue = "0,5s"
-    private Duration step = Duration.instantiateSI(0.5);
+    private Duration step = Duration.ofSI(0.5);
 
     /** Show GUI. */
     @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "false")
     private boolean showGui;
-
-    /** Show GUI. */
-    @Option(names = "--instantLc", description = "Instant lane changes", defaultValue = "true")
-    private boolean instantLc;
 
     /** The simulator. */
     private OtsSimulatorInterfaceStep simulator;
@@ -157,7 +149,7 @@ public class OtsTransceiver
     private RoadNetwork network;
 
     /** Duration of virtual lane change. */
-    private final static Duration VIRTUAL_LC_DURATION = Duration.instantiateSI(3.0);
+    private final static Duration VIRTUAL_LC_DURATION = Duration.ofSI(3.0);
 
     /**
      * Constructor.
@@ -256,9 +248,6 @@ public class OtsTransceiver
     {
 
         /** */
-        private static final long serialVersionUID = 20250320L;
-
-        /** */
         private ZContext context;
 
         /** the socket. */
@@ -310,16 +299,16 @@ public class OtsTransceiver
         private Map<Trace, TraceData> traceFiles = new EnumMap<>(Trace.class);
 
         /** Step in vehicle trace file. */
-        private Duration vehiclesTraceStep = Duration.instantiateSI(0.5);
+        private Duration vehiclesTraceStep = Duration.ofSI(0.5);
 
         /** Time until which detections data was returned. */
-        private Time lastDetectionTime;
+        private Duration lastDetectionTime;
 
         /** Time until which travel time data was returned. */
-        private Time lastTravelTimeTime;
+        private Duration lastTravelTimeTime;
 
         /** Time until which vehicle data was returned. */
-        private Time lastVehiclesTime;
+        private Duration lastVehiclesTime;
 
         /** Listener to static vehicles trace data. */
         private StaticVehiclesTraceDataListener staticVehiclesTraceDataListener;
@@ -352,13 +341,13 @@ public class OtsTransceiver
         {
         }
 
-        /** {@inheritDoc} */
         @Override
         public void run()
         {
             this.context = new ZContext(1);
             this.responder = this.context.createSocket(SocketType.REP);
             this.responder.bind("tcp://*:" + port);
+            this.responder.setReceiveTimeOut(5000);
             System.out.println("Server is running");
 
             try
@@ -366,19 +355,30 @@ public class OtsTransceiver
                 while (!Thread.currentThread().isInterrupted())
                 {
                     // Wait for next request from the client
-                    byte[] request = this.responder.recv(ZMQ.DONTWAIT);
+                    byte[] request = this.responder.recv(); // ZMQ.DONTWAIT
                     while (request == null)
                     {
-                        try
-                        {
-                            // In order to allow resources to go to other processes, we sleep before checking again
-                            Thread.sleep(3);
-                        }
-                        catch (InterruptedException e)
-                        {
-                        }
-                        request = this.responder.recv(ZMQ.DONTWAIT);
+                        /*
+                         * This code is left as a comment to later check how much speed this gains. As of 2026 jan-25 the
+                         * simulation seems to be slow mostly due to excess logging. THis makes a benchmark impossible.
+                         */
+                        // try
+                        // {
+                        // // In order to allow resources to go to other processes, we sleep before checking again
+                        // Thread.sleep(3);
+                        // }
+                        // catch (InterruptedException e)
+                        // {
+                        // }
+                        request = this.responder.recv(); // ZMQ.DONTWAIT
                     }
+                    /*
+                     * We have transitioned from SIM02 to SIM03. SIM03 deals differently with little or big endianness. In
+                     * particular all the little endian data types were removed and the endianness in the main message
+                     * determines all endianness in individual payload objects. This is already how we used sim0mq under SIM02.
+                     * Therefore we can safely change the 2 in to a 3 when receiving the message.
+                     */
+                    request[9] = (byte) 51; // makes the 10th byte represent "3"
                     Sim0MQMessage message = Sim0MQMessage.decode(request);
 
                     if ("STEP".equals(message.getMessageTypeId()))
@@ -390,7 +390,7 @@ public class OtsTransceiver
                     }
                     else if ("VEHICLES".equals(message.getMessageTypeId()))
                     {
-                        Object[] payload = OtsTransceiver.this.instantLc ? getVehiclePayloadInstant() : getVehiclePayload();
+                        Object[] payload = getVehiclePayload();
                         this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
                                 OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
                                 "VEHICLES_REPLY", this.messageId++, payload), 0);
@@ -636,7 +636,7 @@ public class OtsTransceiver
                     // pos, lane, t, ___ v, type, id, dest
                     // pos, lane, t, dt, v, type, id, dest
                     boolean addTravelTime = traceId.equals(Trace.Info.TRAVEL_TIME_ID);
-                    Time time = addTravelTime ? this.lastTravelTimeTime : this.lastDetectionTime;
+                    Duration time = addTravelTime ? this.lastTravelTimeTime : this.lastDetectionTime;
                     int numberOfColumns = addTravelTime ? 8 : 7;
                     TraceData data = new TraceData(numberOfColumns);
                     this.detectors.values().forEach((d) -> addTraceDataFromPassings(d, time, data, addTravelTime));
@@ -656,11 +656,11 @@ public class OtsTransceiver
                     payload[0] = traceId;
                     if (addTravelTime)
                     {
-                        this.lastTravelTimeTime = OtsTransceiver.this.simulator.getSimulatorAbsTime();
+                        this.lastTravelTimeTime = OtsTransceiver.this.simulator.getSimulatorTime();
                     }
                     else
                     {
-                        this.lastDetectionTime = OtsTransceiver.this.simulator.getSimulatorAbsTime();
+                        this.lastDetectionTime = OtsTransceiver.this.simulator.getSimulatorTime();
                     }
                     return payload;
                 }
@@ -711,7 +711,7 @@ public class OtsTransceiver
                     payload[++index] = data.asLength(index - 1); // pos
                     payload[++index] = data.asSpeed(index - 1); // v
                     payload[0] = traceId;
-                    this.lastVehiclesTime = OtsTransceiver.this.simulator.getSimulatorAbsTime();
+                    this.lastVehiclesTime = OtsTransceiver.this.simulator.getSimulatorTime();
                     return payload;
                 }
                 default:
@@ -728,10 +728,10 @@ public class OtsTransceiver
          * @param data object to add data to
          * @param addTravelTime whether to include the travel time since last detector data
          */
-        private void addTraceDataFromPassings(final FosDetector detector, final Time since, final TraceData data,
+        private void addTraceDataFromPassings(final FosDetector detector, final Duration since, final TraceData data,
                 final boolean addTravelTime)
         {
-            FloatLength pos = FloatLength.instantiateSI((float) detector.getLocation().x);
+            FloatLength pos = FloatLength.ofSI((float) detector.getLocation().x);
             Integer lane = getLaneRowFromId(detector.getLane().getId());
             for (Passing passing : detector.getPassings(since))
             {
@@ -741,26 +741,25 @@ public class OtsTransceiver
                     int index = 0;
                     row[index++] = pos; // pos
                     row[index++] = lane; // lane
-                    row[index++] = FloatDuration.instantiateSI((float) passing.time().si); // t
+                    row[index++] = FloatDuration.ofSI((float) passing.time().si); // t
                     if (addTravelTime)
                     {
-                        row[index++] = FloatDuration.instantiateSI((float) passing.travelTimeSinceDetector().si); // dt
+                        row[index++] = FloatDuration.ofSI((float) passing.travelTimeSinceDetector().si); // dt
                     }
-                    row[index++] = FloatSpeed.instantiateSI((float) passing.speed().si); // v
+                    row[index++] = FloatSpeed.ofSI((float) passing.speed().si); // v
                     row[index++] = this.gtuTypes.indexOf(passing.gtuType()); // type
                     row[index++] = Integer.valueOf(passing.id()); // id
                     row[index++] = this.odNumbers.get(passing.destination()); // dest
                     data.append(row);
                 }
             }
-            detector.clearPassingsUpTo(Time.min(this.lastDetectionTime, this.lastTravelTimeTime));
+            detector.clearPassingsUpTo(Duration.min(this.lastDetectionTime, this.lastTravelTimeTime));
         }
 
         /**
          * Adds sampler row to vehicles trace data, if it is at the right vehicles trace step in time.
          * @param row sampler row
          * @param data vehicles trace data
-         * @return
          */
         private void addVehiclesTraceRow(final Row row, final TraceData data)
         {
@@ -772,10 +771,11 @@ public class OtsTransceiver
                 int type = this.gtuTypes.indexOf(this.staticVehiclesTraceDataListener.getGtuType(id));
                 int origin = this.odNumbers.get(this.staticVehiclesTraceDataListener.getOrigin(id));
                 int dest = this.odNumbers.get(this.staticVehiclesTraceDataListener.getDestination(id));
-                double x0 = OtsTransceiver.this.network.getLink(row.getValue(this.linkColumn)).getStartNode().getPoint().x;
+                double x0 =
+                        OtsTransceiver.this.network.getLink(row.getValue(this.linkColumn)).get().getStartNode().getPoint().x;
                 int lane = getLaneRowFromId(row.getValue(this.laneColumn));
-                FloatLength pos = FloatLength.instantiateSI((float) (x0 + row.getValue(this.xColumn).si));
-                FloatSpeed v = FloatSpeed.instantiateSI((float) row.getValue(this.vColumn).si);
+                FloatLength pos = FloatLength.ofSI((float) (x0 + row.getValue(this.xColumn).si));
+                FloatSpeed v = FloatSpeed.ofSI((float) row.getValue(this.vColumn).si);
                 data.append(t, Integer.valueOf(id), type, origin, dest, lane, pos, v);
             }
         }
@@ -785,10 +785,10 @@ public class OtsTransceiver
          * @return payload
          * @throws GtuException
          */
-        private Object[] getVehiclePayloadInstant() throws GtuException
+        private Object[] getVehiclePayload() throws GtuException
         {
             int numGtus = OtsTransceiver.this.network.getGTUs().size();
-            Time now = OtsTransceiver.this.simulator.getSimulatorAbsTime();
+            Duration now = OtsTransceiver.this.simulator.getSimulatorTime();
             for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
             {
                 String gtuId = gtu.getId();
@@ -807,10 +807,10 @@ public class OtsTransceiver
             int k = 1;
             for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
             {
-                LanePosition pos = ((LaneBasedGtu) gtu).getReferencePosition();
+                LanePosition pos = ((LaneBasedGtu) gtu).getPosition();
                 double front = gtu.getFront().dx().si;
                 double laneStart = pos.lane().getLink().getStartNode().getPoint().x;
-                Length position = Length.instantiateSI(pos.position().si + front + laneStart);
+                Length position = Length.ofSI(pos.position().si + front + laneStart);
                 int lane = getLaneRowFromId(pos.lane().getId());
 
                 payload[k++] = lane;
@@ -836,99 +836,6 @@ public class OtsTransceiver
         }
 
         /**
-         * Obtains vehicle message payload.
-         * @return payload
-         * @throws GtuException
-         */
-        private Object[] getVehiclePayload() throws GtuException
-        {
-            int numGtus = OtsTransceiver.this.network.getGTUs().size();
-            Map<Gtu, LaneChange> lcInfo = new LinkedHashMap<>();
-            Map<Gtu, Double> madatoryDesire = new LinkedHashMap<>();
-            for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
-            {
-                Lmrs lmrs = (Lmrs) ((LaneBasedGtu) gtu).getTacticalPlanner();
-                // need to use reflection to access certain information
-                try
-                {
-                    Field lcField = Lmrs.class.getDeclaredField("laneChange");
-                    lcField.setAccessible(true);
-                    LaneChange lc = (LaneChange) lcField.get(lmrs);
-                    // note: lc may already have finalized the lane change, while finalizeLaneChange has not yet
-                    // been called on the GTU, i.e. the reference lane is not the correct lane at the end of an lc
-                    if (lc.isChangingLane())
-                    {
-                        madatoryDesire.put(gtu, lmrs.getLatestDesire(FosIncentiveRoute.class).get(lc.getDirection()));
-                        lcInfo.put(gtu, lc);
-                    }
-                }
-                catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException ex)
-                {
-                    // ignore; no LC will be shown in FOSIM
-                }
-            }
-            int lcGtus = lcInfo.size();
-            Object[] payload = new Object[1 + 5 * (numGtus - lcGtus) + 7 * lcGtus];
-            payload[0] = numGtus;
-            int k = 1;
-            for (Gtu gtu : OtsTransceiver.this.network.getGTUs())
-            {
-                LanePosition pos = ((LaneBasedGtu) gtu).getReferencePosition();
-                double front = gtu.getFront().dx().si;
-                double laneStart = pos.lane().getLink().getStartNode().getPoint().x;
-                Length position = Length.instantiateSI(pos.position().si + front + laneStart);
-                int lane = getLaneRowFromId(pos.lane().getId());
-                LaneChange lc = lcInfo.get(gtu);
-                if (lc == null)
-                {
-                    Integer target = this.targetLane.remove(gtu);
-                    if (target != null)
-                    {
-                        // first time step LaneChange indicated no lane change; it is just finished,
-                        // finalizeLaneChange() is not yet called so reference lane is not valid this time step
-                        lane = target;
-                    }
-                }
-                else if (lc.getDirection().isRight())
-                {
-                    lane++;
-                }
-                else if (lc.getDirection().isLeft())
-                {
-                    lane--;
-                }
-
-                payload[k++] = lane;
-                payload[k++] = position;
-                payload[k++] = gtu.getSpeed();
-                payload[k++] = gtu.getAcceleration();
-                if (lc == null)
-                {
-                    payload[k++] = 0;
-                }
-                else
-                {
-                    this.targetLane.put(gtu, lane);
-                    double totalDesire;
-                    try
-                    {
-                        totalDesire = lc.getDirection().isLeft() ? gtu.getParameters().getParameter(LmrsParameters.DLEFT)
-                                : gtu.getParameters().getParameter(LmrsParameters.DRIGHT);
-                    }
-                    catch (ParameterException ex)
-                    {
-                        totalDesire = 1.0;
-                    }
-                    // 1 = for overtaking, 2 = for destination
-                    payload[k++] = madatoryDesire.get(gtu) / totalDesire < 0.5 ? 1 : 2;
-                    payload[k++] = lc.isChangingLeft();
-                    payload[k++] = lc.getFraction();
-                }
-            }
-            return payload;
-        }
-
-        /**
          * Setup a new simulation.
          * @param message message through Sim0MQ
          * @return possible exception message, empty when ok
@@ -944,7 +851,6 @@ public class OtsTransceiver
                 Map<ParserSetting, Boolean> settings = new LinkedHashMap<>();
                 settings.put(ParserSetting.GUI, OtsTransceiver.this.showGui);
                 settings.put(ParserSetting.FOS_DETECTORS, true);
-                settings.put(ParserSetting.INSTANT_LC, OtsTransceiver.this.instantLc);
                 FosParser parser = new FosParser().setSettings(settings);
                 parser.parseFromString(fosString);
                 this.gtuTypes = parser.getGtuTypes();
@@ -966,16 +872,12 @@ public class OtsTransceiver
                     this.detectors.put(detector.getId(), detector);
                 }
                 this.gtuTypes = parser.getGtuTypes();
-                this.lastDetectionTime = Time.instantiateSI(-1.0);
-                this.lastTravelTimeTime = Time.instantiateSI(-1.0);
-                this.lastVehiclesTime = Time.instantiateSI(-1.0);
+                this.lastDetectionTime = Duration.ofSI(-1.0);
+                this.lastTravelTimeTime = Duration.ofSI(-1.0);
+                this.lastVehiclesTime = Duration.ofSI(-1.0);
                 this.odNumbers = parser.getOdNameMappings();
                 setupSampler(parser);
-                if (OtsTransceiver.this.instantLc)
-                {
-                    LaneChange.MIN_LC_LENGTH_FACTOR = 0;
-                    setupVirtualLaneChanges();
-                }
+                setupVirtualLaneChanges();
             }
             catch (Exception ex)
             {
@@ -992,9 +894,8 @@ public class OtsTransceiver
         @SuppressWarnings("unchecked")
         private void setupSampler(final FosParser parser) throws NetworkException
         {
-            Time endtime = Time.ZERO.plus(OtsTransceiver.this.simulator.getReplication().getEndTime());
-            this.sampler =
-                    new RoadSampler(OtsTransceiver.this.network, Frequency.instantiateSI(1.0 / OtsTransceiver.this.step.si));
+            Duration endtime = Duration.ZERO.plus(OtsTransceiver.this.simulator.getReplication().getEndTime());
+            this.sampler = new RoadSampler(OtsTransceiver.this.network, Frequency.ofSI(1.0 / OtsTransceiver.this.step.si));
 
             // determine grid
             int nSections = 0;
@@ -1016,7 +917,7 @@ public class OtsTransceiver
                 if (lengths[fosLink.sectionIndex] == null)
                 {
                     lengths[fosLink.sectionIndex] =
-                            Length.instantiateSI(fosLink.lanes.get(0).getLane().getLink().getEndNode().getLocation().x
+                            Length.ofSI(fosLink.lanes.get(0).getLane().getLink().getEndNode().getLocation().x
                                     - fosLink.lanes.get(0).getLane().getLink().getStartNode().getLocation().x);
                 }
                 int laneNum = fosLink.fromLane;
@@ -1026,8 +927,9 @@ public class OtsTransceiver
                     {
                         Lane lane = (Lane) fosLane.getLane();
                         laneData[laneNum][fosLink.sectionIndex] = new LaneDataRoad(lane);
-                        this.sampler.registerSpaceTimeRegion(new SpaceTimeRegion<LaneDataRoad>(
-                                laneData[laneNum][fosLink.sectionIndex], Length.ZERO, lane.getLength(), Time.ZERO, endtime));
+                        this.sampler.registerSpaceTimeRegion(
+                                new SpaceTimeRegion<LaneDataRoad>(laneData[laneNum][fosLink.sectionIndex], Length.ZERO,
+                                        lane.getLength(), Duration.ZERO, endtime));
                     }
                     laneNum++;
                 }
@@ -1059,13 +961,13 @@ public class OtsTransceiver
         }
 
         @Override
-        public void notify(final Event event) throws RemoteException
+        public void notify(final Event event)
         {
             if (event.getType().equals(LaneBasedGtu.LANE_CHANGE_EVENT))
             {
                 Object[] content = (Object[]) event.getContent();
                 String gtuId = (String) content[0];
-                Gtu gtu = OtsTransceiver.this.network.getGTU(gtuId);
+                Gtu gtu = OtsTransceiver.this.network.getGTU(gtuId).get();
                 LateralDirectionality dir = LateralDirectionality.valueOf((String) content[1]);
 
                 double totalDesire;
@@ -1079,22 +981,22 @@ public class OtsTransceiver
                     totalDesire = 1.0;
                 }
                 Lmrs lmrs = (Lmrs) ((LaneBasedGtu) gtu).getTacticalPlanner();
-                double mandatoryDesire = lmrs.getLatestDesire(FosIncentiveRoute.class).get(dir);
+                double mandatoryDesire = lmrs.getLatestDesire(FosIncentiveRoute.class).get().get(dir);
                 boolean overtaking = mandatoryDesire / totalDesire < 0.5;
 
                 this.laneChanges.put(gtuId,
-                        new VirtualLaneChange(dir.isLeft(), OtsTransceiver.this.simulator.getSimulatorAbsTime(), overtaking));
+                        new VirtualLaneChange(dir.isLeft(), OtsTransceiver.this.simulator.getSimulatorTime(), overtaking));
             }
             else if (event.getType().equals(Network.GTU_ADD_EVENT))
             {
                 String id = (String) event.getContent();
-                Gtu gtu = OtsTransceiver.this.network.getGTU(id);
+                Gtu gtu = OtsTransceiver.this.network.getGTU(id).get();
                 gtu.addListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
             }
             else if (event.getType().equals(Network.GTU_REMOVE_EVENT))
             {
                 String id = (String) event.getContent();
-                Gtu gtu = OtsTransceiver.this.network.getGTU(id);
+                Gtu gtu = OtsTransceiver.this.network.getGTU(id).get();
                 gtu.removeListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
                 this.laneChanges.remove(id);
             }
@@ -1114,12 +1016,12 @@ public class OtsTransceiver
             Node nodeB = new Node(OtsTransceiver.this.network, "_Node " + this.dummyId++, pointB);
             OtsLine2d line = new OtsLine2d(new PolyLine2d(pointA, pointB));
             CrossSectionLink link = new CrossSectionLink(OtsTransceiver.this.network, "_Link " + this.dummyId++, nodeA, nodeB,
-                    DefaultsNl.FREEWAY, line, FractionalLengthData.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
+                    DefaultsNl.FREEWAY, line, ContinuousPiecewiseLinearFunction.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
             // List<CrossSectionSlice> slices =
-            // List.of(new CrossSectionSlice(Length.ZERO, Length.ZERO, Length.instantiateSI(3.5)));
-            FractionalLengthData offset = FractionalLengthData.of(0.0, 0.0, 1.0, 0.0);
-            FractionalLengthData width = FractionalLengthData.of(0.0, 3.5, 1.0, 3.5);
-            CrossSectionGeometry geometry = new CrossSectionGeometry(line, new Polygon2d(line.getPoints()), offset, width);
+            // List.of(new CrossSectionSlice(Length.ZERO, Length.ZERO, Length.ofSI(3.5)));
+            ContinuousPiecewiseLinearFunction offset = ContinuousPiecewiseLinearFunction.of(0.0, 0.0, 1.0, 0.0);
+            ContinuousPiecewiseLinearFunction width = ContinuousPiecewiseLinearFunction.of(0.0, 3.5, 1.0, 3.5);
+            CrossSectionGeometry geometry = new CrossSectionGeometry(line, new Polygon2d(line.getPointList()), offset, width);
             Lane lane = new Lane(link, "_Lane " + this.dummyId++, geometry, DefaultsRoadNl.FREEWAY,
                     Map.of(DefaultsNl.VEHICLE, new Speed(100.0, SpeedUnit.KM_PER_HOUR)));
             return new LaneDataRoad(lane);
@@ -1138,7 +1040,7 @@ public class OtsTransceiver
             int period = (int) payload[10];
             float value;
             double tEnd = this.firstPeriod.si + this.nextPeriods.si * period;
-            double tNow = OtsTransceiver.this.simulator.getSimulatorAbsTime().si;
+            double tNow = OtsTransceiver.this.simulator.getSimulatorTime().si;
             if (tNow < tEnd)
             {
                 value = -1.0f;
@@ -1201,8 +1103,8 @@ public class OtsTransceiver
             Throw.when(this.stopCriterion == null, IllegalStateException.class,
                     "Call BATCH before calling BATCH_STEP, and stop BATCH calls when TRIGGERED or STOPPED is returned.");
             BatchStatus out;
-            if (OtsTransceiver.this.network.getSimulator().getSimulatorAbsTime().si >= OtsTransceiver.this.network
-                    .getSimulator().getReplication().getEndTime().si)
+            if (OtsTransceiver.this.network.getSimulator().getSimulatorTime().si >= OtsTransceiver.this.network.getSimulator()
+                    .getReplication().getEndTime().si)
             {
                 out = BatchStatus.STOPPED;
             }
@@ -1226,14 +1128,12 @@ public class OtsTransceiver
         private Object[] getTrajectoriesPayload(final Sim0MQMessage message)
         {
             Object[] payloadIn = message.createObjectArray();
-            final Duration startDuration = (Duration) payloadIn[8];
-            final Duration finishDuration = (Duration) payloadIn[9];
+            final Duration startTime = (Duration) payloadIn[8];
+            final Duration finishTime = (Duration) payloadIn[9];
             final Length startPosition = (Length) payloadIn[10];
             final Length finishPosition = (Length) payloadIn[11];
             final int granularity = (int) payloadIn[12]; // number of time steps
 
-            final Time startTime = Time.instantiateSI(startDuration.si);
-            final Time finishTime = Time.instantiateSI(finishDuration.si);
             final float stepSize = (float) (OtsTransceiver.this.step.si * granularity);
 
             final Map<String, SortedSet<Trajectory<?>>> trajectoriesPerGtu = new LinkedHashMap<>();
@@ -1260,11 +1160,11 @@ public class OtsTransceiver
                 Lane lane = ((LaneDataRoad) laneData).getLane();
                 double x0 = lane.getCenterLine().getFirst().x;
                 double x1 = lane.getCenterLine().getLast().x;
-                Length startPositionLane = Length.instantiateSI(startPosition.si - x0);
-                Length finishPositionLane = Length.instantiateSI(finishPosition.si - x0);
+                Length startPositionLane = Length.ofSI(startPosition.si - x0);
+                Length finishPositionLane = Length.ofSI(finishPosition.si - x0);
                 if (x0 < finishPosition.si && x1 > startPosition.si)
                 {
-                    for (Trajectory<?> trajectory : this.sampler.getSamplerData().getTrajectoryGroup(laneData))
+                    for (Trajectory<?> trajectory : this.sampler.getSamplerData().getTrajectoryGroup(laneData).get())
                     {
                         boolean spatialOverlap = trajectory.getX(0) < finishPositionLane.si
                                 && trajectory.getX(trajectory.size() - 1) > startPositionLane.si;
@@ -1278,8 +1178,8 @@ public class OtsTransceiver
                 }
             }
 
-            float tMin = (float) startDuration.si;
-            float tMax = (float) finishDuration.si;
+            float tMin = (float) startTime.si;
+            float tMax = (float) finishTime.si;
             int n = trajectoriesPerGtu.size();
             Object[] payload = new Object[1 + 3 * n];
             int k = 0;
@@ -1465,7 +1365,7 @@ public class OtsTransceiver
     /**
      * Record of lane change direction and time.
      */
-    public record VirtualLaneChange(boolean left, Time time, boolean overtaking)
+    public record VirtualLaneChange(boolean left, Duration time, boolean overtaking)
     {
     }
 }

@@ -30,7 +30,7 @@ public enum Trace
     /** Vehicle samples. */
     VEHICLES(new Info(Info.VEHICLES_ID, "Voertuig monsters", "Vehicle Samples",
             new String[] {"t (s)", "id", "type", "origin", "dest", "lane", "pos (m)", "v (m/s)"}));
-
+    
     /** Data in trace file specification. */
     final Info data;
 

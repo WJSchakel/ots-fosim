@@ -3,13 +3,13 @@ package org.opentrafficsim.fosim.parser;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.djunits.unit.DurationUnit;
 import org.djunits.unit.FrequencyUnit;
-import org.djunits.unit.TimeUnit;
 import org.djunits.value.storage.StorageType;
+import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Frequency;
-import org.djunits.value.vdouble.scalar.Time;
+import org.djunits.value.vdouble.vector.DurationVector;
 import org.djunits.value.vdouble.vector.FrequencyVector;
-import org.djunits.value.vdouble.vector.TimeVector;
 import org.djunits.value.vdouble.vector.data.DoubleVectorData;
 
 /**
@@ -23,7 +23,7 @@ import org.djunits.value.vdouble.vector.data.DoubleVectorData;
 class FosFlow
 {
     /** Time. */
-    public final List<Time> time = new ArrayList<>();
+    public final List<Duration> time = new ArrayList<>();
 
     /** Flow. */
     public final List<Frequency> flow = new ArrayList<>();
@@ -39,13 +39,12 @@ class FosFlow
         for (String subString : fields)
         {
             String[] valueStrings = FosParser.splitAndTrimString(subString, "\\|"); // pipe is a meta character in regex
-            this.time.add(Time.instantiateSI(Double.parseDouble(valueStrings[0])));
+            this.time.add(Duration.ofSI(Double.parseDouble(valueStrings[0])));
             lastFrequency = new Frequency(Double.parseDouble(valueStrings[1]), FrequencyUnit.PER_HOUR);
             this.flow.add(lastFrequency);
         }
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {
@@ -56,10 +55,11 @@ class FosFlow
      * Returns time as time vector.
      * @return time vector.
      */
-    public TimeVector getTimeVector()
+    public DurationVector getTimeVector()
     {
-        return new TimeVector(DoubleVectorData.instantiate(this.time.toArray(new Time[this.time.size()]), StorageType.DENSE),
-                TimeUnit.BASE_SECOND);
+        return new DurationVector(
+                DoubleVectorData.instantiate(this.time.toArray(new Duration[this.time.size()]), StorageType.DENSE),
+                DurationUnit.SECOND);
     }
 
     /**
@@ -78,7 +78,7 @@ class FosFlow
      * applicable in FOSIM.
      * @param endTime end time
      */
-    public void setEndTime(final Time endTime)
+    public void setEndTime(final Duration endTime)
     {
         if (this.time.get(this.time.size() - 1).lt(endTime))
         {

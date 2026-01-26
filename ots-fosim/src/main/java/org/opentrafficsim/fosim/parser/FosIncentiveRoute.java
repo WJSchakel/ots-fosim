@@ -38,7 +38,6 @@ public class FosIncentiveRoute implements MandatoryIncentive
     /** Look-ahead time for mandatory lane changes parameter type. */
     public static final ParameterTypeDuration T0 = ParameterTypes.T0;
 
-    /** {@inheritDoc} */
     @Override
     public final Desire determineDesire(final Parameters parameters, final LanePerception perception,
             final CarFollowingModel carFollowingModel, final Desire mandatoryDesire)
@@ -118,7 +117,6 @@ public class FosIncentiveRoute implements MandatoryIncentive
         return d1 < 0 ? 0 : d1;
     }
 
-    /** {@inheritDoc} */
     @Override
     public final String toString()
     {

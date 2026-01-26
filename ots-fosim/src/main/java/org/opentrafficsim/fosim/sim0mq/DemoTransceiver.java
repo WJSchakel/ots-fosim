@@ -1,6 +1,5 @@
 package org.opentrafficsim.fosim.sim0mq;
 
-import java.awt.Dimension;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.util.List;
@@ -11,14 +10,15 @@ import javax.naming.NamingException;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Time;
 import org.djutils.exceptions.Try;
-import org.opentrafficsim.animation.gtu.colorer.GtuColorer;
 import org.opentrafficsim.base.parameters.ParameterException;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
+import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.perception.HistoryManagerDevs;
+import org.opentrafficsim.draw.colorer.Colorer;
 import org.opentrafficsim.draw.gtu.DefaultCarAnimation.GtuData.GtuMarker;
 import org.opentrafficsim.fosim.simulator.OtsAnimatorStep;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorStep;
@@ -63,13 +63,13 @@ public abstract class DemoTransceiver extends OtsTransceiver
      */
     protected void setupSimulator() throws SimRuntimeException, NamingException, RemoteException, DsolException
     {
-        Duration simulationTime = Duration.instantiateSI(3600.0);
+        Duration simulationTime = Duration.ofSI(3600.0);
         if (!isShowGui())
         {
             setSimulator(new OtsSimulatorStep("Ots-Fosim"));
             final FosimModel fosimModel = new FosimModel(getSimulator(), 1L);
             getSimulator().initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel,
-                    new HistoryManagerDevs(getSimulator(), Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
+                    new HistoryManagerDevs(getSimulator(), Duration.ofSI(5.0), Duration.ofSI(10.0)));
             setNetwork(Try.assign(() -> this.setupSimulation(getSimulator()), RuntimeException.class,
                     "Exception while setting up simulation."));
             fosimModel.setNetwork(getNetwork());
@@ -80,13 +80,13 @@ public abstract class DemoTransceiver extends OtsTransceiver
             setSimulator(animator);
             final FosimModel fosimModel = new FosimModel(getSimulator(), 1L);
             getSimulator().initialize(Time.ZERO, Duration.ZERO, simulationTime, fosimModel,
-                    new HistoryManagerDevs(getSimulator(), Duration.instantiateSI(5.0), Duration.instantiateSI(10.0)));
+                    new HistoryManagerDevs(getSimulator(), Duration.ofSI(5.0), Duration.ofSI(10.0)));
             setNetwork(Try.assign(() -> this.setupSimulation(getSimulator()), RuntimeException.class,
                     "Exception while setting up simulation."));
             fosimModel.setNetwork(getNetwork());
-            List<GtuColorer> colorers = OtsSwingApplication.DEFAULT_GTU_COLORERS;
+            List<Colorer<? super Gtu>> colorers = OtsSwingApplication.DEFAULT_GTU_COLORERS;
             OtsAnimationPanel animationPanel = new OtsAnimationPanel(fosimModel.getNetwork().getExtent(),
-                    new Dimension(800, 600), (OtsAnimator) getSimulator(), fosimModel, colorers, fosimModel.getNetwork());
+                    (OtsAnimator) getSimulator(), fosimModel, colorers, fosimModel.getNetwork());
             Map<GtuType, GtuMarker> markerMap = Map.of(DefaultsNl.TRUCK, GtuMarker.SQUARE);
             new OtsSimulationApplication<FosimModel>(fosimModel, animationPanel, markerMap);
             animator.setSpeedFactor(Double.MAX_VALUE, false);

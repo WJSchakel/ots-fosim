@@ -11,9 +11,6 @@ import org.opentrafficsim.core.dsol.OtsSimulator;
 public class OtsSimulatorStep extends OtsSimulator implements OtsSimulatorInterfaceStep
 {
 
-    /** */
-    private static final long serialVersionUID = 20241014L;
-
     /**
      * Constructor.
      * @param simulatorId simulator id
@@ -23,7 +20,6 @@ public class OtsSimulatorStep extends OtsSimulator implements OtsSimulatorInterf
         super(simulatorId);
     }
 
-    /** {@inheritDoc} */
     @Override
     public Thread getWorkerThread()
     {

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.djunits.unit.DurationUnit;
 import org.djunits.unit.FrequencyUnit;
 import org.djunits.unit.SpeedUnit;
 import org.djunits.unit.TimeUnit;
@@ -12,31 +13,29 @@ import org.djunits.value.storage.StorageType;
 import org.djunits.value.vdouble.scalar.Direction;
 import org.djunits.value.vdouble.scalar.Length;
 import org.djunits.value.vdouble.scalar.Speed;
+import org.djunits.value.vdouble.vector.DurationVector;
 import org.djunits.value.vdouble.vector.FrequencyVector;
-import org.djunits.value.vdouble.vector.TimeVector;
 import org.djunits.value.vdouble.vector.data.DoubleVectorData;
+import org.djutils.draw.function.ContinuousPiecewiseLinearFunction;
 import org.djutils.draw.line.Polygon2d;
 import org.djutils.draw.point.Point2d;
 import org.opentrafficsim.base.geometry.OtsGeometryException;
 import org.opentrafficsim.base.geometry.OtsLine2d;
 import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.core.definitions.Defaults;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
-import org.opentrafficsim.core.geometry.FractionalLengthData;
-import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.NetworkException;
 import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd;
 import org.opentrafficsim.road.gtu.generator.characteristics.DefaultLaneBasedGtuCharacteristicsGeneratorOd.Factory;
 import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
+import org.opentrafficsim.road.network.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionGeometry;
 import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LaneGeometryUtil;
-import org.opentrafficsim.road.network.lane.changing.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.lane.object.detector.SinkDetector;
 import org.opentrafficsim.road.od.Categorization;
 import org.opentrafficsim.road.od.Category;
@@ -103,18 +102,18 @@ public class SingleLaneDemo extends DemoTransceiver
 
         OtsLine2d designLine = new OtsLine2d(pointFrom, pointTo);
         CrossSectionLink link = new CrossSectionLink(network, "Link", nodeFrom, nodeTo, DefaultsNl.FREEWAY, designLine,
-                FractionalLengthData.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
+                ContinuousPiecewiseLinearFunction.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
 
         Polygon2d contour = LaneGeometryUtil.getContour(designLine.offsetLine(1.75), designLine.offsetLine(-1.75));
-        FractionalLengthData offset = FractionalLengthData.of(0.0, 0.0, 1.0, 0.0);
-        FractionalLengthData width = FractionalLengthData.of(0.0, 3.5, 1.0, 3.5);
+        ContinuousPiecewiseLinearFunction offset = ContinuousPiecewiseLinearFunction.of(0.0, 0.0, 1.0, 0.0);
+        ContinuousPiecewiseLinearFunction width = ContinuousPiecewiseLinearFunction.of(0.0, 3.5, 1.0, 3.5);
         CrossSectionGeometry geometry = new CrossSectionGeometry(designLine, contour, offset, width);
         Lane lane = new Lane(link, "1", geometry, DefaultsRoadNl.FREEWAY,
                 Map.of(DefaultsNl.ROAD_USER, new Speed(100.0, SpeedUnit.KM_PER_HOUR)));
 
         DoubleVectorData timeData =
                 DoubleVectorData.instantiate(new double[] {0.0, 3600.0}, TimeUnit.BASE_SECOND.getScale(), StorageType.DENSE);
-        TimeVector timeVector = new TimeVector(timeData, TimeUnit.BASE_SECOND);
+        DurationVector timeVector = new DurationVector(timeData, DurationUnit.SECOND);
         List<Node> origins = new ArrayList<>();
         origins.add(nodeFrom);
         List<Node> destinations = new ArrayList<>();
@@ -130,13 +129,13 @@ public class SingleLaneDemo extends DemoTransceiver
         StreamInterface stream = sim.getModel().getStreams().get("generation");
         LaneBasedStrategicalRoutePlannerFactory defaultLmrsFactory =
                 DefaultLaneBasedGtuCharacteristicsGeneratorOd.defaultLmrs(stream);
+
         Factory characteristicsGeneratorFactory = new Factory(defaultLmrsFactory);
-        GtuType.registerTemplateSupplier(DefaultsNl.CAR, Defaults.NL);
         odOptions.set(OdOptions.GTU_TYPE, characteristicsGeneratorFactory.create());
 
         OdApplier.applyOd(network, od, odOptions, DefaultsNl.ROAD_USERS);
 
-        new SinkDetector(lane, Length.instantiateSI(1950.0), DefaultsNl.ROAD_USERS);
+        new SinkDetector(lane, Length.ofSI(1950.0), DefaultsNl.ROAD_USERS);
 
         return network;
     }

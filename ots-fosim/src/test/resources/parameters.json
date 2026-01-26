@@ -351,20 +351,6 @@
           "maximum": 130.0,
           "nameNl": "<i>v<sub>cong</sub></i>",
           "nameEn": "<i>v<sub>cong</sub></i>"
-        },
-        {
-          "id": "LCdur",
-          "descriptionNl": "Duur van een strookwisseling.",
-          "descriptionEn": "Duration of a lane change.",
-          "unit": "s",
-          "defaultValue": [
-            3.0,
-            3.0
-          ],
-          "minimum": 1.0,
-          "maximum": 5.0,
-          "nameNl": "<i>LC<sub>dur</sub></i>",
-          "nameEn": "<i>LC<sub>dur</sub></i>"
         }
       ]
     },
@@ -376,7 +362,7 @@
         "ON",
         "ON"
       ],
-      "descriptionNl": "Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.",
+      "descriptionNl": "Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.",
       "descriptionEn": "Endogenous influence on desired speed, desired headway and lane change desire from social pressure. This mostly influences the number of lane changes and the headway distribution. It is important to use a different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.",
       "parameters": [
         {
@@ -439,74 +425,43 @@
           "nameEn": "<i>TC</i>"
         },
         {
-          "id": "TScrit",
-          "descriptionNl": "Kritische taak saturatie, waarboven situationele aandacht afneemt en de reactietijd toeneemt.",
-          "descriptionEn": "Critical task saturation, above which situational awareness reduces and reaction time increases.",
+          "id": "TDscan",
+          "descriptionNl": "Taak last voor scannen.",
+          "descriptionEn": "Task demand for scanning.",
           "unit": "-",
           "defaultValue": [
-            0.8,
-            0.8
+            0.0279
           ],
           "minimum": 0.0,
-          "maximum": "TSmax",
-          "nameNl": "<i>TS<sub>crit</sub></i>",
-          "nameEn": "<i>TS<sub>crit</sub></i>"
-        },
-        {
-          "id": "TSmax",
-          "descriptionNl": "Maximale taak saturatie.",
-          "descriptionEn": "Maximum task saturation.",
-          "unit": "-",
-          "defaultValue": [
-            2.0,
-            2.0
-          ],
-          "minimum": "TScrit",
-          "maximum": 3.0,
-          "nameNl": "<i>TS<sub>max</sub></i>",
-          "nameEn": "<i>TS<sub>max</sub></i>"
-        },
-        {
-          "id": "SAmin",
-          "descriptionNl": "Minimale situationele aandacht.",
-          "descriptionEn": "Minimum situational awareness.",
-          "unit": "-",
-          "defaultValue": [
-            0.5,
-            0.5
-          ],
-          "minimum": 0.0,
-          "maximum": "SAmax",
-          "nameNl": "<i>SA<sub>min</sub></i>",
-          "nameEn": "<i>SA<sub>min</sub></i>"
-        },
-        {
-          "id": "SAmax",
-          "descriptionNl": "Maximale situationele aandacht.",
-          "descriptionEn": "Maximum situational awareness.",
-          "unit": "-",
-          "defaultValue": [
-            1.0,
-            1.0
-          ],
-          "minimum": "SAmin",
           "maximum": 1.0,
-          "nameNl": "<i>SA<sub>max</sub></i>",
-          "nameEn": "<i>SA<sub>max</sub></i>"
+          "nameNl": "<i>TS<sub>scan</sub></i>",
+          "nameEn": "<i>TS<sub>scan</sub></i>"
         },
         {
-          "id": "Trmax",
-          "descriptionNl": "Maximale reactietijd.",
-          "descriptionEn": "Maximum reaction time.",
-          "unit": "s",
+          "id": "TDsignal",
+          "descriptionNl": "Taak last door remlicht of knipperlicht.",
+          "descriptionEn": "Task demand due to brakelights or indicators.",
+          "unit": "-",
           "defaultValue": [
-            2.0,
-            2.0
+            0.2
           ],
           "minimum": 0.0,
-          "maximum": 3.0,
-          "nameNl": "<i>T<sub>r,max</sub></i>",
-          "nameEn": "<i>T<sub>r,max</sub></i>"
+          "maximum": 1.0,
+          "nameNl": "<i>TS<sub>signaal</sub></i>",
+          "nameEn": "<i>TS<sub>signal</sub></i>"
+        },
+        {
+          "id": "x0_d",
+          "descriptionNl": "Afstand waarbinnen signalen taak last creëren.",
+          "descriptionEn": "Distance within which signals create task demand.",
+          "unit": "m",
+          "defaultValue": [
+            119.98
+          ],
+          "minimum": 0.0,
+          "maximum": 400.0,
+          "nameNl": "<i>x<sub>0,signaal</sub></i>",
+          "nameEn": "<i>x<sub>0,signal</sub></i>"
         },
         {
           "id": "hexp",
@@ -549,34 +504,6 @@
           "maximum": 2.0,
           "nameNl": "<i>β<sub>v0</sub></i>",
           "nameEn": "<i>β<sub>v0</sub></i>"
-        },
-        {
-          "id": "alpha",
-          "descriptionNl": "Maximale afname primaire taak last door anticipatie.",
-          "descriptionEn": "Maximum reduction of primary task load due to anticipation.",
-          "unit": "-",
-          "defaultValue": [
-            0.8,
-            0.8
-          ],
-          "minimum": 0.0,
-          "maximum": 1.0,
-          "nameNl": "<i>α</i>",
-          "nameEn": "<i>α</i>"
-        },
-        {
-          "id": "beta",
-          "descriptionNl": "Maximale afname secundaire taak last door anticipatie.",
-          "descriptionEn": "Maximum reduction of secondary task load due to anticipation.",
-          "unit": "-",
-          "defaultValue": [
-            0.6,
-            0.6
-          ],
-          "minimum": 0.0,
-          "maximum": 1.0,
-          "nameNl": "<i>β</i>",
-          "nameEn": "<i>β</i>"
         }
       ]
     },

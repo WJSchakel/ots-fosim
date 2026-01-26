@@ -27,7 +27,6 @@ class FosParameter
         this.name = fields[1];
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

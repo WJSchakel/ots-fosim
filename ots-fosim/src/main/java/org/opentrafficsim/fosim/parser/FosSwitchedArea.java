@@ -49,10 +49,10 @@ class FosSwitchedArea
     public FosSwitchedArea(final String string)
     {
         String[] fields = FosParser.splitStringByBlank(string, 9);
-        this.openTime = Duration.instantiateSI(Double.parseDouble(fields[0]));
-        this.closeTime = Duration.instantiateSI(Double.parseDouble(fields[1]));
-        this.openSpeed = Speed.instantiateSI(Double.parseDouble(fields[2])); // unit unknown
-        this.closeSpeed = Speed.instantiateSI(Double.parseDouble(fields[3])); // unit unknown
+        this.openTime = Duration.ofSI(Double.parseDouble(fields[0]));
+        this.closeTime = Duration.ofSI(Double.parseDouble(fields[1]));
+        this.openSpeed = Speed.ofSI(Double.parseDouble(fields[2])); // unit unknown
+        this.closeSpeed = Speed.ofSI(Double.parseDouble(fields[3])); // unit unknown
         this.openIntensity = new Frequency(Double.parseDouble(fields[4]), FrequencyUnit.PER_HOUR); // unit unknown
         this.closeIntensity = new Frequency(Double.parseDouble(fields[5]), FrequencyUnit.PER_HOUR); // unit unknown
         this.openMode = Integer.parseInt(fields[6]); // function unknown
@@ -60,7 +60,6 @@ class FosSwitchedArea
         this.detectorIndex = Integer.parseInt(fields[8]);
     }
 
-    /** {@inheritDoc} */
     @Override
     public String toString()
     {

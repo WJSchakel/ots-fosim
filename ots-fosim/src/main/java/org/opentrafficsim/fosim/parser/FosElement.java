@@ -24,14 +24,12 @@ abstract class FosElement
         this.number = number;
     }
 
-    /** {@inheritDoc} */
     @Override
     public final int hashCode()
     {
         return Objects.hash(this.number);
     }
 
-    /** {@inheritDoc} */
     @Override
     public final boolean equals(final Object obj)
     {
@@ -45,7 +43,6 @@ abstract class FosElement
         return this.number == other.number;
     }
 
-    /** {@inheritDoc} */
     @Override
     public final String toString()
     {

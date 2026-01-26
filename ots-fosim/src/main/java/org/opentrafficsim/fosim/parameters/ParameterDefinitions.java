@@ -46,7 +46,7 @@ public class ParameterDefinitions
 
     /** Anticipation group id. */
     public static final String ANTICIPATION_GROUP_ID = "Anticipation";
-    
+
     /** Number of standard vehicle types. */
     private static int N_TYPES = 2;
 
@@ -179,8 +179,6 @@ public class ParameterDefinitions
                 .setDescriptionEn("Speed gain for maximally desired lane change."));
         group.addParameter(new Parameter("vCong", it("v_cong"), "km/h").setMin(1.0).setMax(130.0).setDefault(60.0, 60.0)
                 .setDescriptionNl("File drempelsnelheid.").setDescriptionEn("Threshold speed for congestion."));
-        group.addParameter(new Parameter("LCdur", it("LC_dur"), "s").setMin(1.0).setMax(5.0).setDefault(3.0, 3.0)
-                .setDescriptionNl("Duur van een strookwisseling.").setDescriptionEn("Duration of a lane change."));
         list.add(group);
 
         // Social interactions
@@ -188,7 +186,7 @@ public class ParameterDefinitions
                 .setDescriptionNl("Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale "
                         + "druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. "
                         + "Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s"
-                        + ", <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.")
+                        + ", <i>v<sub>gain</sub></i> = <i>LogNormal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.")
                 .setDescriptionEn("Endogenous influence on desired speed, desired headway and lane change desire from social "
                         + "pressure. This mostly influences the number of lane changes and the headway distribution. It is "
                         + "important to use a different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = "
@@ -203,8 +201,8 @@ public class ParameterDefinitions
         // .setDescriptionEn("Willing to change lane for others."));
         list.add(group);
         // - courtesy
-        group = new ParameterGroup("Hoffelijkheid", COURTESY_GROUP_ID, DefaultState.ON.array(N_TYPES)).setParent(SOCIAL_GROUP_ID)
-                .setDescriptionNl("Bereid rijstrook te wisselen voor anderen.")
+        group = new ParameterGroup("Hoffelijkheid", COURTESY_GROUP_ID, DefaultState.ON.array(N_TYPES))
+                .setParent(SOCIAL_GROUP_ID).setDescriptionNl("Bereid rijstrook te wisselen voor anderen.")
                 .setDescriptionEn("Willing to change lane for others.");
         list.add(group);
 
@@ -213,21 +211,34 @@ public class ParameterDefinitions
                 .setDescriptionNl("Endogene processen voor imperfecte perceptie, afhankelijk van mentale druk door rijtaken.")
                 .setDescriptionEn(
                         "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.");
+        group.addParameter(new Parameter("tau_min", it("τ_min"), "s").setMin(0.0).setMax("tau_max").setDefault(0.32, 0.32)
+                .setDescriptionNl("Minimale perceptie vertraging.").setDescriptionEn("Minimum perception delay"));
+        group.addParameter(
+                new Parameter("tau_max", it("τ_max"), "s").setMin("tau_min").setMax(2.0).setDefault(0.32 + 0.87, 0.32 + 0.87)
+                        .setDescriptionNl("Maximale perceptie vertraging.").setDescriptionEn("Maximum perception delay"));
         group.addParameter(new Parameter("TC", it("TC"), "-").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
                 .setDescriptionNl("Taak capaciteit.").setDescriptionEn("Task capacity."));
-        group.addParameter(new Parameter("TScrit", it("TS_crit"), "-").setMin(0.0).setMax("TSmax").setDefault(0.8, 0.8)
-                .setDescriptionNl(
-                        "Kritische taak saturatie, waarboven situationele aandacht afneemt en de reactietijd toeneemt.")
-                .setDescriptionEn(
-                        "Critical task saturation, above which situational awareness reduces and reaction time increases."));
-        group.addParameter(new Parameter("TSmax", it("TS_max"), "-").setMin("TScrit").setMax(3.0).setDefault(2.0, 2.0)
-                .setDescriptionNl("Maximale taak saturatie.").setDescriptionEn("Maximum task saturation."));
-        group.addParameter(new Parameter("SAmin", it("SA_min"), "-").setMin(0.0).setMax("SAmax").setDefault(0.5, 0.5)
-                .setDescriptionNl("Minimale situationele aandacht.").setDescriptionEn("Minimum situational awareness."));
-        group.addParameter(new Parameter("SAmax", it("SA_max"), "-").setMin("SAmin").setMax(1.0).setDefault(1.0, 1.0)
-                .setDescriptionNl("Maximale situationele aandacht.").setDescriptionEn("Maximum situational awareness."));
-        group.addParameter(new Parameter("Trmax", it("T_r,max"), "s").setMin(0.0).setMax(3.0).setDefault(2.0, 2.0)
-                .setDescriptionNl("Maximale reactietijd.").setDescriptionEn("Maximum reaction time."));
+        // group.addParameter(new Parameter("TScrit", it("TS_crit"), "-").setMin(0.0).setMax("TSmax").setDefault(0.8, 0.8)
+        // .setDescriptionNl(
+        // "Kritische taak saturatie, waarboven situationele aandacht afneemt en de reactietijd toeneemt.")
+        // .setDescriptionEn(
+        // "Critical task saturation, above which situational awareness reduces and reaction time increases."));
+        // group.addParameter(new Parameter("TSmax", it("TS_max"), "-").setMin("TScrit").setMax(3.0).setDefault(2.0, 2.0)
+        // .setDescriptionNl("Maximale taak saturatie.").setDescriptionEn("Maximum task saturation."));
+        // group.addParameter(new Parameter("SAmin", it("SA_min"), "-").setMin(0.0).setMax("SAmax").setDefault(0.5, 0.5)
+        // .setDescriptionNl("Minimale situationele aandacht.").setDescriptionEn("Minimum situational awareness."));
+        // group.addParameter(new Parameter("SAmax", it("SA_max"), "-").setMin("SAmin").setMax(1.0).setDefault(1.0, 1.0)
+        // .setDescriptionNl("Maximale situationele aandacht.").setDescriptionEn("Maximum situational awareness."));
+        // group.addParameter(new Parameter("Trmax", it("T_r,max"), "s").setMin(0.0).setMax(3.0).setDefault(2.0, 2.0)
+        // .setDescriptionNl("Maximale reactietijd.").setDescriptionEn("Maximum reaction time."));
+        group.addParameter(new Parameter("td_scan", it("TD_scan"), "-").setMin(0.0).setMax(1.0).setDefault(0.0279, 0.0279)
+                .setDescriptionNl("Taak last voor scannen.").setDescriptionEn("Task demand for scanning."));
+        group.addParameter(new Parameter("td_signal", it("TS_signaal"), it("TS_signal"), "-").setMin(0.0).setMax(1.0)
+                .setDefault(0.2, 0.2).setDescriptionNl("Taak last door remlicht of knipperlicht.")
+                .setDescriptionEn("Task demand due to brakelights or indicators."));
+        group.addParameter(new Parameter("x0_d", it("x_0,signaal"), it("x_0,signal"), "m").setMin(0.0).setMax(400.0)
+                .setDefault(119.98, 119.98).setDescriptionNl("Afstand waarbinnen signalen taak last creëren.")
+                .setDescriptionEn("Distance within which signals create task demand."));
         group.addParameter(new Parameter("hexp", it("h_exp"), "s").setMin(1.0).setMax(10.0).setDefault(4.0, 4.0)
                 .setDescriptionNl("Helling van afname volg-taak last bij toenemen volgtijd.")
                 .setDescriptionEn("Slope of reduction of car-following task demand as headway increases."));
@@ -237,6 +248,7 @@ public class ParameterDefinitions
         group.addParameter(new Parameter("betav0", it("β_v0"), "-").setMin(0.0).setMax(2.0).setDefault(1.0, 1.0)
                 .setDescriptionNl("Gevoeligheid aanpassing snelheid.")
                 .setDescriptionEn("Sensitivity behavioural adaptation of speed."));
+
         // group.addParameter(new Parameter("est", it("estimation"),
         // "-1|0|1").setMin(-1.0).setMax(1.0).setDefault(1.0, 1.0)
         // .setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
@@ -248,18 +260,18 @@ public class ParameterDefinitions
         // acceleratie).")
         // .setDescriptionEn("Anticipation (0=none, 1=constant speed, 2=constant
         // acceleration)."));
-        group.addParameter(new Parameter("alpha", it("α"), "-").setMin(0.0).setMax(1.0).setDefault(0.8, 0.8)
-                .setDescriptionNl("Maximale afname primaire taak last door anticipatie.")
-                .setDescriptionEn("Maximum reduction of primary task load due to anticipation."));
-        group.addParameter(new Parameter("beta", it("β"), "-").setMin(0.0).setMax(1.0).setDefault(0.6, 0.6)
-                .setDescriptionNl("Maximale afname secundaire taak last door anticipatie.")
-                .setDescriptionEn("Maximum reduction of secondary task load due to anticipation."));
+        // group.addParameter(new Parameter("alpha", it("α"), "-").setMin(0.0).setMax(1.0).setDefault(0.8, 0.8)
+        // .setDescriptionNl("Maximale afname primaire taak last door anticipatie.")
+        // .setDescriptionEn("Maximum reduction of primary task load due to anticipation."));
+        // group.addParameter(new Parameter("beta", it("β"), "-").setMin(0.0).setMax(1.0).setDefault(0.6, 0.6)
+        // .setDescriptionNl("Maximale afname secundaire taak last door anticipatie.")
+        // .setDescriptionEn("Maximum reduction of secondary task load due to anticipation."));
         list.add(group);
         // - estimation
-        group = new ParameterGroup("Inschatting", ESTIMATION_GROUP_ID, DefaultState.ON.array(N_TYPES)).setParent(PERCEPTION_GROUP_ID)
-                .setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
+        group = new ParameterGroup("Inschatting", ESTIMATION_GROUP_ID, DefaultState.ON.array(N_TYPES))
+                .setParent(PERCEPTION_GROUP_ID).setDescriptionNl("Onder- of overschatting afstand en relatieve snelheid.")
                 .setDescriptionEn("Under- or overestimation of distance and relative speed.");
-        group.addParameter(new Parameter("est", it("estimation"), "-").setMin(0.0).setMax(1.0).setDefault(0.5, 0.5)
+        group.addParameter(new Parameter("f_over", it("f_over"), "-").setMin(0.0).setMax(1.0).setDefault(0.5, 0.5)
                 .setDescriptionNl("Fractie bestuurders met overschatting (overige met onderschatting).")
                 .setDescriptionEn("Fraction of drivers with overestimation (others with underestimation)."));
         list.add(group);
