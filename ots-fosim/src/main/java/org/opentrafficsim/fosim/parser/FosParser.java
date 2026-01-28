@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -48,6 +49,7 @@ import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.dsol.OtsSimulatorInterface;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuCharacteristics;
+import org.opentrafficsim.core.gtu.GtuErrorHandler;
 import org.opentrafficsim.core.gtu.GtuException;
 import org.opentrafficsim.core.gtu.GtuTemplate;
 import org.opentrafficsim.core.gtu.GtuType;
@@ -109,7 +111,6 @@ import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory.FullerImplementation;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory.Setting;
-import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlannerFactory;
 import org.opentrafficsim.road.network.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionElement;
@@ -167,6 +168,9 @@ public class FosParser
 
     /** Simulator. */
     private OtsSimulatorInterface simulator = null;
+
+    /** Colorers. */
+    private List<Colorer<? super Gtu>> colorers;
 
     /** Network. */
     private RoadNetwork network;
@@ -316,6 +320,17 @@ public class FosParser
     }
 
     /**
+     * Sets the GTU colorers for the GUI.
+     * @param colorer colorers
+     * @return this parser for method changing
+     */
+    public FosParser setColorer(final List<Colorer<? super Gtu>> colorers)
+    {
+        this.colorers = colorers;
+        return this;
+    }
+
+    /**
      * Parses a .fos file.
      * @param file location of a .pos file.
      * @throws InvalidPathException if the path is invalid.
@@ -402,6 +417,15 @@ public class FosParser
         return this.timeStep.times(this.detectorTimes.get(1));
     }
 
+    /**
+     * Returns the seed.
+     * @return seed
+     */
+    public int getSeed()
+    {
+        return this.seed;
+    }
+    
     /**
      * Returns the links.
      * @return links
@@ -737,7 +761,8 @@ public class FosParser
 
             if (gui)
             {
-                List<Colorer<? super Gtu>> colorers = OtsSwingApplication.DEFAULT_GTU_COLORERS;
+                List<Colorer<? super Gtu>> colorers =
+                        this.colorers == null ? OtsSwingApplication.DEFAULT_GTU_COLORERS : this.colorers;
                 Map<GtuType, GtuMarker> markerMap = Map.of(DefaultsNl.TRUCK, GtuMarker.SQUARE);
                 OtsAnimationPanel animationPanel = new OtsAnimationPanel(this.network.getExtent(),
                         (OtsAnimator) this.network.getSimulator(), this.model, colorers, this.network);
@@ -1475,6 +1500,9 @@ public class FosParser
         // tactical factory
         LmrsFactory2 lmrsFactory = new LmrsFactory2(this.gtuTypes);
         lmrsFactory.setStream(this.model.getStream("generation"));
+        lmrsFactory.set(Setting.INCENTIVE_ROUTE, false); // Custom FosIncentiveRoute is added in LmrsFactory2
+        lmrsFactory.set(Setting.INCENTIVE_KEEP, false); // Different version is used that disables right-hand desire on
+                                                        // right-hand lane
         for (int vehicleTypeNumber = 0; vehicleTypeNumber < this.vehicleTypeNames.size(); vehicleTypeNumber++)
         {
             GtuType gtuType = this.gtuTypes.get(vehicleTypeNumber);
@@ -1513,7 +1541,6 @@ public class FosParser
             }
 
             // Set factory settings
-            lmrsFactory.set(Setting.INCENTIVE_ROUTE, false); // Custom FosIncentiveRoute is added in LmrsFactory2
             lmrsFactory.set(Setting.SOCIO_TAILGATING, social, gtuType);
             lmrsFactory.set(Setting.SOCIO_SPEED, social, gtuType);
             lmrsFactory.set(Setting.SOCIO_LANE_CHANGE, social, gtuType);
@@ -1524,6 +1551,12 @@ public class FosParser
                 lmrsFactory.set(Setting.FULLER_IMPLEMENTATION, FullerImplementation.ATTENTION_MATRIX, gtuType);
                 lmrsFactory.setEstimation(estimation, gtuType);
                 lmrsFactory.set(Setting.TEMPORAL_ANTICIPATION, anticipation, gtuType);
+            }
+            else
+            {
+                lmrsFactory.set(Setting.FULLER_IMPLEMENTATION, FullerImplementation.NONE, gtuType);
+                lmrsFactory.setEstimation(false, gtuType);
+                lmrsFactory.set(Setting.TEMPORAL_ANTICIPATION, false, gtuType);
             }
         }
         lmrsFactory.set(Setting.ACCELERATION_TRAFFIC_LIGHTS, true);
@@ -1570,6 +1603,33 @@ public class FosParser
                     vehicleModel);
         };
         options.set(OdOptions.GTU_TYPE, characteristicsGenerator);
+        options.set(OdOptions.ERROR_HANDLER, new GtuErrorHandler()
+        {
+            @Override
+            public void handle(final Gtu gtu, final Exception ex) throws Exception
+            {
+                if (ex instanceof RuntimeException && ex.getCause() != null && ex.getCause() instanceof IllegalArgumentException
+                        && ex.getCause().getMessage().equals("Distance must be positive."))
+                {
+                    /*
+                     * Known issue: https://github.com/averbraeck/opentrafficsim/issues/268, delete duplicate trigger at
+                     * negative distance.
+                     */
+                    try
+                    {
+                        Field detTriggers = LaneBasedGtu.class.getDeclaredField("detectorTriggers");
+                        detTriggers.setAccessible(true);
+                        ((LinkedHashMap<?, ?>) detTriggers.get(gtu)).clear();
+                    }
+                    catch (SecurityException | IllegalAccessException | IllegalArgumentException | NoSuchFieldException e)
+                    {
+                        throw new RuntimeException(e);
+                    }
+                    return;
+                }
+                GtuErrorHandler.THROW.handle(gtu, ex);
+            }
+        });
 
         // demand
         for (int sourceIndex = 0; sourceIndex < this.flow.size(); sourceIndex++)
@@ -1598,147 +1658,8 @@ public class FosParser
 
         // apply
         OdApplier.applyOd(this.network, od, options, DefaultsNl.ROAD_USERS);
-    }
 
-    // /**
-    // * Creates a factory with all required model components, including optional social interactions and perception.
-    // * @param parameterFactory parameter factory.
-    // * @param stream stream of random numbers.
-    // * @param vehicleTypeNumber vehicle type number.
-    // * @return factory.
-    // */
-    // private LaneBasedStrategicalRoutePlannerFactory getStrategicalPlannerFactory(final ParameterFactory parameterFactory,
-    // final StreamInterface stream, final int vehicleTypeNumber)
-    // {
-    // // figure out which components to use
-    // boolean social = false;
-    // boolean courtesy = false;
-    // boolean perception = false;
-    // boolean estimation = false;
-    // boolean anticipation = false;
-    // // consideration of parent group is implicit in evaluations later, e.g. 'perception && estimation' to use estimation
-    // if (this.otsParameters != null)
-    // {
-    // for (ParameterDataGroup group : this.otsParameters.parameterGroups)
-    // {
-    // if (group.id.equals(ParameterDefinitions.SOCIAL_GROUP_ID) && group.state != null
-    // && group.state[vehicleTypeNumber].isActive())
-    // {
-    // social = true;
-    // }
-    // else if (group.id.equals(ParameterDefinitions.COURTESY_GROUP_ID) && group.state != null
-    // && group.state[vehicleTypeNumber].isActive())
-    // {
-    // courtesy = true;
-    // }
-    // else if (group.id.equals(ParameterDefinitions.PERCEPTION_GROUP_ID) && group.state != null
-    // && group.state[vehicleTypeNumber].isActive())
-    // {
-    // perception = true;
-    // }
-    // else if (group.id.equals(ParameterDefinitions.ESTIMATION_GROUP_ID) && group.state != null
-    // && group.state[vehicleTypeNumber].isActive())
-    // {
-    // estimation = true;
-    // }
-    // else if (group.id.equals(ParameterDefinitions.ANTICIPATION_GROUP_ID) && group.state != null
-    // && group.state[vehicleTypeNumber].isActive())
-    // {
-    // anticipation = true;
-    // }
-    // }
-    // }
-    //
-    // boolean isTruck = this.isTruck.get(vehicleTypeNumber);
-    // Estimation estimation2 = perception && estimation ? FactorEstimation.SINGLETON : Estimation.NONE;
-    // Anticipation anticipation2 = perception && anticipation ? Anticipation.CONSTANT_SPEED : Anticipation.NONE;
-    //
-    // // car-following
-    // DistContinuous fSpeed = new DistNormal(stream, 123.7 / 120.0, 0.1);
-    // CarFollowingModelFactory<IdmPlus> cfModelFactory =
-    // !social ? new IdmPlusFactory(stream) : new CarFollowingModelFactory<>()
-    // {
-    // @Override
-    // public Parameters getParameters(final GtuType gtuType) throws ParameterException
-    // {
-    // ParameterSet parameters = new ParameterSet();
-    // parameters.setDefaultParameters(AbstractIdm.class);
-    // parameters.setDefaultParameters(SocioDesiredSpeed.class);
-    // parameters.setParameter(ParameterTypes.FSPEED, fSpeed.draw());
-    // return parameters;
-    // }
-    //
-    // @Override
-    // public IdmPlus get()
-    // {
-    // return new IdmPlus(AbstractIdm.HEADWAY, new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED));
-    // }
-    // };
-    // // new AbstractIdmFactory<>(
-    // // new IdmPlus(AbstractIdm.HEADWAY, new SocioDesiredSpeed(AbstractIdm.DESIRED_SPEED)), stream)
-    //
-    // // perception
-    // PerceptionFactory perceptionFactory = perception ? new PerceptionFactory()
-    // {
-    // @Override
-    // public Parameters getParameters(final GtuType gtuType) throws ParameterException
-    // {
-    // return new ParameterSet(); // all parameters are given by FOSIM and parsed in to the ParameterFactoryByType
-    // }
-    //
-    // @Override
-    // public LanePerception generatePerception(final LaneBasedGtu gtu)
-    // {
-    // Set<Task> tasks = new LinkedHashSet<>();
-    // tasks.add(new CarFollowingTask());
-    // tasks.add(new LaneChangeTask());
-    // Set<BehavioralAdaptation> behavioralAdapatations = new LinkedHashSet<>();
-    // behavioralAdapatations.add(new AdaptationSituationalAwareness()); // sets SA and reaction time
-    // behavioralAdapatations.add(new AdaptationHeadway());
-    // behavioralAdapatations.add(new AdaptationSpeed());
-    // TaskManager taskManager = new TaskManagerAr("lane-changing");
-    // CategoricalLanePerception perception =
-    // new CategoricalLanePerception(gtu, new Fuller(tasks, behavioralAdapatations, taskManager));
-    // HeadwayGtuType headwayGtuType = new PerceivedHeadwayGtuType(estimation2, anticipation2);
-    // perception.addPerceptionCategory(new DirectEgoPerception<>(perception));
-    // perception.addPerceptionCategory(new DirectInfrastructurePerception(perception));
-    // perception.addPerceptionCategory(new DirectNeighborsPerception(perception, headwayGtuType));
-    // perception.addPerceptionCategory(new AnticipationTrafficPerception(perception));
-    // perception.addPerceptionCategory(new DirectIntersectionPerception(perception, HeadwayGtuType.WRAP));
-    // return perception;
-    // }
-    // } : new DefaultLmrsPerceptionFactory();
-    //
-    // // tailgating
-    // Tailgating tailgating = social ? Tailgating.PRESSURE : Tailgating.NONE;
-    //
-    // // incentives: voluntary, mandatory, acceleration
-    // Set<MandatoryIncentive> mandatoryIncentives = new LinkedHashSet<>();
-    // mandatoryIncentives.add(new FosIncentiveRoute());
-    // Set<VoluntaryIncentive> voluntaryIncentives = new LinkedHashSet<>();
-    // voluntaryIncentives.add(new IncentiveSpeedWithCourtesy());
-    // voluntaryIncentives.add(new IncentiveKeep());
-    // if (social)
-    // {
-    // voluntaryIncentives.add(new IncentiveSocioSpeed());
-    // if (courtesy)
-    // {
-    // voluntaryIncentives.add(new IncentiveCourtesy());
-    // }
-    // }
-    // if (isTruck)
-    // {
-    // voluntaryIncentives.add(new IncentiveStayRight());
-    // }
-    // Set<AccelerationIncentive> accelerationIncentives = new LinkedHashSet<>();
-    // accelerationIncentives.add(new AccelerationTrafficLights());
-    //
-    // // create the factories
-    // LmrsFactory lmrsFactory = new LmrsFactory(cfModelFactory, perceptionFactory, Synchronization.PASSIVE_MOVING,
-    // Cooperation.PASSIVE, GapAcceptance.INFORMED, tailgating, () -> mandatoryIncentives, () -> voluntaryIncentives,
-    // () -> accelerationIncentives);
-    // return new LaneBasedStrategicalRoutePlannerFactory(lmrsFactory, parameterFactory);
-    // }
+    }
 
     /**
      * Returns the FOSIM parameter value for given vehicle type number, and parameter name.
@@ -1995,279 +1916,6 @@ public class FosParser
         }
     }
 
-    // TODO: remove this after new OTS version; we get lanes from the root cross section, and those are available in
-    // getLegalLaneChangeInfo
-    // private static class IncentiveStayRight implements VoluntaryIncentive
-    // {
-    // public Desire determineDesire(final Parameters parameters, final LanePerception perception,
-    // final CarFollowingModel carFollowingModel, final Desire mandatoryDesire, final Desire voluntaryDesire)
-    // throws ParameterException, OperationalPlanException
-    // {
-    // InfrastructurePerception infra = perception.getPerceptionCategory(InfrastructurePerception.class);
-    // // start at left-most lane
-    // SortedSet<RelativeLane> rootCrossSection = perception.getLaneStructure().getRootCrossSection();
-    // RelativeLane lane = rootCrossSection.first();
-    // // move right until we find 'the right-hand lane', which is defined by the last lane where the urgency does not
-    // // increase
-    // Speed speed = perception.getPerceptionCategory(EgoPerception.class).getSpeed();
-    // double curUrgency = !perception.getLaneStructure().exists(lane) ? Double.MAX_VALUE
-    // : urgency(infra.getLegalLaneChangeInfo(lane), parameters, speed);
-    // double rightUrgency;
-    // RelativeLane right;
-    // while (rootCrossSection.contains(right = lane.getRight())
-    // && (rightUrgency = !perception.getLaneStructure().exists(right) ? Double.MAX_VALUE
-    // : urgency(infra.getLegalLaneChangeInfo(right), parameters, speed)) <= curUrgency)
-    // {
-    // curUrgency = rightUrgency;
-    // lane = right;
-    // }
-    // boolean legalLeft = infra.getLegalLaneChangePossibility(RelativeLane.CURRENT, LateralDirectionality.LEFT).ge0();
-    // if (lane.getLateralDirectionality().isRight() && lane.getNumLanes() > 1)
-    // {
-    // // must change right
-    // return new Desire(legalLeft ? -1.0 : 0.0, parameters.getParameter(LmrsParameters.DSYNC));
-    // }
-    // if (lane.isRight())
-    // {
-    // // must not change left
-    // return new Desire(legalLeft ? -1.0 : 0.0, 0.0);
-    // }
-    // return new Desire(0.0, 0.0);
-    // }
-    //
-    // /**
-    // * Returns the urgency to leave a lane.
-    // * @param laneChangeInfo SortedSet&lt;InfrastructureLaneChangeInfo&gt;; lane change info on the lane
-    // * @param parameters Parameters; parameters
-    // * @param speed Speed; current speed
-    // * @return double; urgency to leave the lane
-    // * @throws ParameterException if parameter is not given
-    // */
-    // private double urgency(final SortedSet<LaneChangeInfo> laneChangeInfo, final Parameters parameters, final Speed speed)
-    // throws ParameterException
-    // {
-    // double urgency = 0.0;
-    // for (LaneChangeInfo info : laneChangeInfo)
-    // {
-    // double nextUrgency = FosIncentiveRoute.getDesireToLeave(parameters, info.remainingDistance(),
-    // info.numberOfLaneChanges(), speed);
-    // urgency = urgency > nextUrgency ? urgency : nextUrgency;
-    // }
-    // return urgency;
-    // }
-
-    // ABOVE: OTS 1.7.5
-    // BELOW: OTS 1.7.4
-
-    // @Override
-    // public Desire determineDesire(final Parameters parameters, final LanePerception perception,
-    // final CarFollowingModel carFollowingModel, final Desire mandatoryDesire, final Desire voluntaryDesire)
-    // throws ParameterException, OperationalPlanException
-    // {
-    // InfrastructurePerception infra = perception.getPerceptionCategory(InfrastructurePerception.class);
-    // LaneStructureRecord root = perception.getLaneStructure().getRootRecord();
-    // LaneStructureRecord record = root;
-    // RelativeLane lane = RelativeLane.CURRENT;
-    // Route route = Try.assign(() -> perception.getGtu().getStrategicalPlanner().getRoute(), "");
-    // GtuType gtuType = Try.assign(() -> perception.getGtu().getType(), "");
-    // Speed speed = perception.getPerceptionCategory(EgoPerception.class).getSpeed();
-    // // move all the way left
-    // while (record.physicalLeft())
-    // {
-    // lane = lane.getLeft();
-    // record = record.getLeft();
-    // }
-    // // move right until we find 'the right-hand lane',
-    // double curUrgency = urgency(infra.getInfrastructureLaneChangeInfo(lane), parameters, speed);
-    // while (true)
-    // {
-    // try
-    // {
-    // if (!record.physicalRight() || !record.getRight().allowsRoute(route, gtuType))
-    // {
-    // // next lane considered not there, we've found 'the right-hand lane'
-    // break;
-    // }
-    // }
-    // catch (NetworkException exception)
-    // {
-    // throw new RuntimeException(exception);
-    // }
-    // double rightUrgency = urgency(infra.getInfrastructureLaneChangeInfo(lane.getRight()), parameters, speed);
-    // if (rightUrgency > curUrgency)
-    // {
-    // // next lane is worse for the route, current lane is allowable for the route
-    // break;
-    // }
-    // lane = lane.getRight();
-    // record = record.getRight();
-    // curUrgency = rightUrgency;
-    // }
-    // if (lane.getLateralDirectionality().isRight() && lane.getNumLanes() > 1)
-    // {
-    // // must change right
-    // return new Desire(root.legalLeft() ? -1.0 : 0.0, parameters.getParameter(LmrsParameters.DSYNC));
-    // }
-    // if (lane.isRight())
-    // {
-    // // must not change left
-    // return new Desire(root.legalLeft() ? -1.0 : 0.0, 0.0);
-    // }
-    // return new Desire(0.0, 0.0);
-    // }
-
-    // /**
-    // * Returns the urgency to leave a lane.
-    // * @param laneChangeInfo SortedSet&lt;InfrastructureLaneChangeInfo&gt;; lane change info on the lane
-    // * @param parameters Parameters; parameters
-    // * @param speed Speed; current speed
-    // * @return double; urgency to leave the lane
-    // * @throws ParameterException if parameter is not given
-    // */
-    // private double urgency(final SortedSet<InfrastructureLaneChangeInfo> laneChangeInfo, final Parameters parameters,
-    // final Speed speed) throws ParameterException
-    // {
-    // double urgency = 0.0;
-    // for (InfrastructureLaneChangeInfo info : laneChangeInfo)
-    // {
-    // double nextUrgency = FosIncentiveRoute.getDesireToLeave(parameters, info.getRemainingDistance(),
-    // info.getRequiredNumberOfLaneChanges(), speed);
-    // urgency = urgency > nextUrgency ? urgency : nextUrgency;
-    // }
-    // return urgency;
-    // }
-
-    // }
-
-    // private static Synchronization ALIGN_GAP = new Synchronization()
-    // {
-    // @Override
-    // public Acceleration synchronize(final LanePerception perception, final Parameters params, final SpeedLimitInfo sli,
-    // final CarFollowingModel cfm, final double desire, final LateralDirectionality lat, final LmrsData lmrsData,
-    // final LaneChange laneChange, final LateralDirectionality initiatedLaneChange)
-    // throws ParameterException, OperationalPlanException
-    // {
-    // Acceleration a = Acceleration.POSITIVE_INFINITY;
-    // EgoPerception<?, ?> ego = perception.getPerceptionCategory(EgoPerception.class);
-    // Speed ownSpeed = ego.getSpeed();
-    //
-    // // skip synchronization at low speed if follower will not provide cooperation
-    // Speed threshold = params.getParameter(ParameterTypes.LOOKAHEAD).divide(params.getParameter(ParameterTypes.T0));
-    // if (desire < params.getParameter(LmrsParameters.DCOOP) && ownSpeed.lt(threshold))
-    // {
-    // return a;
-    // }
-    //
-    // RelativeLane relativeLane = new RelativeLane(lat, 1);
-    // PerceptionCollectable<HeadwayGtu, LaneBasedGtu> leaders =
-    // perception.getPerceptionCategory(NeighborsPerception.class).getLeaders(relativeLane);
-    // if (!leaders.isEmpty())
-    // {
-    // HeadwayGtu leader = leaders.first();
-    // Length gap = leader.getDistance();
-    // setDesiredHeadway(params, desire);
-    // PerceptionCollectable<HeadwayGtu, LaneBasedGtu> followers =
-    // perception.getPerceptionCategory(NeighborsPerception.class).getFollowers(relativeLane);
-    // if (!followers.isEmpty())
-    // {
-    // HeadwayGtu follower = followers.first();
-    // Length netGap = leader.getDistance().plus(follower.getDistance()).times(0.5);
-    // gap = Length.max(gap, leader.getDistance().minus(netGap).plus(cfm.desiredHeadway(params, ownSpeed)));
-    // }
-    // a = CarFollowingUtil.followSingleLeader(cfm, params, ownSpeed, sli, gap, leader.getSpeed());
-    // params.resetParameter(ParameterTypes.T);
-    // // limit deceleration based on desire
-    // a = gentleUrgency(a, desire, params);
-    // }
-    // a = Acceleration.min(a,
-    // DEAD_END.synchronize(perception, params, sli, cfm, desire, lat, lmrsData, laneChange, initiatedLaneChange));
-    // // never stop before we can actually merge
-    // Length xMerge = getMergeDistance(perception, lat);
-    // if (xMerge.gt0())
-    // {
-    // Acceleration aMerge = LmrsUtil.singleAcceleration(xMerge, ownSpeed, Speed.ZERO, desire, params, sli, cfm);
-    // a = Acceleration.max(a, aMerge);
-    // }
-    // return a;
-    // }
-    //
-    // @Override
-    // public String toString()
-    // {
-    // return "ALIGN_GAP";
-    // }
-    //
-    // };
-
-    // private static Synchronization DEAD_END = new Synchronization()
-    // {
-    // @Override
-    // public Acceleration synchronize(final LanePerception perception, final Parameters params, final SpeedLimitInfo sli,
-    // final CarFollowingModel cfm, final double desire, final LateralDirectionality lat, final LmrsData lmrsData,
-    // final LaneChange laneChange, final LateralDirectionality initiatedLaneChange)
-    // throws ParameterException, OperationalPlanException
-    // {
-    // Acceleration a = Acceleration.POSITIVE_INFINITY;
-    // // stop for end
-    // Length remainingDist = Length.POSITIVE_INFINITY;
-    // int dn = laneChange.isChangingLane() ? -1 : 0;
-    // Length lcLength = laneChange.getMinimumLaneChangeDistance();
-    // for (LaneChangeInfo lcInfo : perception.getPerceptionCategory(InfrastructurePerception.class)
-    // .getPhysicalLaneChangeInfo(RelativeLane.CURRENT))
-    // {
-    // // TODO replace this hack with something that properly accounts for overshoot this method also
-    // // introduces very strong deceleration at low speeds, as the time step makes bMin go from 3.4 (ignored,
-    // // so maybe 1.25 acceleration applied) to >10
-    // remainingDist = Length.min(remainingDist,
-    // lcInfo.remainingDistance().minus(lcLength.times(lcInfo.numberOfLaneChanges() + dn)));
-    // }
-    // Speed speed = perception.getPerceptionCategory(EgoPerception.class).getSpeed();
-    // Acceleration bCrit = params.getParameter(ParameterTypes.BCRIT);
-    // remainingDist = remainingDist.minus(params.getParameter(ParameterTypes.S0));
-    // if (remainingDist.le0())
-    // {
-    // if (speed.gt0())
-    // {
-    // a = Acceleration.min(a, bCrit.neg());
-    // }
-    // else
-    // {
-    // a = Acceleration.ONE; // prevent dead-lock
-    // }
-    // }
-    // else
-    // {
-    // Acceleration bMin = new Acceleration(.5 * speed.si * speed.si / remainingDist.si, AccelerationUnit.SI);
-    // if (bMin.ge(bCrit))
-    // {
-    // a = Acceleration.min(a, bMin.neg());
-    // }
-    // }
-    // return a;
-    // }
-    //
-    // @Override
-    // public String toString()
-    // {
-    // return "DEADEND";
-    // }
-    // };
-
-    // /**
-    // * Sets value for T depending on level of lane change desire.
-    // * @param params Parameters; parameters
-    // * @param desire double; lane change desire
-    // * @throws ParameterException if T, TMIN or TMAX is not in the parameters
-    // */
-    // private static void setDesiredHeadway(final Parameters params, final double desire) throws ParameterException
-    // {
-    // double limitedDesire = desire < 0 ? 0 : desire > 1 ? 1 : desire;
-    // double tDes = limitedDesire * params.getParameter(ParameterTypes.TMIN).si
-    // + (1 - limitedDesire) * params.getParameter(ParameterTypes.TMAX).si;
-    // double t = params.getParameter(ParameterTypes.T).si;
-    // params.setParameterResettable(ParameterTypes.T, Duration.ofSI(tDes < t ? tDes : t));
-    // }
-
     /**
      * Return the GTU types.
      * @return GTU types (safe copy)
@@ -2316,9 +1964,10 @@ public class FosParser
         @Override
         public Lmrs create(LaneBasedGtu gtu) throws GtuException
         {
-            // Custom incentives face a immutable List.of() bug, so add it here.
+            // Custom incentives face a immutable List.of() bug, so add them here.
             Lmrs lmrs = super.create(gtu);
-            lmrs.addMandatoryIncentive(new FosIncentiveRoute());
+            lmrs.addMandatoryIncentive(FosIncentiveRoute.SINGLETON);
+            lmrs.addVoluntaryIncentive(FosIncentiveKeep.SINGLETON);
             return lmrs;
         }
 

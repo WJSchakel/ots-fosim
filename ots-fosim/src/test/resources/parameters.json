@@ -1,5 +1,5 @@
 {
-  "version": "v0.0.2",
+  "version": "v0.1.0",
   "parameterGroups": [
     {
       "id": "Vehicle",
@@ -411,6 +411,34 @@
       "descriptionEn": "Endogenous processes of imperfect perception, depending on mental demand due to driving tasks.",
       "parameters": [
         {
+          "id": "tau_min",
+          "descriptionNl": "Minimale perceptie vertraging.",
+          "descriptionEn": "Minimum perception delay.",
+          "unit": "s",
+          "defaultValue": [
+            0.32,
+            0.32
+          ],
+          "minimum": 0.0,
+          "maximum": "tau_max",
+          "nameNl": "<i>τ<sub>min</sub></i>",
+          "nameEn": "<i>τ<sub>min</sub></i>"
+        },
+        {
+          "id": "tau_max",
+          "descriptionNl": "Maximale perceptie vertraging.",
+          "descriptionEn": "Maximum perception delay.",
+          "unit": "s",
+          "defaultValue": [
+            1.19,
+            1.19
+          ],
+          "minimum": "tau_min",
+          "maximum": 2.0,
+          "nameNl": "<i>τ<sub>max</sub></i>",
+          "nameEn": "<i>τ<sub>max</sub></i>"
+        },
+        {
           "id": "TC",
           "descriptionNl": "Taak capaciteit.",
           "descriptionEn": "Task capacity.",
@@ -425,24 +453,26 @@
           "nameEn": "<i>TC</i>"
         },
         {
-          "id": "TDscan",
+          "id": "td_scan",
           "descriptionNl": "Taak last voor scannen.",
           "descriptionEn": "Task demand for scanning.",
           "unit": "-",
           "defaultValue": [
+            0.0279,
             0.0279
           ],
           "minimum": 0.0,
           "maximum": 1.0,
-          "nameNl": "<i>TS<sub>scan</sub></i>",
-          "nameEn": "<i>TS<sub>scan</sub></i>"
+          "nameNl": "<i>TD<sub>scan</sub></i>",
+          "nameEn": "<i>TD<sub>scan</sub></i>"
         },
         {
-          "id": "TDsignal",
+          "id": "td_signal",
           "descriptionNl": "Taak last door remlicht of knipperlicht.",
           "descriptionEn": "Task demand due to brakelights or indicators.",
           "unit": "-",
           "defaultValue": [
+            0.2,
             0.2
           ],
           "minimum": 0.0,
@@ -456,6 +486,7 @@
           "descriptionEn": "Distance within which signals create task demand.",
           "unit": "m",
           "defaultValue": [
+            119.98,
             119.98
           ],
           "minimum": 0.0,
@@ -464,13 +495,13 @@
           "nameEn": "<i>x<sub>0,signal</sub></i>"
         },
         {
-          "id": "hexp",
+          "id": "h_exp",
           "descriptionNl": "Helling van afname volg-taak last bij toenemen volgtijd.",
           "descriptionEn": "Slope of reduction of car-following task demand as headway increases.",
           "unit": "s",
           "defaultValue": [
-            4.0,
-            4.0
+            3.83,
+            3.83
           ],
           "minimum": 1.0,
           "maximum": 10.0,
@@ -478,7 +509,7 @@
           "nameEn": "<i>h<sub>exp</sub></i>"
         },
         {
-          "id": "betaT",
+          "id": "beta_T",
           "descriptionNl": "Gevoeligheid aanpassing volgtijd.",
           "descriptionEn": "Sensitivity behavioural adaptation of headway.",
           "unit": "-",
@@ -492,7 +523,7 @@
           "nameEn": "<i>β<sub>T</sub></i>"
         },
         {
-          "id": "betav0",
+          "id": "beta_v0",
           "descriptionNl": "Gevoeligheid aanpassing snelheid.",
           "descriptionEn": "Sensitivity behavioural adaptation of speed.",
           "unit": "-",
@@ -520,18 +551,18 @@
       "descriptionEn": "Under- or overestimation of distance and relative speed.",
       "parameters": [
         {
-          "id": "est",
+          "id": "f_over",
           "descriptionNl": "Fractie bestuurders met overschatting (overige met onderschatting).",
           "descriptionEn": "Fraction of drivers with overestimation (others with underestimation).",
           "unit": "-",
           "defaultValue": [
-            0.5,
-            0.5
+            1.0,
+            1.0
           ],
           "minimum": 0.0,
           "maximum": 1.0,
-          "nameNl": "<i>estimation</i>",
-          "nameEn": "<i>estimation</i>"
+          "nameNl": "<i>f<sub>over</sub></i>",
+          "nameEn": "<i>f<sub>over</sub></i>"
         }
       ]
     },

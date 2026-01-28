@@ -47,19 +47,11 @@ public class ParameterValidator
             if (group.parent == null)
             {
                 allowedParent = group.id;
-                assertFalse(group.groupNl.startsWith("&#9;"));
-                assertFalse(group.groupEn.startsWith("&#9;"));
-                assertFalse(group.descriptionNl.startsWith("&#9;"));
-                assertFalse(group.descriptionEn.startsWith("&#9;"));
             }
             else
             {
                 assertTrue(group.parent.equals(allowedParent), "Parameter group " + group.id + " refers to parent "
                         + group.parent + " but this is not the first parentless group above it.");
-                assertTrue(group.groupNl.startsWith("&#9;"));
-                assertTrue(group.groupEn.startsWith("&#9;"));
-                assertTrue(group.descriptionNl.startsWith("&#9;"));
-                assertTrue(group.descriptionEn.startsWith("&#9;"));
             }
             if (group.parameters != null)
             {

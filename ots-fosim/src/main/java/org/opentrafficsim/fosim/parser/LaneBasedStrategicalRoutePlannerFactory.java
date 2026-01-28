@@ -1,0 +1,152 @@
+package org.opentrafficsim.fosim.parser;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.djunits.value.vdouble.scalar.Length;
+import org.djunits.value.vdouble.scalar.Speed;
+import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.base.parameters.Parameters;
+import org.opentrafficsim.core.gtu.GtuException;
+import org.opentrafficsim.core.gtu.GtuType;
+import org.opentrafficsim.core.network.Node;
+import org.opentrafficsim.core.network.route.Route;
+import org.opentrafficsim.core.parameters.ParameterFactory;
+import org.opentrafficsim.core.parameters.ParameterFactoryDefault;
+import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
+import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlanner;
+import org.opentrafficsim.road.gtu.lane.tactical.LaneBasedTacticalPlannerFactory;
+import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalPlannerFactory;
+import org.opentrafficsim.road.gtu.strategical.LaneBasedStrategicalRoutePlanner;
+import org.opentrafficsim.road.gtu.strategical.RouteGenerator;
+
+/**
+ * Temporary fix for https://github.com/averbraeck/opentrafficsim/issues/265.
+ * @author wjschakel
+ */
+public class LaneBasedStrategicalRoutePlannerFactory
+        implements LaneBasedStrategicalPlannerFactory<LaneBasedStrategicalRoutePlanner>
+{
+
+    /** Factory for tactical planners. */
+    private final LaneBasedTacticalPlannerFactory<? extends LaneBasedTacticalPlanner> tacticalPlannerFactory;
+
+    /** Route supplier. */
+    private final RouteGenerator routeGenerator;
+
+    /** Parameter factory. */
+    private final ParameterFactory parameterFactory;
+
+    /** Peeked parameters. */
+    private Map<GtuType, Parameters> peekedParameters = new LinkedHashMap<>();
+
+    /**
+     * Constructor with factory for tactical planners.
+     * @param tacticalPlannerFactory factory for tactical planners
+     */
+    public LaneBasedStrategicalRoutePlannerFactory(
+            final LaneBasedTacticalPlannerFactory<? extends LaneBasedTacticalPlanner> tacticalPlannerFactory)
+    {
+        this.tacticalPlannerFactory = tacticalPlannerFactory;
+        this.routeGenerator = RouteGenerator.NULL;
+        this.parameterFactory = new ParameterFactoryDefault();
+    }
+
+    /**
+     * Constructor with factory for tactical planners.
+     * @param tacticalPlannerFactory factory for tactical planners
+     * @param parametersFactory factory for parameters
+     */
+    public LaneBasedStrategicalRoutePlannerFactory(
+            final LaneBasedTacticalPlannerFactory<? extends LaneBasedTacticalPlanner> tacticalPlannerFactory,
+            final ParameterFactory parametersFactory)
+    {
+        this.tacticalPlannerFactory = tacticalPlannerFactory;
+        this.routeGenerator = RouteGenerator.NULL;
+        this.parameterFactory = parametersFactory;
+    }
+
+    /**
+     * Constructor with factory for tactical planners.
+     * @param tacticalPlannerFactory factory for tactical planners
+     * @param parametersFactory factory for parameters
+     * @param routeGenerator route supplier
+     */
+    public LaneBasedStrategicalRoutePlannerFactory(
+            final LaneBasedTacticalPlannerFactory<? extends LaneBasedTacticalPlanner> tacticalPlannerFactory,
+            final ParameterFactory parametersFactory, final RouteGenerator routeGenerator)
+    {
+        this.tacticalPlannerFactory = tacticalPlannerFactory;
+        this.parameterFactory = parametersFactory;
+        this.routeGenerator = routeGenerator;
+    }
+
+    @Override
+    public Optional<Speed> peekDesiredSpeed(final GtuType gtuType, final Speed speedLimit, final Speed maxGtuSpeed)
+            throws GtuException
+    {
+        return this.tacticalPlannerFactory.peekDesiredSpeed(gtuType, speedLimit, maxGtuSpeed, peekParameters(gtuType));
+    }
+
+    @Override
+    public Optional<Length> peekDesiredHeadway(final GtuType gtuType, final Speed speed) throws GtuException
+    {
+        return this.tacticalPlannerFactory.peekDesiredHeadway(gtuType, speed, peekParameters(gtuType));
+    }
+
+    /**
+     * Determine or return the next parameter set.
+     * @param gtuType GTU type to generate parameters for
+     * @return next parameter set
+     * @throws GtuException on parameter exception
+     */
+    private Parameters peekParameters(final GtuType gtuType) throws GtuException
+    {
+        if (this.peekedParameters.containsKey(gtuType))
+        {
+            return this.peekedParameters.get(gtuType);
+        }
+        try
+        {
+            Parameters parameters = this.tacticalPlannerFactory.getParameters(gtuType);
+            this.parameterFactory.setValues(parameters, gtuType);
+            this.peekedParameters.put(gtuType, parameters);
+            return parameters;
+        }
+        catch (ParameterException exception)
+        {
+            throw new GtuException("Parameter was set to illegal value.", exception);
+        }
+    }
+
+    @Override
+    public final LaneBasedStrategicalRoutePlanner create(final LaneBasedGtu gtu, final Route route, final Node origin,
+            final Node destination) throws GtuException
+    {
+        LaneBasedStrategicalRoutePlanner strategicalPlanner = new LaneBasedStrategicalRoutePlanner(
+                this.tacticalPlannerFactory.create(gtu), route, gtu, origin, destination, this.routeGenerator);
+        gtu.setParameters(nextParameters(gtu.getType()));
+        return strategicalPlanner;
+    }
+
+    /**
+     * Returns the parameters for the next GTU.
+     * @param gtuType GTU type of GTU to be generated
+     * @return parameters for the next GTU
+     * @throws GtuException on parameter exception
+     */
+    protected final Parameters nextParameters(final GtuType gtuType) throws GtuException
+    {
+        Parameters parameters = peekParameters(gtuType);
+        this.peekedParameters.remove(gtuType);
+        return parameters;
+    }
+
+    @Override
+    public final String toString()
+    {
+        return "LaneBasedStrategicalRoutePlannerFactory [tacticalPlannerFactory=" + this.tacticalPlannerFactory + "]";
+    }
+
+}

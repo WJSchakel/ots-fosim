@@ -133,7 +133,7 @@ public class FosContourDataSource
                     for (Section<? extends LaneData<?>> section : getPath().getSections())
                     {
                         TrajectoryGroup<?> trajectoryGroup =
-                                this.samplerData.getTrajectoryGroup(section.getSource(series)).get();
+                                this.samplerData.getTrajectoryGroup(section.getSource(series)).orElse(null);
                         // when null, this is created by OtsTransceiver.Worker.dummyLaneData()
                         if (null != trajectoryGroup)
                         {

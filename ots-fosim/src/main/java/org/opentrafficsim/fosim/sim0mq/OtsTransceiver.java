@@ -1,5 +1,6 @@
 package org.opentrafficsim.fosim.sim0mq;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -11,9 +12,10 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.swing.JFileChooser;
 import javax.swing.WindowConstants;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
-import org.djunits.unit.SpeedUnit;
 import org.djunits.value.vdouble.scalar.Duration;
 import org.djunits.value.vdouble.scalar.Frequency;
 import org.djunits.value.vdouble.scalar.Length;
@@ -28,17 +30,12 @@ import org.djunits.value.vfloat.vector.FloatLengthVector;
 import org.djutils.cli.CliUtil;
 import org.djutils.data.Column;
 import org.djutils.data.Row;
-import org.djutils.draw.function.ContinuousPiecewiseLinearFunction;
-import org.djutils.draw.line.PolyLine2d;
-import org.djutils.draw.line.Polygon2d;
-import org.djutils.draw.point.Point2d;
 import org.djutils.event.Event;
 import org.djutils.event.EventListener;
 import org.djutils.exceptions.Throw;
 import org.djutils.serialization.SerializationException;
-import org.opentrafficsim.base.geometry.OtsLine2d;
+import org.opentrafficsim.base.OtsRuntimeException;
 import org.opentrafficsim.base.parameters.ParameterException;
-import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsAnimator;
 import org.opentrafficsim.core.gtu.Gtu;
 import org.opentrafficsim.core.gtu.GtuException;
@@ -46,9 +43,7 @@ import org.opentrafficsim.core.gtu.GtuType;
 import org.opentrafficsim.core.network.LateralDirectionality;
 import org.opentrafficsim.core.network.Network;
 import org.opentrafficsim.core.network.NetworkException;
-import org.opentrafficsim.core.network.Node;
 import org.opentrafficsim.draw.graphs.GraphPath;
-import org.opentrafficsim.draw.graphs.GraphPath.Section;
 import org.opentrafficsim.draw.graphs.GraphUtil;
 import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.FosDetector.Passing;
@@ -59,9 +54,8 @@ import org.opentrafficsim.fosim.parameters.LimitAdapter;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.distributions.DistributionDefinitions;
 import org.opentrafficsim.fosim.parser.FosIncentiveRoute;
-import org.opentrafficsim.fosim.parser.FosLane;
-import org.opentrafficsim.fosim.parser.FosLink;
 import org.opentrafficsim.fosim.parser.FosParser;
+import org.opentrafficsim.fosim.parser.FosSampler;
 import org.opentrafficsim.fosim.parser.ParserSetting;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.BatchStatus;
 import org.opentrafficsim.fosim.sim0mq.StopCriterion.DetectionType;
@@ -73,16 +67,11 @@ import org.opentrafficsim.fosim.sim0mq.trace.Trace;
 import org.opentrafficsim.fosim.sim0mq.trace.TraceData;
 import org.opentrafficsim.fosim.simulator.OtsSimulatorInterfaceStep;
 import org.opentrafficsim.kpi.interfaces.LaneData;
-import org.opentrafficsim.kpi.sampling.SpaceTimeRegion;
 import org.opentrafficsim.kpi.sampling.Trajectory;
-import org.opentrafficsim.road.definitions.DefaultsRoadNl;
 import org.opentrafficsim.road.gtu.lane.LaneBasedGtu;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
-import org.opentrafficsim.road.network.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.RoadNetwork;
-import org.opentrafficsim.road.network.lane.CrossSectionGeometry;
-import org.opentrafficsim.road.network.lane.CrossSectionLink;
 import org.opentrafficsim.road.network.lane.Lane;
 import org.opentrafficsim.road.network.lane.LanePosition;
 import org.opentrafficsim.road.network.sampling.LaneDataRoad;
@@ -112,7 +101,7 @@ public class OtsTransceiver
 {
 
     /** Parameter and distribution version so Fosim can check versions. */
-    public static final String VERSION = "v0.0.2";
+    public static final String VERSION = "v0.1.0";
 
     /** Federation id to receive/sent messages. */
     @Option(names = "--federationId", description = "Federation id to receive/sent messages", defaultValue = "Ots_Fosim")
@@ -142,6 +131,26 @@ public class OtsTransceiver
     @Option(names = "--gui", description = "Whether to show GUI", defaultValue = "false")
     private boolean showGui;
 
+    // -------- OTS-only settings --------
+    // To use the transceiver in OTS only mode, use (with possible relevant paths):
+    // java.exe -jar OtsTransceiver.jar --otsOnly=true --gui=false --fosFile=network.fos --detectorOutput=true --seed=12
+
+    /** Run simulation from FOSIM file in OTS directly. */
+    @Option(names = "--otsOnly", description = "Run simulation in OTS from FOSIM file", defaultValue = "false")
+    private boolean otsOnly;
+
+    /** FOSIM file to run with. */
+    @Option(names = "--fosFile", description = "FOSIM file to run with (if not given a file dialog will appear)")
+    private String fosFile = null;
+
+    /** Write detector output. */
+    @Option(names = "--detectorOutput", description = "Write detector output", defaultValue = "false")
+    private boolean detectorOutput;
+
+    /** Seed. */
+    @Option(names = "--seed", description = "Seed to override file seed with")
+    private Integer seed;
+
     /** The simulator. */
     private OtsSimulatorInterfaceStep simulator;
 
@@ -168,7 +177,35 @@ public class OtsTransceiver
      */
     public static void main(String[] args) throws Exception
     {
-        new OtsTransceiver(args).start();
+        OtsTransceiver otsTransceiver = new OtsTransceiver(args);
+        if (otsTransceiver.otsOnly)
+        {
+            File file;
+            if (otsTransceiver.fosFile != null && !otsTransceiver.fosFile.isBlank())
+            {
+                file = new File(otsTransceiver.fosFile);
+            }
+            else
+            {
+                JFileChooser chooser = new JFileChooser();
+                FileNameExtensionFilter filter = new FileNameExtensionFilter("FOSIM file", "fos");
+                chooser.setFileFilter(filter);
+                int returnVal = chooser.showOpenDialog(null);
+                if (returnVal == JFileChooser.APPROVE_OPTION)
+                {
+                    file = chooser.getSelectedFile();
+                }
+                else
+                {
+                    return;
+                }
+            }
+            OtsRunner.run(file, otsTransceiver.showGui, otsTransceiver.detectorOutput, otsTransceiver.seed);
+        }
+        else
+        {
+            otsTransceiver.start();
+        }
     }
 
     /**
@@ -232,7 +269,15 @@ public class OtsTransceiver
     public static int getLaneRowFromId(final String laneId)
     {
         int underscore = laneId.indexOf("_");
-        return Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
+        try
+        {
+            return Integer.parseInt(underscore < 0 ? laneId : laneId.substring(underscore + 1));
+        }
+        catch (NumberFormatException ex)
+        {
+            throw new OtsRuntimeException("Could not find row from lane. Is the GTU mapped to a dummy lane starting with '_'?",
+                    ex);
+        }
     }
 
     /**
@@ -276,9 +321,6 @@ public class OtsTransceiver
 
         /** Trajectory sampler. */
         private RoadSampler sampler;
-
-        /** ID of dummy objects. */
-        private int dummyId;
 
         /** Target lane of lane changes. */
         private Map<Gtu, Integer> targetLane = new LinkedHashMap<>();
@@ -846,7 +888,6 @@ public class OtsTransceiver
             try
             {
                 stopSimulation();
-                this.dummyId = 0;
                 String fosString = (String) message.createObjectArray()[8];
                 Map<ParserSetting, Boolean> settings = new LinkedHashMap<>();
                 settings.put(ParserSetting.GUI, OtsTransceiver.this.showGui);
@@ -891,64 +932,11 @@ public class OtsTransceiver
          * @param parser parser
          * @throws NetworkException if dummy network element cannot be created
          */
-        @SuppressWarnings("unchecked")
         private void setupSampler(final FosParser parser) throws NetworkException
         {
-            Duration endtime = Duration.ZERO.plus(OtsTransceiver.this.simulator.getReplication().getEndTime());
-            this.sampler = new RoadSampler(OtsTransceiver.this.network, Frequency.ofSI(1.0 / OtsTransceiver.this.step.si));
-
-            // determine grid
-            int nSections = 0;
-            int fromLane = Integer.MAX_VALUE;
-            int toLane = 0;
-            for (FosLink fosLink : parser.getLinks())
-            {
-                nSections = Math.max(nSections, fosLink.sectionIndex);
-                fromLane = Math.min(fromLane, fosLink.fromLane);
-                toLane = Math.max(toLane, fosLink.toLane);
-            }
-            nSections++; // zero-indexed
-
-            // create grid of LaneDataRoad and register regions for recording
-            Length[] lengths = new Length[nSections + 1];
-            LaneDataRoad[][] laneData = new LaneDataRoad[toLane + 1][nSections + 1];
-            for (FosLink fosLink : parser.getLinks())
-            {
-                if (lengths[fosLink.sectionIndex] == null)
-                {
-                    lengths[fosLink.sectionIndex] =
-                            Length.ofSI(fosLink.lanes.get(0).getLane().getLink().getEndNode().getLocation().x
-                                    - fosLink.lanes.get(0).getLane().getLink().getStartNode().getLocation().x);
-                }
-                int laneNum = fosLink.fromLane;
-                for (FosLane fosLane : fosLink.lanes)
-                {
-                    if (fosLane.getLane() instanceof Lane)
-                    {
-                        Lane lane = (Lane) fosLane.getLane();
-                        laneData[laneNum][fosLink.sectionIndex] = new LaneDataRoad(lane);
-                        this.sampler.registerSpaceTimeRegion(
-                                new SpaceTimeRegion<LaneDataRoad>(laneData[laneNum][fosLink.sectionIndex], Length.ZERO,
-                                        lane.getLength(), Duration.ZERO, endtime));
-                    }
-                    laneNum++;
-                }
-            }
-
-            // create graph paths, which ContourDataSource will use later to provide speed contour data
-            this.graphPaths = new GraphPath[toLane + 1];
-            Speed speedLimit = new Speed(100.0, SpeedUnit.KM_PER_HOUR); // used for EGTF, which Fosim does not use
-            for (int i = fromLane; i <= toLane; i++)
-            {
-                String pathName = "Lane " + i;
-                List<Section<LaneDataRoad>> sections = new ArrayList<>();
-                for (int j = 0; j < nSections; j++)
-                {
-                    LaneDataRoad laneDataRoad = laneData[i][j] == null ? dummyLaneData(lengths[j]) : laneData[i][j];
-                    sections.add(new Section<>(laneDataRoad.getLength(), speedLimit, List.of(laneDataRoad)));
-                }
-                this.graphPaths[i] = new GraphPath<>(pathName, sections);
-            }
+            FosSampler fosSampler = new FosSampler(parser, network, Frequency.ofSI(1.0 / OtsTransceiver.this.step.si));
+            this.sampler = fosSampler.getSampler();
+            this.graphPaths = fosSampler.getLaneGraphPaths();
         }
 
         /**
@@ -1000,31 +988,6 @@ public class OtsTransceiver
                 gtu.removeListener(this, LaneBasedGtu.LANE_CHANGE_EVENT);
                 this.laneChanges.remove(id);
             }
-        }
-
-        /**
-         * Creates a dummy lane data in place of a gap within a lane (row), i.e. a grass section.
-         * @param length length required
-         * @return dummy lane data
-         * @throws NetworkException
-         */
-        private LaneDataRoad dummyLaneData(final Length length) throws NetworkException
-        {
-            Point2d pointA = new Point2d(0.0, -10.0);
-            Point2d pointB = new Point2d(length.si, -10.0);
-            Node nodeA = new Node(OtsTransceiver.this.network, "_Node " + this.dummyId++, pointA);
-            Node nodeB = new Node(OtsTransceiver.this.network, "_Node " + this.dummyId++, pointB);
-            OtsLine2d line = new OtsLine2d(new PolyLine2d(pointA, pointB));
-            CrossSectionLink link = new CrossSectionLink(OtsTransceiver.this.network, "_Link " + this.dummyId++, nodeA, nodeB,
-                    DefaultsNl.FREEWAY, line, ContinuousPiecewiseLinearFunction.of(0.0, 0.0), LaneKeepingPolicy.KEEPRIGHT);
-            // List<CrossSectionSlice> slices =
-            // List.of(new CrossSectionSlice(Length.ZERO, Length.ZERO, Length.ofSI(3.5)));
-            ContinuousPiecewiseLinearFunction offset = ContinuousPiecewiseLinearFunction.of(0.0, 0.0, 1.0, 0.0);
-            ContinuousPiecewiseLinearFunction width = ContinuousPiecewiseLinearFunction.of(0.0, 3.5, 1.0, 3.5);
-            CrossSectionGeometry geometry = new CrossSectionGeometry(line, new Polygon2d(line.getPointList()), offset, width);
-            Lane lane = new Lane(link, "_Lane " + this.dummyId++, geometry, DefaultsRoadNl.FREEWAY,
-                    Map.of(DefaultsNl.VEHICLE, new Speed(100.0, SpeedUnit.KM_PER_HOUR)));
-            return new LaneDataRoad(lane);
         }
 
         /**
@@ -1282,7 +1245,6 @@ public class OtsTransceiver
             this.detectors.clear();
             this.stepNumber = 1;
             this.sampler = null;
-            this.dummyId = 0;
             this.targetLane.clear();
             this.graphPaths = null;
             this.laneChanges.clear();

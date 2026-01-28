@@ -9,6 +9,7 @@ import org.opentrafficsim.base.parameters.ParameterTypeDuration;
 import org.opentrafficsim.base.parameters.ParameterTypeLength;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.base.parameters.Parameters;
+import org.opentrafficsim.core.gtu.Stateless;
 import org.opentrafficsim.core.gtu.perception.EgoPerception;
 import org.opentrafficsim.core.gtu.plan.operational.OperationalPlanException;
 import org.opentrafficsim.core.network.LateralDirectionality;
@@ -29,9 +30,26 @@ import org.opentrafficsim.road.network.LaneChangeInfo;
  * </p>
  * @author <a href="https://github.com/wjschakel">Wouter Schakel</a>
  */
-public class FosIncentiveRoute implements MandatoryIncentive
+public class FosIncentiveRoute implements MandatoryIncentive, Stateless<FosIncentiveRoute>
 {
 
+    /** Singleton instance. */
+    public static final FosIncentiveRoute SINGLETON = new FosIncentiveRoute();
+
+    /**
+     * Constructor.
+     */
+    private FosIncentiveRoute()
+    {
+        //
+    }
+    
+    @Override
+    public FosIncentiveRoute get()
+    {
+        return SINGLETON;
+    }
+    
     /** Look ahead parameter type. */
     protected static final ParameterTypeLength LOOKAHEAD = ParameterTypes.LOOKAHEAD;
 
