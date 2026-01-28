@@ -425,7 +425,7 @@ public class FosParser
     {
         return this.seed;
     }
-    
+
     /**
      * Returns the links.
      * @return links
@@ -1360,11 +1360,11 @@ public class FosParser
     {
         List<Point2d> points = new ArrayList<>(leftEdge.getPointList());
         List<Point2d> right = new ArrayList<>(rightEdge.reverse().getPointList());
-        points.addAll(right.subList(right.getFirst().equals(points.getLast()) ? 1 : 0, right.size()));
+        points.addAll(right.subList(right.get(0).equals(points.get(points.size() - 1)) ? 1 : 0, right.size()));
         // close loop
-        if (!points.getFirst().equals(points.getLast()))
+        if (!points.get(0).equals(points.get(points.size() - 1)))
         {
-            points.add(points.getFirst());
+            points.add(points.get(0));
         }
         return new Polygon2d(points);
     }
