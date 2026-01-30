@@ -182,6 +182,7 @@ public class OtsParametersParser
                 LengthUnit.SI, stream, vehicleTypeNumber);
         addParameter(parameterFactory, AbstractIdm.DELTA, ParameterDefinitions.FOLLOWING_GROUP_ID, "delta", stream,
                 vehicleTypeNumber);
+        // n (nLeaders) is set where the IdmPlusMulti car-following model is set
 
         // Lane-changing: dFree, dSyn, dCoop, tau, x0, t0, vGain, vCong
         addParameter(parameterFactory, LmrsParameters.DFREE, ParameterDefinitions.LC_GROUP_ID, "dFree", stream,
@@ -493,8 +494,8 @@ public class OtsParametersParser
                         distribution.distributionParameters.get("sigma"), distribution.distributionParameters.get("min"),
                         distribution.distributionParameters.get("max"));
             case LogNormal:
-                return new DistLogNormalTrunc(stream, distribution.distributionParameters.get("mean"),
-                        distribution.distributionParameters.get("std"), distribution.distributionParameters.get("min"),
+                return new DistLogNormalTrunc(stream, distribution.distributionParameters.get("mu"),
+                        distribution.distributionParameters.get("sigma"), distribution.distributionParameters.get("min"),
                         distribution.distributionParameters.get("max"));
             case Uniform:
                 return new DistUniform(stream, distribution.distributionParameters.get("min"),

@@ -65,6 +65,7 @@ import org.opentrafficsim.fosim.FosDetector;
 import org.opentrafficsim.fosim.parameters.ParameterDefinitions;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataDefinition;
 import org.opentrafficsim.fosim.parameters.data.ParameterDataGroup;
+import org.opentrafficsim.fosim.parameters.data.ScalarData;
 import org.opentrafficsim.fosim.parameters.data.ValueAdapter;
 import org.opentrafficsim.fosim.parameters.data.ValueData;
 import org.opentrafficsim.fosim.sim0mq.FosimModel;
@@ -107,6 +108,8 @@ import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskSig
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskTrafficLight;
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.IntersectionPerceptionChannel;
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.NeighborsPerceptionChannel;
+import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
+import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusMulti;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory.FullerImplementation;
@@ -1558,6 +1561,24 @@ public class FosParser
                 lmrsFactory.setEstimation(false, gtuType);
                 lmrsFactory.set(Setting.TEMPORAL_ANTICIPATION, false, gtuType);
             }
+
+            // Multi-leader anticipation depending on parameter
+            if (this.otsParameters != null)
+            {
+                Object obj = this.otsParameters.parameterGroups.stream()
+                        .filter((g) -> g.id.equals(ParameterDefinitions.FOLLOWING_GROUP_ID)).findFirst().get().parameters
+                                .stream().filter((p) -> p.id.equals("n")).findFirst().get().value.get(vehicleTypeNumber);
+                if (obj instanceof ScalarData scalar && scalar.value() >= 2.0)
+                {
+                    lmrsFactory.set(Setting.CAR_FOLLOWING_MODEL, IdmPlusMulti::new);
+                    // Not part of parameter parser
+                    lmrsFactory.addParameter(IdmPlusMulti.NLEADERS, (int) scalar.value());
+                }
+                else
+                {
+                    lmrsFactory.set(Setting.CAR_FOLLOWING_MODEL, IdmPlus::new);
+                }
+            }
         }
         lmrsFactory.set(Setting.ACCELERATION_TRAFFIC_LIGHTS, true);
 
@@ -1962,7 +1983,7 @@ public class FosParser
         }
 
         @Override
-        public Lmrs create(LaneBasedGtu gtu) throws GtuException
+        public Lmrs create(final LaneBasedGtu gtu) throws GtuException
         {
             // Custom incentives face a immutable List.of() bug, so add them here.
             Lmrs lmrs = super.create(gtu);

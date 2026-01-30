@@ -148,6 +148,8 @@ public class ParameterDefinitions
         group.addParameter(new Parameter("delta", it("δ"), "-").setMin(0).setMax(1000).setDefault(4.0, 4.0)
                 .setDescriptionNl("Persistentie maximale acceleratie bij toenemen snelheid.")
                 .setDescriptionEn("Persistence of maximum acceleration as speed increases."));
+        group.addParameter(new Parameter("n", it("n"), "-").setMin(1).setMax(10).setDefault(1, 1)
+                .setDescriptionNl("Aantal geanticipeerde voorliggers.").setDescriptionEn("Number of anticipated leaders."));
         list.add(group);
 
         // Lane-change model
@@ -182,7 +184,7 @@ public class ParameterDefinitions
         list.add(group);
 
         // Social interactions
-        group = new ParameterGroup("Sociale interacties", SOCIAL_GROUP_ID, DefaultState.ON.array(N_TYPES))
+        group = new ParameterGroup("Sociale interacties", SOCIAL_GROUP_ID, DefaultState.OFF.array(N_TYPES))
                 .setDescriptionNl("Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale "
                         + "druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. "
                         + "Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s"

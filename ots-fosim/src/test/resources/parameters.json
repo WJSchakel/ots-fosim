@@ -226,6 +226,20 @@
           "maximum": 1000.0,
           "nameNl": "<i>δ</i>",
           "nameEn": "<i>δ</i>"
+        },
+        {
+          "id": "n",
+          "descriptionNl": "Aantal geanticipeerde voorliggers.",
+          "descriptionEn": "Number of anticipated leaders.",
+          "unit": "-",
+          "defaultValue": [
+            1.0,
+            1.0
+          ],
+          "minimum": 1.0,
+          "maximum": 10.0,
+          "nameNl": "<i>n</i>",
+          "nameEn": "<i>n</i>"
         }
       ]
     },
@@ -359,8 +373,8 @@
       "groupNl": "Sociale interacties",
       "groupEn": "Social interactions",
       "defaultState": [
-        "ON",
-        "ON"
+        "OFF",
+        "OFF"
       ],
       "descriptionNl": "Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.",
       "descriptionEn": "Endogenous influence on desired speed, desired headway and lane change desire from social pressure. This mostly influences the number of lane changes and the headway distribution. It is important to use a different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = <i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.",
