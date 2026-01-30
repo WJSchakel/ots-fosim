@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.swing.JFileChooser;
 import javax.swing.WindowConstants;
@@ -295,6 +297,9 @@ public class OtsTransceiver
         /** */
         private ZContext context;
 
+        /** REQ <> REP or REQ <> ROUTER pattern. */
+        private final boolean reqrep = false;
+
         /** the socket. */
         private ZMQ.Socket responder;
 
@@ -381,39 +386,116 @@ public class OtsTransceiver
          */
         public Worker()
         {
+            super("FOSIM worker-replier");
         }
 
         @Override
         public void run()
         {
             this.context = new ZContext(1);
-            this.responder = this.context.createSocket(SocketType.REP);
+            this.responder = this.context.createSocket(this.reqrep ? SocketType.REP : SocketType.ROUTER);
             this.responder.bind("tcp://*:" + port);
-            this.responder.setReceiveTimeOut(5000);
+            // this.responder.setReceiveTimeOut(5000);
             System.out.println("Server is running");
 
+            BlockingQueue<Request> queue = new LinkedBlockingQueue<>();
+            Thread listener = null;
             try
             {
-                while (!Thread.currentThread().isInterrupted())
+
+                // Parallel thread to receive requests and put them in the queue
+                listener = new Thread(() ->
                 {
-                    // Wait for next request from the client
-                    byte[] request = this.responder.recv(); // ZMQ.DONTWAIT
-                    while (request == null)
+                    boolean getIdentity = !this.reqrep;
+                    boolean getDelimiter = false;
+                    boolean getPayload = this.reqrep;
+                    byte[] identity = null;
+                    while (!Thread.currentThread().isInterrupted())
                     {
+                        if (this.reqrep)
+                        {
+                            // Wait for queue to be empty, otherwise socket in unsupported parallel send/recv state
+                            synchronized (queue)
+                            {
+                                while (!queue.isEmpty())
+                                {
+                                    try
+                                    {
+                                        queue.wait();
+                                    }
+                                    catch (InterruptedException e)
+                                    {
+                                        //
+                                    }
+                                }
+                            }
+                        }
+
+                        // Wait for next request from the client
+                        byte[] request = this.responder.recv(); // ZMQ.DONTWAIT
+                        while (request == null)
+                        {
+                            /*
+                             * This code is left as a comment to later check how much speed this gains. As of 2026 jan-25 the
+                             * simulation seems to be slow mostly due to excess logging. THis makes a benchmark impossible.
+                             */
+                            // try
+                            // {
+                            // // In order to allow resources to go to other processes, we sleep before checking again
+                            // Thread.sleep(3);
+                            // }
+                            // catch (InterruptedException e)
+                            // {
+                            // }
+                            request = this.responder.recv(); // ZMQ.DONTWAIT
+                        }
+
                         /*
-                         * This code is left as a comment to later check how much speed this gains. As of 2026 jan-25 the
-                         * simulation seems to be slow mostly due to excess logging. THis makes a benchmark impossible.
+                         * REQ <> ROUTER pattern: The REQ sends a request. This is received by the ROUTER in three frames as
+                         * [identity][delimiter][request]. The identity is a few bytes identifying the request. The delimiter is
+                         * an empty byte array. The request is the actual bytes to process with Sim0mq. The reply should be send
+                         * as three frames [identity][delimiter][reply], where identity is the same bytes as received for the
+                         * specific request, delimiter is again an empty byte array, and reply is the bytes from Sim0mq that
+                         * form the reply to the request.
                          */
-                        // try
-                        // {
-                        // // In order to allow resources to go to other processes, we sleep before checking again
-                        // Thread.sleep(3);
-                        // }
-                        // catch (InterruptedException e)
-                        // {
-                        // }
-                        request = this.responder.recv(); // ZMQ.DONTWAIT
+                        /*
+                         * REQ <> REP pattern: This is a simple single-frame pattern REQ -> REP = [request], REP -> REQ =
+                         * [reply].
+                         */
+                        if (getIdentity)
+                        {
+                            identity = request;
+                            getIdentity = false;
+                            getDelimiter = true;
+                            continue;
+                        }
+                        if (getDelimiter)
+                        {
+                            Throw.when(request.length != 0, IllegalStateException.class,
+                                    "Expecting empty delimiter frame, but got non-empty request.");
+                            getDelimiter = false;
+                            getPayload = true;
+                            continue;
+                        }
+                        Throw.when(!getPayload, IllegalStateException.class,
+                                "Not expecting a message, but did not receive an identity or delimiter.");
+                        if (!this.reqrep)
+                        {
+                            getIdentity = true;
+                            getPayload = false;
+                        }
+
+                        queue.add(new Request(identity, request));
+                        identity = null;
                     }
+                }, "FOSIM worker-listener");
+                listener.start();
+
+                while (!this.isInterrupted())
+                {
+                    Request requestObj = queue.take();
+                    byte[] request = requestObj.request;
+
                     /*
                      * We have transitioned from SIM02 to SIM03. SIM03 deals differently with little or big endianness. In
                      * particular all the little endian data types were removed and the endianness in the main message
@@ -426,66 +508,75 @@ public class OtsTransceiver
                     if ("STEP".equals(message.getMessageTypeId()))
                     {
                         step();
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "STEP_REPLY", this.messageId++, new Object[0]), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "STEP_REPLY", this.messageId++, new Object[0]), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "STEP_REPLY");
                     }
                     else if ("VEHICLES".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = getVehiclePayload();
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "VEHICLES_REPLY", this.messageId++, payload), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "VEHICLES_REPLY", this.messageId++, payload), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "VEHICLES_REPLY", payload);
                     }
                     else if ("DETECTOR".equals(message.getMessageTypeId()))
                     {
                         float value = getDetectorValue(message);
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "DETECTOR_REPLY", this.messageId++, value), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "DETECTOR_REPLY", this.messageId++, value), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "DETECTOR_REPLY", value);
                     }
                     else if ("BATCH".equals(message.getMessageTypeId()))
                     {
                         batch(message);
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "BATCH_REPLY", this.messageId++, new Object[0]), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "BATCH_REPLY", this.messageId++, new Object[0]), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "BATCH_REPLY");
                     }
                     else if ("BATCH_STEP".equals(message.getMessageTypeId()))
                     {
                         // TODO: We could perform the next step asynchronously?
                         BatchStatus triggered = batchStep();
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "BATCH_STEP_REPLY", this.messageId++, new Object[] {triggered.name()}), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "BATCH_STEP_REPLY", this.messageId++, new Object[] {triggered.name()}), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "BATCH_STEP_REPLY", triggered.name());
                     }
                     else if ("TRAJECTORIES".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = getTrajectoriesPayload(message);
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "TRAJECTORIES_REPLY", this.messageId++, payload), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "TRAJECTORIES_REPLY", this.messageId++, payload), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "TRAJECTORIES_REPLY", payload);
                     }
                     else if ("CONTOUR".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = getSpeedContourPayload(message);
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "CONTOUR_REPLY", this.messageId++, payload), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "CONTOUR_REPLY", this.messageId++, payload), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "CONTOUR_REPLY", payload);
                     }
                     else if ("DISTRIBUTIONS".equals(message.getMessageTypeId()))
                     {
                         String distributions = asJsonString(new DistributionDefinitions(OtsTransceiver.VERSION));
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "DISTRIBUTIONS_REPLY", this.messageId++, distributions), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "DISTRIBUTIONS_REPLY", this.messageId++, distributions), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "DISTRIBUTIONS_REPLY", distributions);
                     }
                     else if ("PARAMETERS".equals(message.getMessageTypeId()))
                     {
                         String parameters = asJsonString(new ParameterDefinitions(OtsTransceiver.VERSION));
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "PARAMETERS_REPLY", this.messageId++, parameters), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "PARAMETERS_REPLY", this.messageId++, parameters), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "PARAMETERS_REPLY", parameters);
                     }
                     else if ("SETUP".equals(message.getMessageTypeId()))
                     {
@@ -494,64 +585,90 @@ public class OtsTransceiver
                         {
                             setupTraceData();
                         }
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "SETUP_REPLY", this.messageId++, exceptionMessage), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "SETUP_REPLY", this.messageId++, exceptionMessage), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "SETUP_REPLY", exceptionMessage);
                     }
                     else if ("TRACE_FILES".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = getTraceFilesPayload();
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "TRACE_FILES_REPLY", this.messageId++, payload), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "TRACE_FILES_REPLY", this.messageId++, payload), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "TRACE_FILES_REPLY", payload);
                     }
                     else if ("TRACE_ACTIVE".equals(message.getMessageTypeId()))
                     {
                         setTraceActive(message);
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "TRACE_ACTIVE_REPLY", this.messageId++, new Object[0]), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "TRACE_ACTIVE_REPLY", this.messageId++, new Object[0]), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "TRACE_ACTIVE_REPLY");
                     }
                     else if ("TRACE_VEHICLES_STEP".equals(message.getMessageTypeId()))
                     {
-                        Object[] payload = message.createObjectArray();
-                        this.vehiclesTraceStep = (Duration) payload[8];
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "TRACE_VEHICLES_STEP_REPLY", this.messageId++, new Object[0]), 0);
+                        this.vehiclesTraceStep = (Duration) message.createObjectArray()[8];
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "TRACE_VEHICLES_STEP_REPLY", this.messageId++, new Object[0]), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "TRACE_VEHICLES_STEP_REPLY");
                     }
                     else if ("TRACE_GET".equals(message.getMessageTypeId()))
                     {
                         Object[] payload = getTracePayload((String) message.createObjectArray()[8]);
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "TRACE_GET_REPLY", this.messageId++, payload), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "TRACE_GET_REPLY", this.messageId++, payload), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "TRACE_GET_REPLY", payload);
                     }
                     else if ("STOP".equals(message.getMessageTypeId()))
                     {
                         stopSimulation();
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "STOP_REPLY", this.messageId++, new Object[0]), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "STOP_REPLY", this.messageId++, new Object[0]), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "STOP_REPLY");
                     }
                     else if ("TERMINATE".equals(message.getMessageTypeId()))
                     {
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
-                                "TERMINATE_REPLY", this.messageId++, new Object[0]), 0);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim,
+                        // "TERMINATE_REPLY", this.messageId++, new Object[0]), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "TERMINATE_REPLY");
                         break;
                     }
                     else if ("PING".equals(message.getMessageTypeId()))
                     {
-                        this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
-                                OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim, "PONG",
-                                this.messageId++, new Object[0]), 0);
+                        // this.responder.send(requestObj.identity, ZMQ.SNDMORE);
+                        // this.responder.send(new byte[0], ZMQ.SNDMORE);
+                        // this.responder.send(Sim0MQMessage.encodeUTF8(OtsTransceiver.this.bigEndian,
+                        // OtsTransceiver.this.federation, OtsTransceiver.this.ots, OtsTransceiver.this.fosim, "PONG",
+                        // this.messageId++, new Object[0]), 0);
+                        requestObj.reply(OtsTransceiver.this, Worker.this, "PONG");
+                    }
+
+                    if (this.reqrep)
+                    {
+                        synchronized (queue)
+                        {
+                            if (queue.isEmpty())
+                            {
+                                // Notify queue is empty and its safe to listen to the socket again
+                                queue.notify();
+                            }
+                        }
                     }
                 }
             }
-            catch (Sim0MQException | SerializationException | NumberFormatException | GtuException | IOException e)
+            catch (Sim0MQException | SerializationException | NumberFormatException | GtuException | IOException
+                    | InterruptedException e)
             {
                 e.printStackTrace();
+            }
+            if (listener != null)
+            {
+                listener.interrupt();
             }
             this.responder.close();
             this.context.destroy();
@@ -1319,6 +1436,51 @@ public class OtsTransceiver
             {
                 this.shownMinute = thisMinute;
                 System.out.println(time);
+            }
+        }
+
+        /**
+         * Record of a queued request.
+         */
+        private record Request(byte[] identity, byte[] request)
+        {
+            /** Empty payload. */
+            private static Object[] EMPTY = new Object[0];
+
+            /**
+             * Send reply without payload.
+             * @param transceiver transceiver
+             * @param worker worker
+             * @param messageTypeId message type id
+             * @throws Sim0MQException exception
+             * @throws SerializationException exception
+             */
+            public void reply(final OtsTransceiver transceiver, final Worker worker, final String messageTypeId)
+                    throws Sim0MQException, SerializationException
+            {
+                reply(transceiver, worker, messageTypeId, EMPTY);
+            }
+
+            /**
+             * Send reply.
+             * @param transceiver transceiver
+             * @param worker worker
+             * @param messageTypeId message type id
+             * @param payload reply
+             * @throws Sim0MQException exception
+             * @throws SerializationException exception
+             */
+            public void reply(final OtsTransceiver transceiver, final Worker worker, final String messageTypeId,
+                    final Object... payload) throws Sim0MQException, SerializationException
+            {
+                if (!worker.reqrep)
+                {
+                    // Send [identity][delimiter] before [reply] for REQ <> ROUTER
+                    worker.responder.send(this.identity, ZMQ.SNDMORE);
+                    worker.responder.send(new byte[0], ZMQ.SNDMORE);
+                }
+                worker.responder.send(Sim0MQMessage.encodeUTF8(transceiver.bigEndian, transceiver.federation, transceiver.ots,
+                        transceiver.fosim, messageTypeId, worker.messageId++, payload), 0);
             }
         }
 
