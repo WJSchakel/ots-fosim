@@ -42,7 +42,9 @@ import org.djutils.immutablecollections.ImmutableSet;
 import org.opentrafficsim.base.OtsRuntimeException;
 import org.opentrafficsim.base.geometry.OtsGeometryException;
 import org.opentrafficsim.base.geometry.OtsLine2d;
+import org.opentrafficsim.base.logger.Logger;
 import org.opentrafficsim.base.parameters.ParameterException;
+import org.opentrafficsim.base.parameters.ParameterTypeDouble;
 import org.opentrafficsim.base.parameters.ParameterTypes;
 import org.opentrafficsim.core.definitions.DefaultsNl;
 import org.opentrafficsim.core.dsol.OtsAnimator;
@@ -88,6 +90,7 @@ import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Anticipa
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.DirectNeighborsPerception;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.Estimation;
 import org.opentrafficsim.road.gtu.lane.perception.categories.neighbors.PerceivedGtuType;
+import org.opentrafficsim.road.gtu.lane.perception.mental.AbstractTask;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationHeadway;
 import org.opentrafficsim.road.gtu.lane.perception.mental.AdaptationLaneChangeDesire;
 import org.opentrafficsim.road.gtu.lane.perception.mental.BehavioralAdaptation;
@@ -101,7 +104,6 @@ import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskAcc
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskCarFollowing;
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskConflict;
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskCooperation;
-import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskLaneChange;
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskRoadSideDistraction;
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskScan;
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.ChannelTaskSignal;
@@ -110,10 +112,14 @@ import org.opentrafficsim.road.gtu.lane.perception.mental.channel.IntersectionPe
 import org.opentrafficsim.road.gtu.lane.perception.mental.channel.NeighborsPerceptionChannel;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlus;
 import org.opentrafficsim.road.gtu.lane.tactical.following.IdmPlusMulti;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.AbstractIncentivesTacticalPlanner;
+import org.opentrafficsim.road.gtu.lane.tactical.lmrs.IncentiveSpeedWithCourtesy;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.Lmrs;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory.FullerImplementation;
 import org.opentrafficsim.road.gtu.lane.tactical.lmrs.LmrsFactory.Setting;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.LmrsParameters;
+import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.VoluntaryIncentive;
 import org.opentrafficsim.road.network.LaneKeepingPolicy;
 import org.opentrafficsim.road.network.RoadNetwork;
 import org.opentrafficsim.road.network.lane.CrossSectionElement;
@@ -1648,7 +1654,8 @@ public class FosParser
                     }
                     return;
                 }
-                GtuErrorHandler.THROW.handle(gtu, ex);
+                Logger.ots().info("Deleting GTU {} due to exception.", gtu.getId());
+                gtu.getSimulator().scheduleEventNow(() -> gtu.destroy());
             }
         });
 
@@ -1988,7 +1995,33 @@ public class FosParser
             // Custom incentives face a immutable List.of() bug, so add them here.
             Lmrs lmrs = super.create(gtu);
             lmrs.addMandatoryIncentive(FosIncentiveRoute.SINGLETON);
-            lmrs.addVoluntaryIncentive(FosIncentiveKeep.SINGLETON);
+
+            try
+            {
+                // Let's make sure IncentiveSpeedWithCourtesy is first and FosIncentiveKeep is second voluntary incentive
+                Field field = AbstractIncentivesTacticalPlanner.class.getDeclaredField("voluntaryIncentives");
+                field.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                LinkedHashSet<VoluntaryIncentive> set = (LinkedHashSet<VoluntaryIncentive>) field.get(lmrs);
+                LinkedHashSet<VoluntaryIncentive> copy = new LinkedHashSet<>(set);
+                if (set.contains(IncentiveSpeedWithCourtesy.SINGLETON))
+                {
+                    set.clear();
+                    set.add(IncentiveSpeedWithCourtesy.SINGLETON);
+                    copy.remove(IncentiveSpeedWithCourtesy.SINGLETON);
+                }
+                else
+                {
+                    set.clear();
+                }
+                set.add(FosIncentiveKeep.SINGLETON);
+                set.addAll(copy);
+            }
+            catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e)
+            {
+                // ignore
+                lmrs.addVoluntaryIncentive(FosIncentiveKeep.SINGLETON);
+            }
             return lmrs;
         }
 
@@ -2009,7 +2042,8 @@ public class FosParser
                 addChannelTask(taskSuppliers, get(Setting.TASK_FREE_ACCELERATION, gtuType), ChannelTaskAcceleration.SUPPLIER);
                 addChannelTask(taskSuppliers, get(Setting.TASK_TRAFFIC_LIGHTS, gtuType), ChannelTaskTrafficLight.SUPPLIER);
                 addChannelTask(taskSuppliers, get(Setting.TASK_SIGNAL, gtuType), ChannelTaskSignal.SUPPLIER);
-                addChannelTask(taskSuppliers, get(Setting.TASK_LANE_CHANGE, gtuType), ChannelTaskLaneChange.SUPPLIER);
+                // Use different lane-change implementation
+                addChannelTask(taskSuppliers, get(Setting.TASK_LANE_CHANGE, gtuType), ChannelTaskLaneChange2.SUPPLIER);
                 addChannelTask(taskSuppliers, get(Setting.TASK_COOPERATION, gtuType), ChannelTaskCooperation.SUPPLIER);
                 addChannelTask(taskSuppliers, get(Setting.TASK_CONFLICTS, gtuType), ChannelTaskConflict.SUPPLIER);
                 addChannelTask(taskSuppliers, get(Setting.TASK_ROADSIDE_DISTRACTION, gtuType),
@@ -2088,6 +2122,74 @@ public class FosParser
                 taskSuppliers.add(supplier);
             }
         }
+
+        /**
+         * Deals with d=1 when lane change is initiated issue.
+         */
+        private static class ChannelTaskLaneChange2 extends AbstractTask implements ChannelTask
+        {
+
+            /** Current left lane change desire. */
+            private static final ParameterTypeDouble DLEFT = LmrsParameters.DLEFT;
+
+            /** Current right lane change desire. */
+            private static final ParameterTypeDouble DRIGHT = LmrsParameters.DRIGHT;
+
+            /** Lane change desire of current lane change. */
+            private static final ParameterTypeDouble DLC = LmrsParameters.DLC;
+
+            /** Standard set of left and right lane-change task. */
+            private static final Set<ChannelTask> SET =
+                    Set.of(new ChannelTaskLaneChange2(true), new ChannelTaskLaneChange2(false));
+
+            /** Standard supplier that supplies instances for left and right lane-change task. */
+            public static final Function<LanePerception, Set<ChannelTask>> SUPPLIER = (p) -> SET;
+
+            /** Whether this task instance regards the left side. */
+            private final boolean left;
+
+            /**
+             * Constructor.
+             * @param left whether this task instance regards the left side.
+             */
+            private ChannelTaskLaneChange2(final boolean left)
+            {
+                super("lane-changing");
+                this.left = left;
+            }
+
+            @Override
+            public String getId()
+            {
+                return String.format("lane-changing (%s)", this.left ? "left" : "right");
+            }
+
+            @Override
+            public Object getChannel()
+            {
+                return this.left ? LEFT : RIGHT;
+            }
+
+            @Override
+            public double calculateTaskDemand(final LanePerception perception) throws ParameterException
+            {
+                double dLeft = perception.getGtu().getParameters().getParameter(DLEFT);
+                double dRight = perception.getGtu().getParameters().getParameter(DRIGHT);
+                // Fix: check whether the value is 1, and use the level of DLC in that direction if that's the case
+                if (dLeft == 1.0)
+                {
+                    dLeft = perception.getGtu().getParameters().getParameter(DLC);
+                }
+                if (dRight == 1.0)
+                {
+                    dRight = perception.getGtu().getParameters().getParameter(DLC);
+                }
+                return Math.min(0.999, this.left ? (dLeft >= dRight && dLeft > 0.0 ? dLeft : 0.0)
+                        : (dRight >= dLeft && dRight > 0.0 ? dRight : 0.0));
+            }
+
+        }
+
     }
 
 }
