@@ -187,12 +187,14 @@ public class ParameterDefinitions
         group = new ParameterGroup("Sociale interacties", SOCIAL_GROUP_ID, DefaultState.OFF.array(N_TYPES))
                 .setDescriptionNl("Endogene beinvloeding van gewenste snelheid, volgtijd en rijstrookwisselwens vanuit sociale "
                         + "druk. Dit beinvloedt met name het aantal rijstrookwisselingen en de verdeling van volgtijden. "
-                        + "Hierbij is het van belang dat er andere basis waarden worden gebruikt: <i>T<sub>max</sub></i> = 1.6s"
-                        + ", <i>v<sub>gain</sub></i> = <i>LogNormal</i>(3.3789, 0.4) (cars) en 50 (trucks) km/h.")
+                        + "Met sociale interacties is het van belang dat er andere standaard waarden worden gebruikt: "
+                        + "<i>T<sub>max</sub></i> = 1.6s onder Bestuurder, en <i>v<sub>gain</sub></i> = "
+                        + "<i>LogNormal</i>(3.3789, 0.4) (auto's) en 50 (vrachtwagens) km/h bij het Rijstrookwisselmodel.")
                 .setDescriptionEn("Endogenous influence on desired speed, desired headway and lane change desire from social "
-                        + "pressure. This mostly influences the number of lane changes and the headway distribution. It is "
-                        + "important to use a different base value: <i>T<sub>max</sub></i> = 1.6s, <i>v<sub>gain</sub></i> = "
-                        + "<i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h.");
+                        + "pressure. This mostly influences the number of lane changes and the headway distribution. "
+                        + "With social interactions it is important to use different default values: "
+                        + "<i>T<sub>max</sub></i> = 1.6s under Driver, and <i>v<sub>gain</sub></i> = "
+                        + "<i>LogNormaal</i>(3.3789, 0.4) (cars) and 50 (trucks) km/h under Lane-change model.");
         group.addParameter(new Parameter("sigma", it("σ"), "-").setMin(0.0).setMax(1.0)
                 .setDefault(DistributionValue.triangular(0.0, 0.25, 1.0), 1.0)
                 .setDescriptionNl("Gevoeligheid voor gewenste snelheid anderen.").setDescriptionEn("Socio-speed sensitivity."));
