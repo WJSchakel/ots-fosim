@@ -22,7 +22,7 @@ import org.opentrafficsim.road.gtu.lane.tactical.util.lmrs.MandatoryIncentive;
 import org.opentrafficsim.road.network.LaneChangeInfo;
 
 /**
- * Equal to IncentiveRoute, but adds 100m of full lane change desire. This is because in the original LMRS vehicles could be
+ * Equal to IncentiveRoute, but adds 200m of full lane change desire. This is because in the original LMRS vehicles could be
  * deleted. This cannot happen in OTS which cause vehicles to stop instead, especially at splits.
  * <p>
  * Copyright (c) 2013-2024 Delft University of Technology, PO Box 5, 2600 AA, Delft, the Netherlands. All rights reserved. <br>
@@ -128,7 +128,7 @@ public class FosIncentiveRoute implements MandatoryIncentive, Stateless<FosIncen
     public static double getDesireToLeave(final Parameters params, final Length x, final int n, final Speed v)
             throws ParameterException
     {
-        double xAdjusted = x.si < 100.0 ? 0.0 : x.si - 100;
+        double xAdjusted = x.si < 200.0 ? 0.0 : x.si - 200;
         double d1 = 1 - xAdjusted / (n * params.getParameter(LOOKAHEAD).si);
         double d2 = 1 - (xAdjusted / v.si) / (n * params.getParameter(T0).si);
         d1 = d2 > d1 ? d2 : d1;
